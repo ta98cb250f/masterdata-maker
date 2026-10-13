@@ -4,10 +4,29 @@ import type { SortKey } from './compare';
 
 const sorted = (xs: string[], cmp: (a: string, b: string) => number) => [...xs].sort(cmp);
 
+/** UTF-8 のバイト列（core は Node.js の型を使わないので自前で変換する） */
+function utf8(s: string): number[] {
+  const out: number[] = [];
+  for (const ch of s) {
+    const cp = ch.codePointAt(0) as number;
+    if (cp < 0x80) out.push(cp);
+    else if (cp < 0x800) out.push(0xc0 | (cp >> 6), 0x80 | (cp & 63));
+    else if (cp < 0x10000) out.push(0xe0 | (cp >> 12), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));
+    else out.push(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 63), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));
+  }
+  return out;
+}
+
+function compareBytes(a: number[], b: number[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] - b[i];
+  return a.length - b.length;
+}
+
 describe('文字列のコードポイント順', () => {
   it('UTF-8 のバイト順と同じになる（サロゲートペアに注意）', () => {
     const xs = ['\u{1F600}', 'Ａ', 'b', 'a', 'B', 'あ', '', 'ab', ''];
-    const byBytes = [...xs].sort((a, b) => Buffer.compare(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8')));
+    const byBytes = [...xs].sort((a, b) => compareBytes(utf8(a), utf8(b)));
+    expect(utf8('\u{1F600}')).toEqual([0xf0, 0x9f, 0x98, 0x80]);
     expect(sorted(xs, compareCodePoints)).toEqual(byBytes);
     // UTF-16 の単位の順（JavaScript の既定）では U+1F600 が U+FF21 より前になってしまう
     expect('\u{1F600}' < 'Ａ').toBe(true);
