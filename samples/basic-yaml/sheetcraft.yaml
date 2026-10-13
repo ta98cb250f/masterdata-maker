@@ -1,0 +1,10 @@
+format_version: 1
+storage:
+  format: yaml
+timezone: Asia/Tokyo
+paths:
+  tables: tables/
+  config: config/
+output:
+  format: json
+  out_dir: build/

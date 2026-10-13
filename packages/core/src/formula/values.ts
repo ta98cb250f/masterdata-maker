@@ -24,6 +24,8 @@ export class DateTimeValue {
 /** 未入力を表す値。唯一のインスタンス EMPTY だけを使う */
 export class EmptyValue {
   static readonly instance: EmptyValue = new EmptyValue();
+  /** 型を区別するための印（メンバーが無いと、構造的にどの値とも互換になる） */
+  readonly kind = 'empty' as const;
   private constructor() {}
 }
 

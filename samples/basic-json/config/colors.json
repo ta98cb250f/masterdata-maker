@@ -1,0 +1,12 @@
+{
+  "colors": [
+    { "key": "red", "color": "#f4cccc", "label": "赤" },
+    { "key": "orange", "color": "#fce5cd", "label": "オレンジ" },
+    { "key": "yellow", "color": "#fff2cc", "label": "黄" },
+    { "key": "green", "color": "#d9ead3", "label": "緑" },
+    { "key": "cyan", "color": "#d0e0e3", "label": "シアン" },
+    { "key": "blue", "color": "#cfe2f3", "label": "青" },
+    { "key": "purple", "color": "#d9d2e9", "label": "紫" },
+    { "key": "magenta", "color": "#ead1dc", "label": "マゼンタ" }
+  ]
+}

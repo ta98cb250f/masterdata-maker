@@ -38,7 +38,6 @@ function localFieldsArg(arg: FnArg, name: string, ctx: EvalContext): LocalDateTi
   const v = scalarArg(arg);
   if (v instanceof FormulaError) return v;
   if (v instanceof DateTimeValue) return epochToLocal(v.epochMs, ctx.timeZone);
-  let serial: number | undefined;
   if (typeof v === 'string' && parseNumericString(v) === undefined) {
     const dt = parseUserDateTime(v, ctx.timeZone);
     if (dt === null) return argNotNumber(name, 1, v, ctx);
@@ -46,7 +45,7 @@ function localFieldsArg(arg: FnArg, name: string, ctx: EvalContext): LocalDateTi
   }
   const n = toNumeric(v, ctx.timeZone);
   if (n === undefined) return argNotNumber(name, 1, v, ctx);
-  serial = Number(n);
+  const serial = Number(n);
   if (!Number.isFinite(serial) || Math.abs(serial) > MAX_ABS_SERIAL) {
     return formulaError('#NUM!', 'formula.dateOutOfRange');
   }

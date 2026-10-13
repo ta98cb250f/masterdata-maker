@@ -65,7 +65,7 @@ const YAML_SPECIAL_WORDS = new Set(['~', 'null', 'y', 'yes', 'n', 'no', 'true', 
 // 先頭に来ると引用符なしでは書けない文字
 const YAML_INDICATOR_START = /^[-?:,[\]{}#&*!|>'"%@`]/;
 // 改行・タブ・制御文字・BOM・行区切りなど（エスケープが必要な文字）
-const YAML_NEEDS_ESCAPE = /[\u0000-\u001f\u007f-\u009f  ﻿￾￿]|[\ud800-\udfff]/u;
+const YAML_NEEDS_ESCAPE = /[\u0000-\u001f\u007f-\u009f\u2028\u2029\ufeff\ufffe\uffff]|[\ud800-\udfff]/u;
 
 /**
  * DR-41: 文字列を引用符で囲む必要があるか。

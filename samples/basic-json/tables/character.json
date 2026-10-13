@@ -1,0 +1,60 @@
+{
+  "table": "character",
+  "display_name": "キャラクター",
+  "fields": [
+    { "name": "name", "type": "string", "display_name": "名前", "validation": { "required": true, "max_length": 20 } },
+    { "name": "rarity", "type": "enum", "display_name": "レアリティ", "enum_ref": "rarity" },
+    { "name": "hp", "type": "int", "display_name": "HP", "validation": { "required": true, "min": 1, "max": 99999 }, "anomaly": { "warn_above": 5000 } },
+    { "name": "defense", "type": "int", "display_name": "防御力", "default": 0, "validation": { "min": 0, "max": 999 } },
+    { "name": "effective_hp", "type": "float", "display_name": "実効HP", "description": "防御力を加味した HP", "formula": "hp * (1 + defense / 100)" },
+    { "name": "skill_ids", "type": "list<int>", "display_name": "スキル", "ref": "skill.id", "validation": { "max_items": 4 } },
+    { "name": "element", "type": "list<enum>", "display_name": "属性", "enum_ref": "element" },
+    { "name": "start_at", "type": "datetime", "display_name": "開始日時" },
+    { "name": "power", "type": "int64", "display_name": "戦闘力" },
+    { "name": "code", "type": "string", "display_name": "コード", "validation": { "regex": "^[A-Za-z0-9.]+$", "unique": true } },
+    { "name": "memo", "type": "string", "display_name": "メモ", "export": false }
+  ],
+  "records": [
+    {
+      "id": 1,
+      "name": "勇者アルス",
+      "rarity": "SSR",
+      "hp": 1200,
+      "defense": 30,
+      "skill_ids": [1, 3],
+      "element": ["火", "光"],
+      "start_at": "2026-10-13T12:00:00+09:00",
+      "power": 9007199254740993,
+      "code": "NO",
+      "memo": "主人公"
+    },
+    {
+      "id": 2,
+      "name": "魔法使いリナ",
+      "rarity": "SR",
+      "hp": { "value": 800, "color": "red", "comment": "次回調整予定" },
+      "defense": 10,
+      "effective_hp": { "override": "hp * 2" },
+      "skill_ids": [1, 2],
+      "element": ["水"],
+      "start_at": "2026-10-20T00:00:00+09:00",
+      "power": 12000,
+      "code": "1.10",
+      "memo": "一行目\n二行目"
+    },
+    {
+      "id": 3,
+      "version": "0.1.2",
+      "name": "盗賊カイ",
+      "rarity": "R",
+      "hp": 650,
+      "element": ["風", "闇"],
+      "power": 800,
+      "code": "null"
+    }
+  ],
+  "view": {
+    "column_widths": { "name": 160, "hp": 80, "memo": 200 },
+    "frozen_columns": 2
+  }
+}
