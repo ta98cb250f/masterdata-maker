@@ -1,0 +1,20 @@
+{
+  "name": "@sheetcraft/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "sheetcraft": "./dist/cli.mjs"
+  },
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/cli.mjs",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sheetcraft/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "0.28.2"
+  }
+}
