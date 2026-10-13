@@ -15,13 +15,14 @@ export interface RichCellInit {
 
 /** 値にセル色・メモ・セル単位式を付けたセル（DR-11） */
 export class RichCell {
-  value?: RawValue;
+  // declare: 未指定のキーをプロパティとして作らない（ES2022 のクラスフィールドは undefined で作られるため）
+  declare value?: RawValue;
   /** セル単位式。先頭の `=` は付けない（P-04） */
-  override?: string;
-  color?: string;
-  comment?: string;
+  declare override?: string;
+  declare color?: string;
+  declare comment?: string;
   /** 知らないキー（読み込みエラーになる）。元の順で保持する */
-  extra?: [string, ExtraValue][];
+  declare extra?: [string, ExtraValue][];
 
   constructor(init: RichCellInit = {}) {
     // 未指定のプロパティは作らない（'value' in cell で有無を判別できるように）

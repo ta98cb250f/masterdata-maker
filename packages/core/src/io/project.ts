@@ -203,7 +203,10 @@ export interface ProjectWritePlan {
 }
 
 export interface PlanOptions {
-  /** リソースファイルの形式。省略時は storage.format（変えると CLI の convert になる） */
+  /**
+   * すべてのリソースファイルをこの形式で書く（CLI の convert）。storage.format も書き換える。
+   * 省略時は、読み込んだファイルは元の形式・元のパスのまま、新しいファイルは storage.format で書く
+   */
   format?: StorageFormat;
 }
 
@@ -216,12 +219,16 @@ function targetPath(source: SourceFile | null, fallback: string, format: Storage
   return source.format === format ? source.path : replaceExtension(source.path, format);
 }
 
+function formatFor(source: SourceFile | null, options: PlanOptions, storage: StorageFormat): StorageFormat {
+  return options.format ?? source?.format ?? storage;
+}
+
 /**
  * 書き出すべきファイルを返す（core は書き込まない）。既定値のままの共通設定はファイルを作らない。
  * 正規形のファイルを読んで何も変えなければ、どれも changed が false になる（DR-30）
  */
 export function planProjectWrite(project: Project, options: PlanOptions = {}): ProjectWritePlan {
-  const format = options.format ?? project.config.storage.format;
+  const storage = options.format ?? project.config.storage.format;
   const paths = resolveProjectPaths(project.config);
   const files: WriteFile[] = [];
   const remove: string[] = [];
@@ -232,20 +239,22 @@ export function planProjectWrite(project: Project, options: PlanOptions = {}): P
   };
 
   // プロジェクト設定ファイル自身の形式は拡張子で決める（P-01）
-  const config: ProjectConfig = { ...project.config, storage: { ...project.config.storage, format } };
+  const config: ProjectConfig = { ...project.config, storage: { ...project.config.storage, format: storage } };
   const configSource = project.config.source;
-  const configFormat = configSource?.format ?? format;
+  const configFormat = configSource?.format ?? storage;
   add(configSource?.path ?? `sheetcraft.${extensionOf(configFormat)}`, serializeProjectConfig(config, configFormat), configSource);
 
   for (const name of COMMON_PART_NAMES) {
     const part = project.common[name];
     if (part.isDefault) continue;
+    const format = formatFor(part.source, options, storage);
     const path = targetPath(part.source, joinPath(paths.configDir, `${name}.${extensionOf(format)}`), format);
     add(path, serializeCommonPart(project.common, name, format), part.source);
   }
 
   const baseFields = project.common.base_fields.items;
   for (const table of project.tables) {
+    const format = formatFor(table.source, options, storage);
     const path = targetPath(table.source, joinPath(paths.tablesDir, `${table.name}.${extensionOf(format)}`), format);
     add(path, serializeTable(table, baseFields, format), table.source);
   }
