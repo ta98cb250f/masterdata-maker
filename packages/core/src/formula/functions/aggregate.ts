@@ -63,6 +63,7 @@ function collectNumbers(args: readonly FnArg[], ctx: EvalContext, name: string):
     }
     const n = rangeItemNumber(v, ctx);
     if (n !== undefined) out.push(n);
+    return undefined;
   });
   return err ?? out;
 }
