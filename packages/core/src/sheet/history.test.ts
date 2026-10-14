@@ -69,4 +69,14 @@ describe('元に戻す履歴', () => {
     expect(h.canUndo() || h.canRedo()).toBe(false);
     expect(() => new UndoHistory(0)).toThrow(RangeError);
   });
+
+  it('some は元に戻す・やり直しの両方の項目を調べる', () => {
+    const h = new UndoHistory<number>();
+    h.push(1);
+    h.push(2);
+    h.undo();
+    expect(h.some((n) => n === 2)).toBe(true);
+    expect(h.some((n) => n === 1)).toBe(true);
+    expect(h.some((n) => n === 3)).toBe(false);
+  });
 });

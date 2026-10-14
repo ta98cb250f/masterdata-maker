@@ -25,6 +25,7 @@ export type ShortcutId =
   | 'selectColumn'
   | 'save'
   | 'showShortcuts'
+  | 'contextMenu'
   | 'moveUp'
   | 'moveDown'
   | 'moveLeft'
@@ -135,6 +136,8 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   def('selectColumn', 'common', GRID, [plain('Space', { ctrl: true })]),
   def('save', 'common', BOTH, [mod('s')]),
   def('showShortcuts', 'common', GRID, [mod('/')]),
+  // 右クリックメニューをキーで開く（NFR-40。Shift+F10 と ContextMenu キーはブラウザの慣例。Googleスプレッドシートでは未検証）
+  def('contextMenu', 'common', GRID, [plain('F10', { shift: true }), plain('ContextMenu')]),
 
   // 移動（Mac の Ctrl+矢印にあたる ⌘+矢印は未検証）
   ...ARROWS.map(([name, key]) => def(`move${name}` as ShortcutId, 'navigate', GRID, [plain(key)])),

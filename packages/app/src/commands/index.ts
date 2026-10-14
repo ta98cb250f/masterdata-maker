@@ -3,11 +3,12 @@ import { PANELS } from '../panels';
 import { panelCommand } from '../panels/registry';
 import { editCommands } from './edit';
 import { fileCommands } from './file';
+import { gridFeatureCommands } from './gridFeatures';
 import { navigateCommands } from './navigate';
 import type { CommandDef } from './registry';
 import { rowCommands } from './rows';
 
-export const COMMAND_MODULES: readonly (readonly CommandDef[])[] = [fileCommands, editCommands, navigateCommands, rowCommands];
+export const COMMAND_MODULES: readonly (readonly CommandDef[])[] = [fileCommands, editCommands, navigateCommands, rowCommands, gridFeatureCommands];
 
 /** 登録するすべての操作（パネルの開閉の操作 `panel.<id>` を含む） */
 export function allCommands(): CommandDef[] {

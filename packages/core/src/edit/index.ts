@@ -46,7 +46,22 @@ export { DEFAULT_COLUMN_WIDTH, isValidIdentifier } from './helpers';
 export type { CellTarget, TableCellTarget } from './helpers';
 
 export { EditSession } from './session';
-export type { ApplyResult, EditEvent, EditListener, EditSessionOptions, SaveFile, SavePlan, SaveTarget } from './session';
+export type {
+  ApplyResult,
+  CommonReload,
+  EditEvent,
+  EditListener,
+  EditSessionOptions,
+  KeepRequest,
+  ReloadRequest,
+  SaveFile,
+  SavePlan,
+  SaveTarget,
+  TableReload,
+} from './session';
+
+export { restoreProject, snapshotProject } from './snapshot';
+export type { ProjectSnapshot, RecordSnapshot, TableSnapshot } from './snapshot';
 
 export { clearCells, enterInput, replaceCells, setCellColor, setCellComment } from './commands/cells';
 export type { CellColorArgs, CellsArgs, CommentArgs, EnterInputArgs, ReplaceArgs, ReplaceResult } from './commands/cells';

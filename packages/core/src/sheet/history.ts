@@ -66,4 +66,9 @@ export class UndoHistory<T> {
     this.undoStack = [];
     this.redoStack = [];
   }
+
+  /** 元に戻す・やり直しの履歴の項目のどれかが条件に合うか */
+  some(predicate: (entry: T) => boolean): boolean {
+    return this.undoStack.some(predicate) || this.redoStack.some(predicate);
+  }
 }

@@ -45,6 +45,7 @@ const rowSize = (): number => ROW_HEIGHT;
 const rowKey = (i: number): number => i;
 
 const DECORATORS = GRID_EXTENSIONS.flatMap((e) => (e.decorateCell === undefined ? [] : [e.decorateCell.bind(e)]));
+const HEADER_DECORATORS = GRID_EXTENSIONS.flatMap((e) => (e.decorateColumnHeader === undefined ? [] : [e.decorateColumnHeader.bind(e)]));
 const OVERLAYS = GRID_EXTENSIONS.filter((e): e is GridExtension & Required<Pick<GridExtension, 'overlay'>> => e.overlay !== undefined);
 const POINTER_HOOKS = GRID_EXTENSIONS.filter((e) => e.pointerDown !== undefined);
 
@@ -122,7 +123,7 @@ function GridView({ store, sheet }: { store: AppStore; sheet: SheetModel }) {
     if (calc === null) return null;
     // 編集・検査の結果が変わったら作り直す（行の memo を外して描き直す）
     const version = `${revision}:${validationVersion}`;
-    return { store, table: sheet.table, sheet, calc, geometry, timeZone: calc.timeZone, issues, colors, decorators: DECORATORS, t, version };
+    return { store, table: sheet.table, sheet, calc, geometry, timeZone: calc.timeZone, issues, colors, decorators: DECORATORS, headerDecorators: HEADER_DECORATORS, t, version };
   }, [store, sheet, calc, geometry, issues, colors, t, revision, validationVersion]);
 
   // ---- フォーカス・スクロールの位置 ----

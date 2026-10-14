@@ -1,21 +1,29 @@
 // プロジェクト全体の編集セッション（FR-HIS-01〜04、FR-FIO-02〜05、P-43、P-44）
+import { IoCode } from '../io/codes';
 import { serializeCommonPart, serializeTable } from '../io/serialize';
-import type { CommonPartName } from '../model/common';
+import type { ColorDef, CommonPartName, EnumDef } from '../model/common';
 import { COMMON_PART_NAMES } from '../model/common';
+import { defaultBaseFields, defaultColors, defaultEnums } from '../model/defaults';
+import type { FieldDef } from '../model/field';
 import type { Project } from '../model/project';
-import { joinPath, resolveProjectPaths } from '../model/project';
-import type { StorageFormat } from '../model/source';
+import { compareNames, joinPath, resolveProjectPaths } from '../model/project';
+import type { SourceFile, StorageFormat } from '../model/source';
 import { extensionOf } from '../model/source';
-import type { Table } from '../model/table';
+import type { BrokenTable, Table } from '../model/table';
 import { DEFAULT_HISTORY_LIMIT, UndoHistory } from '../sheet/history';
 import type { Patch } from './patch';
-import { applyPatches, commonVersion, patchTable, tableListVersion, tableVersion } from './patch';
+import { applyPatch, applyPatches, commonVersion, patchTable, tableListVersion, tableVersion, toTableData } from './patch';
 import type { CommandResult, EditFailure, FocusHint, Transaction } from './transaction';
 
 export type EditEvent =
   /** patches は当てた順のパッチ（Worker に同じ順で送れば同じ状態になる） */
   | { kind: 'apply' | 'undo' | 'redo'; transaction: Transaction; patches: readonly Patch[] }
-  /** 保存の完了（未保存の印が変わる） */
+  /**
+   * 外部で書き換えられたファイルを読み込み直した（FR-FIO-07。履歴には積まない）。patches は当てた順のパッチ、
+   * tables は置き換えた・取り除いたテーブルの uid、historyCleared は履歴を消したか
+   */
+  | { kind: 'reload'; patches: readonly Patch[]; tables: readonly number[]; historyCleared: boolean }
+  /** 保存の完了、または基準の変更（未保存の印が変わる） */
   | { kind: 'saved' };
 
 export type EditListener = (event: EditEvent) => void;
@@ -68,6 +76,41 @@ function dirOf(path: string): string {
 }
 
 export type ApplyResult = { ok: true; tx: Transaction } | { ok: false; failures: EditFailure[] };
+
+/** 読み込み直すテーブル（FR-FIO-07）。next が null なら、ファイルが消されたのでテーブルを取り除く */
+export interface TableReload {
+  /** 置き換えるテーブル（読み込みエラーのテーブルでもよい）の uid。next はこの uid で置き換える */
+  uid: number;
+  /** 読み直したファイルを parseTableFile で読んだもの（レコードの uid はプロジェクトの採番から取ること） */
+  next: Table | BrokenTable | null;
+}
+
+/** 読み込み直す共通設定。next が null なら、ファイルが消されたので既定値に戻す */
+export type CommonReload =
+  | { part: 'enums'; next: { items: EnumDef[]; source: SourceFile } | null }
+  | { part: 'base_fields'; next: { items: FieldDef[]; source: SourceFile } | null }
+  | { part: 'colors'; next: { items: ColorDef[]; source: SourceFile } | null };
+
+export interface ReloadRequest {
+  tables?: readonly TableReload[];
+  common?: readonly CommonReload[];
+}
+
+/** エディタの内容で上書きするファイル。text はファイルの今のテキスト（消されていれば null） */
+export interface KeepRequest {
+  tables?: readonly { uid: number; text: string | null }[];
+  common?: readonly { part: CommonPartName; text: string | null }[];
+}
+
+function defaultCommonItems(part: CommonPartName): EnumDef[] | FieldDef[] | ColorDef[] {
+  if (part === 'enums') return defaultEnums();
+  if (part === 'base_fields') return defaultBaseFields();
+  return defaultColors();
+}
+
+function compareTableEntries(a: Table | BrokenTable, b: Table | BrokenTable): number {
+  return compareNames(a.name, b.name) || compareNames(a.source?.path ?? '', b.source?.path ?? '');
+}
 
 export class EditSession {
   readonly project: Project;
@@ -214,6 +257,118 @@ export class EditSession {
 
   get redoCount(): number {
     return this.history.redoCount;
+  }
+
+  // ---- 外部での変更（FR-FIO-07） ----
+
+  /**
+   * 外部で書き換えられたファイルを読み込み直す。テーブルは uid のまま中身を置き換え、読み直したテキストを基準にする
+   * （そのテーブルの未保存の変更は消える）。共通設定は読み直した値にする。
+   * 読み込み直したテーブル・共通設定を指す履歴は当てられなくなるので、そういう項目が 1 つでもあれば履歴をすべて消す
+   * （共通列は全テーブルの列なので、共通列を読み込み直したら履歴は必ず消す）。履歴には積まない
+   */
+  reloadFiles(request: ReloadRequest): { historyCleared: boolean } {
+    const patches: Patch[] = [];
+    const touched = new Set<number>();
+    const parts = new Set<CommonPartName>();
+    const apply = (patch: Patch) => {
+      applyPatch(this.project, patch);
+      patches.push(patch);
+    };
+    // 共通設定を先に（共通列はテーブルの列になるので、テーブルを読み直すより前に変える）
+    for (const item of request.common ?? []) {
+      const items = item.next?.items ?? defaultCommonItems(item.part);
+      apply({ op: 'setCommon', part: item.part, items, isDefault: item.next === null } as Patch);
+      this.project.common[item.part].source = item.next?.source ?? null;
+      // 基準は開いたときと同じく、読んだ内容を正規形にしたテキスト（正規形でないファイルでも未保存にしない）
+      this.commonBaselines.set(item.part, { path: item.next?.source.path ?? null, text: this.commonText(item.part) });
+      parts.add(item.part);
+    }
+    for (const { uid, next } of request.tables ?? []) {
+      const current = this.project.tables.find((t) => t.uid === uid);
+      const brokenIndex = this.project.brokenTables.findIndex((t) => t.uid === uid);
+      if (current !== undefined) apply({ op: 'removeTable', table: uid });
+      else if (brokenIndex >= 0) this.project.brokenTables.splice(brokenIndex, 1);
+      else continue;
+      touched.add(uid);
+      this.tableTexts.delete(uid);
+      this.tableBaselines.delete(uid);
+      this.states.delete(uid);
+      if (next === null) continue;
+      let replacement: Table | BrokenTable = next;
+      if (next.kind === 'table') {
+        const other = [...this.project.tables, ...this.project.brokenTables].find((t) => t.uid !== uid && t.name === next.name);
+        // 同じ名前のテーブルが他にあれば、開いたときと同じく読み込みエラーにする
+        if (other !== undefined && next.source !== null) {
+          replacement = {
+            kind: 'broken',
+            uid,
+            name: next.name,
+            source: next.source,
+            diagnostics: [
+              ...next.diagnostics,
+              {
+                severity: 'error',
+                code: IoCode.duplicateTableName,
+                file: next.source.path,
+                table: next.name,
+                params: { name: next.name, others: other.source?.path ?? '' },
+              },
+            ],
+          };
+        }
+      }
+      if (replacement.kind === 'broken') {
+        this.project.brokenTables.push({ ...replacement, uid });
+        this.project.brokenTables.sort(compareTableEntries);
+        continue;
+      }
+      const data = toTableData(replacement);
+      data.uid = uid;
+      apply({ op: 'addTable', table: data });
+      const state = this.nextState++;
+      this.states.set(uid, state);
+      this.tableBaselines.set(uid, {
+        name: replacement.name,
+        path: replacement.source?.path ?? null,
+        format: this.formatOf(replacement),
+        text: replacement.source?.text ?? null,
+        state,
+      });
+    }
+    const refers = (tx: Transaction) =>
+      parts.has('base_fields') ||
+      [...tx.patches, ...tx.inverse].some((p) => {
+        const table = patchTable(p);
+        return (table !== null && touched.has(table)) || (p.op === 'setCommon' && parts.has(p.part));
+      });
+    const historyCleared = this.history.some(refers);
+    if (historyCleared) this.history.clear();
+    this.emit({ kind: 'reload', patches, tables: [...touched], historyCleared });
+    return { historyCleared };
+  }
+
+  /**
+   * 外部で書き換えられたファイルを、エディタの内容で上書きすることにする。基準をそのファイルの今のテキストにするので、
+   * エディタの内容と違えば未保存になり、次の保存で書き込む（消されたファイルは作り直す）
+   */
+  keepEditorContent(request: KeepRequest): void {
+    for (const { uid, text } of request.tables ?? []) {
+      const table = this.project.tables.find((t) => t.uid === uid);
+      const baseline = this.tableBaselines.get(uid);
+      if (table === undefined || baseline === undefined) continue;
+      // 今の内容がファイルと同じなら未保存にしない
+      const same = text !== null && baseline.name === table.name && this.tableText(table) === text;
+      this.tableBaselines.set(uid, { ...baseline, text, state: same ? this.stateOf(uid) : -1 });
+      if (table.source !== null && text !== null) table.source = { ...table.source, text };
+    }
+    for (const { part, text } of request.common ?? []) {
+      const common = this.project.common[part];
+      const baseline = this.commonBaselines.get(part);
+      this.commonBaselines.set(part, { path: baseline?.path ?? common.source?.path ?? null, text });
+      if (common.source !== null && text !== null) common.source = { ...common.source, text };
+    }
+    this.emit({ kind: 'saved' });
   }
 
   // ---- 変更の購読 ----

@@ -1,6 +1,7 @@
 // グリッドの拡張点。機能ごとのファイルで GridExtension を作り、grid/extensions/index.ts の一覧に 1 行足して登録する。
 // - contextMenu: 右クリック（セル・行番号・列ヘッダー・シートタブの 4 か所。FR-CTX-01）で出すメニューの項目
 // - decorateCell: セルの装飾（枠・印・添える文字など）
+// - decorateColumnHeader: 列ヘッダーの装飾（並べ替え・フィルタの印とボタンなど）
 // - overlay: 選択範囲の上に重ねる要素（フィルハンドルなど）
 // - pointerDown: グリッドのマウス操作を先に受け取る（フィルハンドルのドラッグなど）
 import type { Cell, CellResult, Selection, Severity, Table, TableRecord } from '@sheetcraft/core';
@@ -58,6 +59,15 @@ export interface CellDecoration {
   children?: ReactNode;
 }
 
+/** 列ヘッダーを描くときに渡す情報 */
+export interface ColumnHeaderRenderContext {
+  store: AppStore;
+  table: Table;
+  sheet: SheetModel;
+  col: number;
+  column: SheetColumn;
+}
+
 /** 選択範囲の上に重ねる要素に渡す情報（座標は layout.ts の本体座標。geometry.rangeRects などで求める） */
 export interface GridOverlayProps {
   store: AppStore;
@@ -91,6 +101,8 @@ export interface GridExtension {
   contextMenu?(request: ContextMenuRequest, store: AppStore): MenuEntry[] | null;
   /** セルの装飾。描くたびに見えているセルの数だけ呼ばれるので、軽くする */
   decorateCell?(ctx: CellRenderContext): CellDecoration | null;
+  /** 列ヘッダーの装飾。children は列ヘッダーの中に足す（状態の変化で描き直すものは、自分で購読する部品にする） */
+  decorateColumnHeader?(ctx: ColumnHeaderRenderContext): CellDecoration | null;
   /** 選択範囲の上に重ねる要素 */
   overlay?: ComponentType<GridOverlayProps>;
   /** true を返せば、グリッドの既定の処理（選択など）をしない */

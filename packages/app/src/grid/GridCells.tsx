@@ -9,7 +9,7 @@ import { cellDisplay } from '../sheet/display';
 import type { SheetModel } from '../sheet/model';
 import type { AppStore } from '../store/AppStore';
 import type { TableIssues } from '../store/types';
-import type { CellDecoration, CellRenderContext, GridExtension } from './extensions';
+import type { CellDecoration, CellRenderContext, ColumnHeaderRenderContext, GridExtension } from './extensions';
 import type { GridGeometry } from './layout';
 
 /** 描画で共有する情報。中身が変わったときだけ作り直す（行の memo の判定に使う） */
@@ -24,6 +24,8 @@ export interface RenderCtx {
   /** セル色のプリセット（キー → 色コード） */
   colors: ReadonlyMap<string, string>;
   decorators: readonly NonNullable<GridExtension['decorateCell']>[];
+  /** 列ヘッダーの装飾 */
+  headerDecorators: readonly NonNullable<GridExtension['decorateColumnHeader']>[];
   t: Translate;
   /** 編集・検査の版（変わったら描き直す） */
   version: string;
@@ -55,8 +57,8 @@ function renderCell(ctx: RenderCtx, row: number, col: number, record: TableRecor
   const rich = cell instanceof RichCell ? cell : undefined;
   const color = rich?.color === undefined ? undefined : ctx.colors.get(rich.color);
   if (color !== undefined) style.background = color;
+  // メモの中身は、マウスを重ねたときの吹き出しで出す（grid/extensions/notes.tsx）
   const comment = rich?.comment !== undefined && rich.comment !== '' ? rich.comment : undefined;
-  if (comment !== undefined) title = comment;
   // 値が優先されて使われていないセル単位式も、印は出す（値を消すと式が使われる）
   const hasOverride = rich?.override !== undefined && rich.override !== '' && !isEmptyValue(cellValue(cell));
 
@@ -133,8 +135,22 @@ export const ColumnHeader = memo(function ColumnHeader({ ctx, col, highlighted, 
   if (!column.editable) className += ' sc-readonly';
   const tips = [field.description, !column.editable ? t('ui.grid.readonly') : undefined, !column.exported ? t('ui.grid.noExport') : undefined, column.formula ? `=${field.formula}` : undefined];
   const isLast = col === sheet.columns.length - 1;
+  const style: CSSProperties = { left, width: column.width };
+  let title = tips.filter((x) => x !== undefined).join('\n') || undefined;
+  let extra: ReactNode[] | null = null;
+  if (ctx.headerDecorators.length > 0) {
+    const info: ColumnHeaderRenderContext = { store: ctx.store, table: ctx.table, sheet, col, column };
+    for (const decorate of ctx.headerDecorators) {
+      const d: CellDecoration | null = decorate(info);
+      if (d === null) continue;
+      if (d.className !== undefined) className += ` ${d.className}`;
+      if (d.style !== undefined) Object.assign(style, d.style);
+      if (d.title !== undefined) title = title === undefined ? d.title : `${title}\n${d.title}`;
+      if (d.children !== undefined) (extra ??= []).push(d.children);
+    }
+  }
   return (
-    <div className={className} style={{ left, width: column.width }} title={tips.filter((x) => x !== undefined).join('\n') || undefined} data-col={col}>
+    <div className={className} style={style} title={title} data-col={col}>
       <div className="sc-colhead-title">{field.display_name ?? field.name}</div>
       <div className="sc-colhead-sub">
         {column.primary && (
@@ -162,6 +178,7 @@ export const ColumnHeader = memo(function ColumnHeader({ ctx, col, highlighted, 
       {isLast && sheet.hiddenAfter.length > 0 && (
         <span className="sc-hidden-mark right" data-unhide={sheet.hiddenAfter.join(',')} title={t('ui.grid.showHidden', { columns: sheet.hiddenAfter.join(', ') })} />
       )}
+      {extra}
     </div>
   );
 });

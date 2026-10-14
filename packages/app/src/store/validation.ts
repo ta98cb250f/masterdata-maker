@@ -1,5 +1,5 @@
 // 検査（FR-VAL-09）。検査の呼び出しはここにまとめる（後の段階で Web Worker に差し替える。FR-VAL-10）
-import type { Calculator, Diagnostic, Patch, Project, Severity } from '@sheetcraft/core';
+import type { Calculator, Diagnostic, MessageParams, Patch, Project, Severity } from '@sheetcraft/core';
 import { patchTable, validateCommon, validateTable } from '@sheetcraft/core';
 import type { TableIssues } from './types';
 
@@ -26,6 +26,17 @@ export interface Validator {
 }
 
 export type ValidatorFactory = (project: Project, calc: Calculator) => Validator;
+
+/** 利用者に見せる文言を持つ検査の失敗（Worker の時間切れなど。FR-VAL-10）。store は code の文言をそのまま示す */
+export class ValidationFailure extends Error {
+  constructor(
+    readonly code: string,
+    readonly params: MessageParams = {},
+  ) {
+    super(code);
+    this.name = 'ValidationFailure';
+  }
+}
 
 /** その場で検査する（この段階の実装） */
 export function runValidation(project: Project, calc: Calculator, request: ValidationRequest): ValidationOutput {

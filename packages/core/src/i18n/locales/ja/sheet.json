@@ -23,6 +23,7 @@
   "sheet.shortcut.selectColumn": "列を選択",
   "sheet.shortcut.save": "保存",
   "sheet.shortcut.showShortcuts": "キーボード ショートカットを表示",
+  "sheet.shortcut.contextMenu": "右クリックメニューを開く",
   "sheet.shortcut.moveUp": "上のセルへ移動",
   "sheet.shortcut.moveDown": "下のセルへ移動",
   "sheet.shortcut.moveLeft": "左のセルへ移動",

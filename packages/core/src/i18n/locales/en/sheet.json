@@ -23,6 +23,7 @@
   "sheet.shortcut.selectColumn": "Select column",
   "sheet.shortcut.save": "Save",
   "sheet.shortcut.showShortcuts": "Show keyboard shortcuts",
+  "sheet.shortcut.contextMenu": "Open the context menu",
   "sheet.shortcut.moveUp": "Move up one cell",
   "sheet.shortcut.moveDown": "Move down one cell",
   "sheet.shortcut.moveLeft": "Move left one cell",

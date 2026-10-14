@@ -191,7 +191,7 @@ export function menuEntriesToItems(store: AppStore, entries: readonly MenuEntry[
     return {
       kind: 'item',
       key,
-      label: entry.labelKey !== undefined ? store.t(entry.labelKey) : store.commandLabel(entry.command),
+      label: entry.label ?? (entry.labelKey !== undefined ? store.t(entry.labelKey) : store.commandLabel(entry.command)),
       shortcut: shortcutText(store, entry.command),
       disabled: def === undefined || !store.isEnabled(entry.command),
       checked: def?.checked?.(store),

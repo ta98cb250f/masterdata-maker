@@ -76,7 +76,8 @@ export type PanelPosition = 'right' | 'bottom';
 
 /** 右クリックメニューなどの項目 */
 export type MenuEntry =
-  | { kind: 'command'; command: string; args?: unknown; labelKey?: string }
+  /** label は組み立て済みの名前（参照先の名前など、文言キーで表せないもの。labelKey より優先） */
+  | { kind: 'command'; command: string; args?: unknown; labelKey?: string; label?: string }
   | { kind: 'separator' }
   | { kind: 'submenu'; labelKey: string; items: MenuEntry[] };
 
