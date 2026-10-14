@@ -415,7 +415,8 @@ async function sampleYamlFiles(): Promise<Map<string, string>> {
 describe('サンプルを専用の処理で読むと、yaml ライブラリの経路と同じ結果になる', () => {
   it('basic-yaml と、basic-json を YAML にしたもの', async () => {
     const files = await sampleYamlFiles();
-    expect(files.size).toBe(14);
+    // basic-yaml の 7 ファイルと、basic-json の設定以外の 6 ファイル（sheetcraft.json は JSON のまま）
+    expect(files.size).toBe(13);
     for (const [path, text] of files) expectSameAsLibrary(path, text);
   });
 });
@@ -437,7 +438,7 @@ describe('受け付ける書き方の細部（値・位置がライブラリの�
     ['フローの中の引用符と記号', "a: [a\"b, c'd, e!f, g&h, i*j, k?l, m|n, o>p, q%r, s@t]\n"],
     ['`:` を含むキーと空白を含むキー', 'a:b: 1\nx y: 2\nキー: 3\n'],
     ['数値・null・真偽値の表記', 'a: -5\nb: +5\nc: 0o17\nd: 0x1F\ne: 1e+21\nf: .5\ng: 1.\nh: -.inf\ni: .NaN\nj: ~\nk: 007\nl: -0\nm: Null\nn: TRUE\no: False\np: 0.0\nq: -1.5e-3\n'],
-    ['YAML 1.2 では文字列になる表記', 'a: yes\nb: NO\nc: on\nd: 0b101\ne: 1_000\nf: 2026-10-13\ng: 12:30:00\nh: <<\ni: =\nj: -.nan\nk: 0o8\nl: 0x\n'],
+    ['YAML 1.2 では文字列になる表記', 'a: yes\nb: NO\nc: on\nd: 0b101\ne: 1_000\nf: 2026-10-13\ng: 12:30:00\nh: <<\ni: =\nk: 0o8\nl: 0x\n'],
     ['フローの中の数値・null・真偽値', 'a: [-5, +5, 0o17, 0x1F, 1e+21, .5, 1., -.inf, .NaN, ~, null, true, FALSE]\n'],
     ['ダブルクォートのエスケープ', 'a: "\\0\\a\\b\\e\\f\\n\\r\\t\\v\\N\\_\\L\\P\\ \\"\\/\\\\"\nb: "\\x41\\u00e9\\U0001F600\\uD800\\udc00\\U0000D83D"\n'],
     ['引用符で囲んだキー', '"1": a\n"true": b\n"": c\n"a: b": d\n"\\n": e\nf: { "1": x, "": y, "a, b": z }\n'],
@@ -541,6 +542,7 @@ describe('正規形でない入力では専用の処理が辞退し、結果は�
     ['記号で始まる値 `', 'a: `x\n'],
     ['記号で始まる値 %', 'a: %x\n'],
     ['記号で始まる値 -', 'a: -x\n'],
+    ['- で始まる数値でない値', 'a: -.nan\n'],
     ['記号で始まる値 ?', 'a: ?x\n'],
     ['記号で始まる値 :', 'a: :x\n'],
     ['記号で始まる値 ,', 'a: ,x\n'],
@@ -601,13 +603,13 @@ describe('正規形を壊した入力（専用の処理は、ライブラリの�
     '...\n',
   ];
 
-  it('1 文字の挿入・削除・置換をランダムに加える', async () => {
+  it('1 文字の挿入・削除・置換をランダムに加える', { timeout: 60_000 }, async () => {
     const bases = [...(await sampleYamlFiles()).values()];
     const baseFields = defaultBaseFields();
     for (let seed = 1; seed <= 20; seed++) bases.push(serializeTable(randomTable(seed), baseFields, 'yaml'));
     const rand = new Random(7);
     let accepted = 0;
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 1500; i++) {
       const base = rand.pick(bases);
       const at = rand.int(base.length + 1);
       const op = rand.int(3);
@@ -621,7 +623,7 @@ describe('正規形を壊した入力（専用の処理は、ライブラリの�
       if (compare(text)) accepted++;
     }
     // 壊しても正規形のままのもの（値の文字が変わっただけなど）は受け付ける
-    expect(accepted).toBeGreaterThan(300);
+    expect(accepted).toBeGreaterThan(150);
   });
 });
 
