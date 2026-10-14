@@ -1,6 +1,7 @@
 // 文言の多言語化（FR-ETC-02）。文言ファイルは「キー → `{name}` 形式の差し込みを含む文」の平らな JSON
 import enCalc from './locales/en/calc.json';
 import enCli from './locales/en/cli.json';
+import enEdit from './locales/en/edit.json';
 import enExport from './locales/en/export.json';
 import enFormula from './locales/en/formula.json';
 import enIo from './locales/en/io.json';
@@ -8,6 +9,7 @@ import enSheet from './locales/en/sheet.json';
 import enValidate from './locales/en/validate.json';
 import jaCalc from './locales/ja/calc.json';
 import jaCli from './locales/ja/cli.json';
+import jaEdit from './locales/ja/edit.json';
 import jaExport from './locales/ja/export.json';
 import jaFormula from './locales/ja/formula.json';
 import jaIo from './locales/ja/io.json';
@@ -42,6 +44,8 @@ const BUNDLES: readonly [Locale, Messages][] = [
   ['en', enSheet],
   ['ja', jaCalc],
   ['en', enCalc],
+  ['ja', jaEdit],
+  ['en', enEdit],
   ['ja', jaValidate],
   ['en', enValidate],
   ['ja', jaExport],

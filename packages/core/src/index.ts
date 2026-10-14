@@ -8,6 +8,7 @@ export * from './i18n';
 export * from './calc';
 export * from './validate';
 export * from './export';
+export * from './edit';
 
 // 名前が衝突するものの解決
 // - フィールド型とセルの値の型は model と formula で同じもの。model の側を公開する
