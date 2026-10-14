@@ -25,7 +25,7 @@
   "ui.nameBox.broken": "テーブル {name} は読み込みエラーのため開けません",
   "ui.nameBox.hiddenColumn": "列 {name} は非表示です",
   "ui.nameBox.hiddenRow": "そのレコードはフィルタで非表示になっています",
-  "ui.nameBox.cannotSwitch": "編集中のセルを確定できないため、テーブルを切り替えられません",
+  "ui.nameBox.cannotSwitch": "編集中のセルを確定できないため、移動できません",
   "ui.complete.label": "入力の候補",
   "ui.complete.column": "列",
   "ui.complete.hint": "Tab / Enter で入力、↑↓ で選択"

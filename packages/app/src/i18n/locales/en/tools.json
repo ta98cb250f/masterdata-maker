@@ -25,7 +25,7 @@
   "ui.nameBox.broken": "The table {name} cannot be opened because of load errors",
   "ui.nameBox.hiddenColumn": "The column {name} is hidden",
   "ui.nameBox.hiddenRow": "The record is hidden by a filter",
-  "ui.nameBox.cannotSwitch": "Cannot switch tables because the cell being edited cannot be committed",
+  "ui.nameBox.cannotSwitch": "Cannot move because the cell being edited cannot be committed",
   "ui.complete.label": "Suggestions",
   "ui.complete.column": "col",
   "ui.complete.hint": "Tab / Enter to insert, ↑↓ to choose"

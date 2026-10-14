@@ -47,6 +47,7 @@ export function problemRows(validation: ValidationState, tableOrder: readonly st
 /** 診断の場所へ移る。移れなければ理由を知らせる */
 export function revealDiagnostic(store: AppStore, d: Diagnostic): void {
   if (d.table === undefined) return;
+  if (store.getState().editing !== null && !store.commitEdit(null)) return;
   const tab = store.tabs().find((x) => x.name === d.table);
   if (tab === undefined) return;
   store.setActiveTable(tab.uid);

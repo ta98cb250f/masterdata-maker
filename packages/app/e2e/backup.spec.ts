@@ -6,12 +6,16 @@ import { openOpfsProject } from './opfs';
 
 /** 退避の書き込み（kind: set / del）が終わるまで待つ */
 async function waitBackup(page: Page, kind: 'set' | 'del'): Promise<void> {
-  await page.waitForFunction(async (k) => {
-    const manager = (globalThis as unknown as { sheetcraftBackup?: { idle(): Promise<void>; lastWrite: { kind: string } | null } }).sheetcraftBackup;
-    if (manager === undefined) return false;
-    await manager.idle();
-    return manager.lastWrite?.kind === k;
-  }, kind);
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const manager = (globalThis as unknown as { sheetcraftBackup?: { idle(): Promise<void>; lastWrite: { kind: string } | null } }).sheetcraftBackup;
+        if (manager === undefined) return null;
+        await manager.idle();
+        return manager.lastWrite?.kind ?? null;
+      }),
+    )
+    .toBe(kind);
 }
 
 async function editHp(page: Page, row: number, text: string): Promise<void> {
@@ -90,4 +94,42 @@ test('直接保存方式: 前回のフォルダを開き直すと復元を提案
   await page.waitForTimeout(500);
   await expect(page.getByTestId('backup-dialog')).toHaveCount(0);
   expect(await cellText(page, 0, 'hp')).toBe('4321');
+});
+
+test('1 万行 × 50 列: 退避してもメインスレッドは 100 ミリ秒を超えて止まらない（NFR-10）', async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.goto('/?sample=large');
+  await expect(page.locator('[data-testid=grid][data-table=big]')).toBeVisible({ timeout: 60_000 });
+  await page.waitForFunction(() => {
+    const s = (globalThis as unknown as { sheetcraft: { getState(): { validation: { version: number; running: boolean } } } }).sheetcraft.getState();
+    return s.validation.version > 0 && !s.validation.running;
+  });
+  await clickCell(page, 0, await colIndex(page, 'hp'));
+  const result = await page.evaluate(async () => {
+    const longTasks: number[] = [];
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) longTasks.push(entry.duration);
+    });
+    observer.observe({ type: 'longtask', buffered: false });
+    const manager = (globalThis as unknown as { sheetcraftBackup: { idle(): Promise<void>; lastWrite: { at: number; kind: string } | null } }).sheetcraftBackup;
+    const input = document.querySelector<HTMLTextAreaElement>('[data-testid=cell-input]') as HTMLTextAreaElement;
+    input.focus();
+    const started = Date.now();
+    input.value = '123';
+    input.dispatchEvent(new InputEvent('input', { bubbles: true, data: '123', inputType: 'insertText' }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }));
+    while ((manager.lastWrite?.at ?? 0) < started && Date.now() - started < 20_000) {
+      await new Promise((r) => setTimeout(r, 50));
+      await manager.idle();
+    }
+    const writtenMs = Date.now() - started;
+    await new Promise((r) => setTimeout(r, 200));
+    observer.disconnect();
+    return { writtenMs, kind: manager.lastWrite?.kind, maxLongTaskMs: Math.max(0, ...longTasks), longTasks: longTasks.length };
+  });
+  console.log(
+    `[perf] large sample backup: written ${result.writtenMs} ms after the edit, longest main-thread task ${result.maxLongTaskMs.toFixed(0)} ms (${result.longTasks} long tasks)`,
+  );
+  expect(result.kind).toBe('set');
+  expect(result.maxLongTaskMs).toBeLessThan(100);
 });

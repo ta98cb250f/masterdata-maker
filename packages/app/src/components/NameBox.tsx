@@ -11,6 +11,8 @@ import '../styles/nameBox.css';
 
 /** 位置へ移る。移れなければ理由の文言を返す */
 export function goToLocation(store: AppStore, target: LocationTarget): string | null {
+  // 編集中のセルは先に確定する（確定できなければ動かない）
+  if (store.getState().editing !== null && !store.commitEdit(null)) return store.t('ui.nameBox.cannotSwitch');
   if (store.getState().activeTable !== target.table) {
     store.setActiveTable(target.table);
     // 編集中のセルを確定できなければ切り替わらない
@@ -60,6 +62,7 @@ export function NameBox({ location }: { location: string }) {
 
   const start = () => {
     if (store.getState().project === null) return;
+    if (store.getState().editing !== null && !store.commitEdit(null)) return;
     setText(location);
     setError(null);
     setEditing(true);

@@ -72,6 +72,7 @@ function currentPos(store: AppStore): { table: number; row: number; col: number 
 }
 
 function goTo(store: AppStore, hit: FindHit): void {
+  if (store.getState().editing !== null && !store.commitEdit(null)) return;
   if (store.getState().activeTable !== hit.table) store.setActiveTable(hit.table);
   const sheet = store.sheet(hit.table);
   if (sheet !== null) store.setSelection(selectCell({ row: hit.row, col: hit.col }, sheet.size), { reveal: true, table: hit.table });

@@ -57,7 +57,7 @@ function ShortcutsDialog({ store, close }: DialogProps<void>) {
         />
         <select
           className="sc-select"
-          style={{ flex: 'none', width: 180 }}
+          style={{ flex: 'none', width: 250 }}
           value={platform}
           aria-label={t('ui.shortcuts.platform')}
           onChange={(e) => setPlatform(e.target.value as Platform)}

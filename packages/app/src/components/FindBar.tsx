@@ -17,6 +17,7 @@ import '../styles/findBar.css';
 const DEBOUNCE_MS = 120;
 
 function selectHit(store: AppStore, hit: FindHit): void {
+  if (store.getState().editing !== null && !store.commitEdit(null)) return;
   const sheet = store.sheet(hit.table);
   if (sheet === null) return;
   store.setSelection(selectCell({ row: hit.row, col: hit.col }, sheet.size), { reveal: true, table: hit.table });

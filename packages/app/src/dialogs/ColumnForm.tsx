@@ -65,6 +65,11 @@ export function ColumnForm({ store, draft, errors, showError, onChange, columns,
     const names = target === undefined || calc === null ? [] : calc.columns(target).map((c) => c.name);
     return draft.ref_column !== '' && !names.includes(draft.ref_column) ? [...names, draft.ref_column] : names;
   }, [calc, draft.ref_table, draft.ref_column]);
+  // 参照先のテーブルを選んだら、その主キーの列を選んでおく（DR-17）
+  const primaryOf = (tableName: string): string => {
+    const target = tableName === '' || calc === null ? undefined : calc.findTable(tableName);
+    return target === undefined || calc === null ? '' : (calc.primaryColumn(target)?.name ?? '');
+  };
   const syntax = formulaSyntaxError(draft.formula);
   const show = (applicable: boolean, ...keys: DraftKey[]) => applicable || keys.some((k) => draft[k] !== '' && draft[k] !== false);
 
@@ -108,13 +113,8 @@ export function ColumnForm({ store, draft, errors, showError, onChange, columns,
       </Section>
 
       <Section title={t('ui.column.section.value')}>
-        {show(isEnumType(draft.type), 'enum_ref') && (
-          <Field
-            label={t('ui.column.field.enumRef')}
-            htmlFor={id('enum_ref')}
-            error={err('enum_ref')}
-            warning={isEnumType(draft.type) ? undefined : notApplicable}
-          >
+        {isEnumType(draft.type) && (
+          <Field label={t('ui.column.field.enumRef')} htmlFor={id('enum_ref')} error={err('enum_ref')}>
             <select id={id('enum_ref')} className="sc-select" value={draft.enum_ref} onChange={(e) => onChange({ enum_ref: e.target.value })} data-testid={id('enum_ref')}>
               <option value="">{t('ui.column.none')}</option>
               {enumOptions.map((name) => (
@@ -132,7 +132,7 @@ export function ColumnForm({ store, draft, errors, showError, onChange, columns,
               className="sc-select"
               value={draft.ref_table}
               aria-label={t('ui.column.field.refTable')}
-              onChange={(e) => onChange({ ref_table: e.target.value, ref_column: e.target.value === '' ? '' : 'id' })}
+              onChange={(e) => onChange({ ref_table: e.target.value, ref_column: primaryOf(e.target.value) })}
               data-testid={id('ref_table')}
             >
               <option value="">{t('ui.column.none')}</option>
