@@ -1,7 +1,9 @@
 // 画面テスト（NFR-31）。ビルドしたものを vite preview で配り、Chromium で動かす
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4173;
+// 複数の作業が同時に画面テストを走らせても、ビルドの出力先とポートが重ならないように環境変数で変えられる
+const PORT = Number(process.env.E2E_PORT ?? 4173);
+const OUT_DIR = process.env.E2E_OUTDIR ?? 'dist';
 
 export default defineConfig({
   testDir: './e2e',
@@ -19,9 +21,10 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1400, height: 900 } } }],
   webServer: {
-    command: `pnpm exec vite build && pnpm exec vite preview --port ${PORT} --strictPort`,
+    command: `pnpm exec vite build --outDir ${OUT_DIR} && pnpm exec vite preview --outDir ${OUT_DIR} --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
+    // 古いビルドを配っているサーバーを使い回さないよう、毎回ビルドし直す
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });
