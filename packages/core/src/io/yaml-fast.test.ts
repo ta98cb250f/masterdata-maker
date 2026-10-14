@@ -606,7 +606,11 @@ describe('正規形を壊した入力（専用の処理は、ライブラリの�
   it('1 文字の挿入・削除・置換をランダムに加える', { timeout: 60_000 }, async () => {
     const bases = [...(await sampleYamlFiles()).values()];
     const baseFields = defaultBaseFields();
-    for (let seed = 1; seed <= 20; seed++) bases.push(serializeTable(randomTable(seed), baseFields, 'yaml'));
+    // 乱数のテーブルは先頭の 30 行だけ使う（ライブラリの経路の時間を抑えるため）
+    for (let seed = 1; seed <= 20; seed++) {
+      const lines = serializeTable(randomTable(seed), baseFields, 'yaml').split('\n');
+      bases.push(`${lines.slice(0, 30).join('\n').trimEnd()}\n`);
+    }
     const rand = new Random(7);
     let accepted = 0;
     for (let i = 0; i < 1500; i++) {

@@ -77,9 +77,15 @@ function decodeView(node: SrcNode, r: Reporter): TableView {
   return view;
 }
 
+/** 列と、その列のセルの診断に付ける付加情報 */
+interface RecordColumn {
+  field: FieldDef;
+  scope: { field: string };
+}
+
 function decodeRecord(
   node: SrcNode,
-  columns: Map<string, FieldDef>,
+  columns: Map<string, RecordColumn>,
   primary: FieldDef | undefined,
   uids: UidAllocator,
   reporter: Reporter,
@@ -96,8 +102,8 @@ function decodeRecord(
   for (const entry of node.entries) {
     const column = columns.get(entry.key);
     if (column !== undefined) {
-      const cell = decodeCell(entry.value, column, r.child({ field: column.name }));
-      if (cell !== undefined) cells.set(column.name, cell);
+      const cell = decodeCell(entry.value, column.field, r.child(column.scope));
+      if (cell !== undefined) cells.set(column.field.name, cell);
     } else {
       // DR-34: 列定義に無いキーは消さずに残し、警告する
       r.warn(IoCode.unknownRecordKey, entry.keyPos, { key: entry.key });
@@ -105,10 +111,10 @@ function decodeRecord(
     }
   }
   // 診断に主キーの値を付ける（FR-VAL-08）
-  if (primary !== undefined) {
+  if (primary !== undefined && r.items.length > before) {
     const key = cellValue(cells.get(primary.name));
     if (key !== undefined && !Array.isArray(key)) {
-      for (const d of r.items.slice(before)) d.recordKey = String(key);
+      for (let i = before; i < r.items.length; i++) r.items[i].recordKey = String(key);
     }
   }
   return { uid, cells, extra };
@@ -149,7 +155,8 @@ export function decodeTable(root: SrcNode | null, reporter: Reporter, options: D
   const fields = fieldsEntry === undefined ? [] : decodeFieldList(fieldsEntry.value, r, 'fields');
 
   const columns = tableColumns(options.baseFields, { fields });
-  const byName = columnMap(columns);
+  const byName = new Map<string, RecordColumn>();
+  for (const [name, field] of columnMap(columns)) byName.set(name, { field, scope: { field: field.name } });
   const primary = primaryColumn(columns);
 
   const records: TableRecord[] = [];

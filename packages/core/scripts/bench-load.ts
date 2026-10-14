@@ -2,9 +2,11 @@
 //
 // 実行方法（リポジトリのルートで）:
 //   packages/cli/node_modules/.bin/esbuild packages/core/scripts/bench-load.ts --bundle --platform=node \
-//     --format=esm --outfile=/tmp/bench-load.mjs && node /tmp/bench-load.mjs
-// 引数: 行数と列数（既定は 10000 行 × 50 列。列数は共通列の id・version を含む）
-//   node /tmp/bench-load.mjs 10000 50
+//     --format=cjs --outfile=/tmp/bench-load.cjs && node /tmp/bench-load.cjs
+// （yaml ライブラリが CommonJS の require('process') を使うので、--format=cjs にする）
+// 引数: 行数と列数（既定は 10000 行 × 50 列。列数は共通列の id・version を含む）。
+// 3 つ目の引数に lib を付けると、yaml ライブラリの経路の時間も測る（大きいテーブルでは 1 回 10 秒以上かかる）
+//   node /tmp/bench-load.cjs 10000 50 lib
 
 import { RichCell } from '../src/model/cell';
 import type { Cell, RawValue } from '../src/model/cell';
@@ -118,7 +120,9 @@ function bench(label: string, rows: number, columns: number, times: number): voi
     measure(`${format}: 構文木の生成（parseText）`, times, () => parseText(text, format, new Reporter()));
     if (format === 'yaml') {
       if (parseCanonicalYaml(text) === null) console.log('   （専用の処理が辞退した）');
-      measure('yaml: 構文木の生成（yaml ライブラリの経路）', times, () => parseYamlWithLibrary(text, new Reporter()));
+      if (withLibrary) {
+        measure('yaml: 構文木の生成（yaml ライブラリの経路）', times, () => parseYamlWithLibrary(text, new Reporter()));
+      }
     } else {
       measure('json: 構文木の生成（parseJson）', times, () => parseJson(text, new Reporter()));
     }
@@ -137,5 +141,6 @@ function bench(label: string, rows: number, columns: number, times: number): voi
 
 const rows = Number(process.argv[2] ?? 10000);
 const columns = Number(process.argv[3] ?? 50);
+const withLibrary = process.argv[4] === 'lib';
 bench('大きいテーブル', rows, columns, 5);
 bench('小さいテーブル', 100, 10, 200);

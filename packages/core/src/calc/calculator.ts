@@ -140,6 +140,20 @@ export function valueKey(v: FValue): string | undefined {
   return undefined;
 }
 
+const DATETIME_CACHE_LIMIT = 100_000;
+const dateTimeCache = new Map<string, FValue>();
+
+/** datetime の列の文字列を式の値にする。読むのは文字列だけで決まるので、文字列ごとに覚えておく */
+function dateTimeValue(raw: string): FValue {
+  let v = dateTimeCache.get(raw);
+  if (v === undefined) {
+    v = rawToValue(raw, 'datetime');
+    if (dateTimeCache.size >= DATETIME_CACHE_LIMIT) dateTimeCache.clear();
+    dateTimeCache.set(raw, v);
+  }
+  return v;
+}
+
 /** 深すぎる再帰の印（呼び出し元に返る前に必ず解消される） */
 function tooDeep(): FormulaError {
   return new FormulaError('#REF!', 'calc.tooDeep');
@@ -559,7 +573,8 @@ export class Calculator {
     const value = cellValue(cell);
     if (!isEmptyValue(value)) {
       const raw = value as RawValue;
-      return { value: rawToValue(raw, column.type), raw, source: 'value' };
+      const v = column.type === 'datetime' && typeof raw === 'string' ? dateTimeValue(raw) : rawToValue(raw, column.type);
+      return { value: v, raw, source: 'value' };
     }
     if (cell instanceof RichCell && cell.override !== undefined && cell.override.trim() !== '') {
       return this.formulaCell(state, record, column, cell.override, 'override');

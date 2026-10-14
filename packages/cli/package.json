@@ -7,7 +7,7 @@
     "sheetcraft": "./dist/cli.mjs"
   },
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/cli.mjs",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/cli.mjs \"--banner:js=import { createRequire as __sheetcraftCreateRequire } from 'node:module'; const require = __sheetcraftCreateRequire(import.meta.url);\"",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

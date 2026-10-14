@@ -108,6 +108,12 @@ class CanonicalYamlParser {
   private lineEnd = 0;
   /** 直前に読んだ 1 行の値（スカラー・フロー）の終わりの位置 */
   private end = 0;
+  /**
+   * 深さごとの、直前のブロックのマッピングのキー（引用符なし・確かめ済み・重複なし）。
+   * レコードのように同じ深さのマッピングは同じキーを同じ順に持つことが多いので、同じ文字列を使い回す
+   * （切り出し・確かめ・重複の検査を省ける。Map の検索でもハッシュを計算し直さずに済む）
+   */
+  private readonly keyCache: string[][] = [];
 
   constructor(private readonly text: string) {}
 
@@ -258,22 +264,54 @@ class CanonicalYamlParser {
     if (depth > MAX_DEPTH) decline();
     const text = this.text;
     const entries: SrcEntry[] = [];
-    const keys = new Set<string>();
     const map: SrcMap = { kind: 'map', entries, pos: this.posAt(this.lineStart + indent) };
+    const cache = this.keyCache[depth];
+    // true のあいだ、キーはすべて cache の中に順に見つかっている（重複が無いことが保証される）
+    let inCache = cache !== undefined;
+    let cursor = 0;
+    let allPlain = true;
+    let keys: Set<string> | undefined;
     for (;;) {
       const start = this.lineStart + indent;
-      let key: string;
+      let key: string | undefined;
       let colon: number;
       if (text.charCodeAt(start) === DQ) {
         key = this.doubleQuoted(start);
         colon = this.end;
         if (text.charCodeAt(colon) !== COLON) decline();
+        allPlain = false;
+        inCache = false;
       } else {
-        colon = this.plainKeyEnd(start);
-        key = this.plainKey(start, colon);
+        colon = -1;
+        if (inCache) {
+          // 確かめ済みのキーの直後が `: ` か `:\n` なら、plainKeyEnd もそこで止まる（文字を調べ直さない）
+          for (let j = cursor; j < cache.length; j++) {
+            const cached = cache[j];
+            const end = start + cached.length;
+            if (text.charCodeAt(end) !== COLON || !text.startsWith(cached, start)) continue;
+            const after = text.charCodeAt(end + 1);
+            if (after !== SP && after !== LF) continue;
+            key = cached;
+            colon = end;
+            cursor = j + 1;
+            break;
+          }
+        }
+        if (key === undefined) {
+          colon = this.plainKeyEnd(start);
+          key = this.plainKey(start, colon);
+          inCache = false;
+        }
       }
-      if (colon - start > MAX_KEY_SPAN || keys.has(key)) decline();
-      keys.add(key);
+      if (colon - start > MAX_KEY_SPAN) decline();
+      if (!inCache) {
+        if (keys === undefined) {
+          keys = new Set();
+          for (const entry of entries) keys.add(entry.key);
+        }
+        if (keys.has(key)) decline();
+        keys.add(key);
+      }
       const keyPos = this.posAt(start);
       const after = text.charCodeAt(colon + 1);
       let value: SrcNode;
@@ -289,10 +327,12 @@ class CanonicalYamlParser {
         decline();
       }
       entries.push({ key, keyPos, value });
-      if (this.atEnd()) return map;
-      const next = this.indent();
-      if (next < indent) return map;
+      const next = this.atEnd() ? -1 : this.indent();
       if (next > indent) decline();
+      if (next < indent) {
+        if (!inCache && allPlain) this.keyCache[depth] = entries.map((entry) => entry.key);
+        return map;
+      }
     }
   }
 

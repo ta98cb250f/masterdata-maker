@@ -39,6 +39,20 @@ type Problem =
   | { kind: 'invalidDateTime' }
   | { kind: 'notInEnum' };
 
+const DATETIME_CACHE_LIMIT = 100_000;
+const dateTimeValidity = new Map<string, boolean>();
+
+/** DR-18: 時差付きの ISO 8601 か。結果は文字列だけで決まるので、文字列ごとに覚えておく */
+function isIsoDateTime(s: string): boolean {
+  let ok = dateTimeValidity.get(s);
+  if (ok === undefined) {
+    ok = parseIsoOffset(s) !== null;
+    if (dateTimeValidity.size >= DATETIME_CACHE_LIMIT) dateTimeValidity.clear();
+    dateTimeValidity.set(s, ok);
+  }
+  return ok;
+}
+
 function isSafeBig(v: bigint): boolean {
   return v <= MAX_SAFE && v >= -MAX_SAFE;
 }
@@ -71,7 +85,7 @@ function scalarProblem(v: RawValue, type: ScalarFieldType, enumValues: readonly 
       return enumValues === undefined || enumValues.includes(v) ? null : { kind: 'notInEnum' };
     case 'datetime':
       if (typeof v !== 'string') return { kind: 'type' };
-      return parseIsoOffset(v) === null ? { kind: 'invalidDateTime' } : null;
+      return isIsoDateTime(v) ? null : { kind: 'invalidDateTime' };
   }
 }
 
@@ -110,26 +124,44 @@ function elementIssue(p: Problem, index: number, v: RawValue, type: ScalarFieldT
   }
 }
 
+export interface RawCheck {
+  issues: readonly Issue[];
+  /** 型に合うか（列挙型の値の誤りは型の誤りとしない。ルールを当てはめてよいかの判定に使う） */
+  typeValid: boolean;
+}
+
+const VALID: RawCheck = Object.freeze({ issues: Object.freeze([]) as readonly Issue[], typeValid: true });
+
 /**
  * 値を列の型で検査する（型・整数の範囲・datetime の形式・列挙型の値・リストの要素）。
- * enumValues が undefined なら列挙型の値は検査しない
+ * enumValues が undefined なら列挙型の値は検査しない。問題が無ければ同じオブジェクトを返す（割り当てを避ける）
  */
-export function checkRawValue(raw: RawValue, field: FieldDef, enumValues: readonly string[] | undefined): Issue[] {
+export function inspectRawValue(raw: RawValue, field: FieldDef, enumValues: readonly string[] | undefined): RawCheck {
   const type = field.type;
   if (isListType(type)) {
     if (!Array.isArray(raw)) {
-      return [{ code: ValidateCode.typeMismatch, params: { expected: type, actual: rawTypeName(raw), value: rawText(raw) } }];
+      return {
+        issues: [{ code: ValidateCode.typeMismatch, params: { expected: type, actual: rawTypeName(raw), value: rawText(raw) } }],
+        typeValid: false,
+      };
     }
     const elem = elementType(type);
-    const issues: Issue[] = [];
-    raw.forEach((item, i) => {
-      const p = scalarProblem(item, elem, enumValues);
-      if (p !== null) issues.push(elementIssue(p, i + 1, item, elem, field));
-    });
-    return issues;
+    let issues: Issue[] | null = null;
+    let typeValid = true;
+    for (let i = 0; i < raw.length; i++) {
+      const p = scalarProblem(raw[i], elem, enumValues);
+      if (p === null) continue;
+      (issues ??= []).push(elementIssue(p, i + 1, raw[i], elem, field));
+      if (p.kind !== 'notInEnum') typeValid = false;
+    }
+    return issues === null ? VALID : { issues, typeValid };
   }
   const p = scalarProblem(raw, type as ScalarFieldType, enumValues);
-  return p === null ? [] : [scalarIssue(p, raw, type, field)];
+  return p === null ? VALID : { issues: [scalarIssue(p, raw, type, field)], typeValid: p.kind === 'notInEnum' };
+}
+
+export function checkRawValue(raw: RawValue, field: FieldDef, enumValues: readonly string[] | undefined): readonly Issue[] {
+  return inspectRawValue(raw, field, enumValues).issues;
 }
 
 /** 値が列の型に合うか（列挙型の値は問わない。ルールを当てはめてよいかの判定に使う） */

@@ -50,13 +50,21 @@ export type DiagnosticScope = Omit<Diagnostic, 'severity' | 'code' | 'params' | 
 
 /** 診断を集める。child で付加情報を足した報告先を作れる（集めた先は共有） */
 export class Reporter {
+  /**
+   * child の作り元。付加情報は診断を作るときに作り元から順に重ねる
+   * （レコード・セルごとに作るので、作るときに付加情報を写さない）
+   */
+  private parent: Reporter | undefined = undefined;
+
   constructor(
     readonly items: Diagnostic[] = [],
     private readonly scope: DiagnosticScope = {},
   ) {}
 
   child(scope: DiagnosticScope): Reporter {
-    return new Reporter(this.items, { ...this.scope, ...scope });
+    const r = new Reporter(this.items, scope);
+    r.parent = this;
+    return r;
   }
 
   error(code: string, at?: SrcPos, params?: DiagnosticParams): void {
@@ -74,11 +82,16 @@ export class Reporter {
   private push(severity: 'error' | 'warning', code: string, at?: SrcPos, params?: DiagnosticParams): void {
     const d: Diagnostic = { severity, code };
     if (params !== undefined) d.params = params;
-    Object.assign(d, this.scope);
+    this.applyScope(d);
     if (at !== undefined) {
       d.line = at.line;
       d.column = at.column;
     }
     this.items.push(d);
+  }
+
+  private applyScope(d: Diagnostic): void {
+    if (this.parent !== undefined) this.parent.applyScope(d);
+    Object.assign(d, this.scope);
   }
 }
