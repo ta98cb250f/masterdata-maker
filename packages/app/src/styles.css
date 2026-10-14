@@ -464,6 +464,7 @@ button {
 .sc-rowhead {
   position: absolute;
   left: 0;
+  contain: strict;
   border-right: 1px solid var(--sc-border);
   border-bottom: 1px solid var(--sc-gridline);
   background: var(--sc-header-bg);
@@ -483,11 +484,14 @@ button {
   position: absolute;
   left: 0;
   right: 0;
+  /* 行の中の変化が外の配置に影響しないようにする（スクロール中の配置の計算を軽くする） */
+  contain: strict;
 }
 .sc-cell {
   position: absolute;
   top: 0;
   height: 100%;
+  contain: strict;
   padding: 0 3px;
   border-right: 1px solid var(--sc-gridline);
   border-bottom: 1px solid var(--sc-gridline);
@@ -503,9 +507,6 @@ button {
 }
 .sc-cell.align-center {
   text-align: center;
-}
-.sc-cell-text {
-  pointer-events: none;
 }
 /* 状態の見た目（FR-ANN-04） */
 .sc-error-value {

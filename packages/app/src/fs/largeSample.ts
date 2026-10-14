@@ -73,7 +73,7 @@ function bigTable(rows: number, columns: number, uid: () => number): Table {
   const rand = random(42);
   const fields: FieldDef[] = [
     { name: 'name', type: 'string', display_name: '名前' },
-    { name: 'hp', type: 'int', display_name: 'HP', validation: { min: 1, max: 99999 }, anomaly: { warn_above: 90000 } },
+    { name: 'hp', type: 'int', display_name: 'HP', validation: { min: 1, max: 99999 }, anomaly: { warn_above: 9900 } },
     { name: 'defense', type: 'int', display_name: '防御力', default: 0 },
     { name: 'effective_hp', type: 'float', display_name: '実効HP', formula: 'hp * (1 + defense / 100)' },
     { name: 'skill_ids', type: 'list<int>', display_name: 'スキル', ref: 'skill.id' },
@@ -123,7 +123,8 @@ function bigTable(rows: number, columns: number, uid: () => number): Table {
     cells.set('id', r + 1);
     if (r % 7 === 0) cells.set('version', `0.${r % 3}.${r % 11}`);
     cells.set('name', `${WORDS[r % WORDS.length]}${r + 1}`);
-    const hp = 100 + Math.floor(rand() * 9900);
+    // 検査のエラー（min: 1 に反する）と警告（warn_above を超える）も少し混ぜる
+    const hp = r % 1000 === 999 ? 0 : 100 + Math.floor(rand() * 9900);
     cells.set('hp', r % 97 === 0 ? new RichCell({ value: hp, color: 'red', comment: '調整中' }) : hp);
     if (r % 3 !== 0) cells.set('defense', Math.floor(rand() * 100));
     if (r % 50 === 0) cells.set('effective_hp', new RichCell({ override: 'hp * 2' }));

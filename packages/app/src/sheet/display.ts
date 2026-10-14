@@ -16,9 +16,23 @@ export interface CellDisplay {
 
 const NUMERIC_TYPES = new Set(['int', 'int64', 'float']);
 
+const DATETIME_CACHE_LIMIT = 50_000;
+const dateTimeTexts = new Map<string, string>();
+
 function rawText(raw: RawValue, field: FieldDef, timeZone: string): string {
   // 小数は Googleスプレッドシートと同じく有効数字 15 桁で表示する（1200 * 1.3 → 1560。P-34）
   if (typeof raw === 'number' && field.type === 'float') return numberToText(raw);
+  if (typeof raw === 'string' && field.type === 'datetime') {
+    // 日時の表示はタイムゾーンの計算が重いので、元の文字列ごとに覚えておく（スクロール中に何度も描くため）
+    const key = `${timeZone}\u0000${raw}`;
+    let text = dateTimeTexts.get(key);
+    if (text === undefined) {
+      text = formatValueText(raw, field.type, timeZone);
+      if (dateTimeTexts.size >= DATETIME_CACHE_LIMIT) dateTimeTexts.clear();
+      dateTimeTexts.set(key, text);
+    }
+    return text;
+  }
   return formatValueText(raw, field.type, timeZone);
 }
 

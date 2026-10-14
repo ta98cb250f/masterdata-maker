@@ -25,6 +25,8 @@ export interface RenderCtx {
   colors: ReadonlyMap<string, string>;
   decorators: readonly NonNullable<GridExtension['decorateCell']>[];
   t: Translate;
+  /** 編集・検査の版（変わったら描き直す） */
+  version: string;
 }
 
 const ENUM_TYPES = new Set(['enum', 'list<enum>']);
@@ -73,11 +75,7 @@ function renderCell(ctx: RenderCtx, row: number, col: number, record: TableRecor
 
   return (
     <div key={col} className={className} style={style} title={title}>
-      {display.checkbox !== null ? (
-        <span className={`sc-checkbox${display.checkbox ? ' checked' : ''}`} data-checkbox="1" />
-      ) : (
-        <span className="sc-cell-text">{display.text}</span>
-      )}
+      {display.checkbox !== null ? <span className={`sc-checkbox${display.checkbox ? ' checked' : ''}`} data-checkbox="1" /> : display.text}
       {extra}
       {ENUM_TYPES.has(field.type) && column.editable && <span className="sc-dropdown" data-dropdown="1" />}
       {comment !== undefined && <span className="sc-mark-note" />}

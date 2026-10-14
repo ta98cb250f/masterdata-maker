@@ -25,13 +25,14 @@ import type { AppStore } from '../store/AppStore';
 import { useAppState, useStore, useT } from '../store/hooks';
 import type { ClipboardMark } from '../store/types';
 import { CellInput } from './CellInput';
+import { pasteText } from './clipboard';
 import type { ContextMenuRequest, GridExtension } from './extensions';
 import { dispatchContextMenu } from './extensions';
 import { GRID_EXTENSIONS } from './extensions/index';
 import type { RenderCtx } from './GridCells';
 import { ColumnHeader, GridRow } from './GridCells';
 import type { GridHit, Rect, ScrollPos, ViewportSize } from './layout';
-import { GridGeometry, MIN_COLUMN_WIDTH } from './layout';
+import { GridGeometry, MIN_COLUMN_WIDTH, ROW_HEIGHT } from './layout';
 import { useVirtual } from './useVirtual';
 
 type Drag =
@@ -40,7 +41,7 @@ type Drag =
   | { kind: 'cols'; anchorCol: number }
   | { kind: 'resize'; col: number; startX: number; startWidth: number };
 
-const rowSize = (): number => 21;
+const rowSize = (): number => ROW_HEIGHT;
 const rowKey = (i: number): number => i;
 
 const DECORATORS = GRID_EXTENSIONS.flatMap((e) => (e.decorateCell === undefined ? [] : [e.decorateCell.bind(e)]));
@@ -97,7 +98,7 @@ function GridView({ store, sheet }: { store: AppStore; sheet: SheetModel }) {
     estimateSize: rowSize,
     getItemKey: rowKey,
     paddingStart: geometry.headerHeight,
-    overscan: 6,
+    overscan: 4,
     initialOffset: initialScroll.top,
   });
   const colV = useVirtual({
@@ -119,10 +120,9 @@ function GridView({ store, sheet }: { store: AppStore; sheet: SheetModel }) {
   const colors = useMemo(() => new Map((colorItems ?? []).map((c) => [c.key, c.color])), [colorItems]);
   const ctx: RenderCtx | null = useMemo(() => {
     if (calc === null) return null;
-    // revision・検査の結果が変わったら作り直す（セルの中身が変わったので、行を描き直す）
-    void revision;
-    void validationVersion;
-    return { store, table: sheet.table, sheet, calc, geometry, timeZone: calc.timeZone, issues, colors, decorators: DECORATORS, t };
+    // 編集・検査の結果が変わったら作り直す（行の memo を外して描き直す）
+    const version = `${revision}:${validationVersion}`;
+    return { store, table: sheet.table, sheet, calc, geometry, timeZone: calc.timeZone, issues, colors, decorators: DECORATORS, t, version };
   }, [store, sheet, calc, geometry, issues, colors, t, revision, validationVersion]);
 
   // ---- フォーカス・スクロールの位置 ----
@@ -152,6 +152,13 @@ function GridView({ store, sheet }: { store: AppStore; sheet: SheetModel }) {
   useEffect(() => () => {
     if (raf.current !== null) cancelAnimationFrame(raf.current.id);
   }, []);
+
+  // 行が無くなる・できると入力欄が入れ替わるので、フォーカスを失っていたら戻す
+  const hasCells = sheet.size.rows > 0 && sheet.size.cols > 0;
+  useEffect(() => {
+    const active = document.activeElement;
+    if ((active === null || active === document.body) && store.getState().dialogs.length === 0) inputRef.current?.focus({ preventScroll: true });
+  }, [hasCells, store]);
 
   if (ctx === null) return null;
 
@@ -388,7 +395,6 @@ function GridView({ store, sheet }: { store: AppStore; sheet: SheetModel }) {
   const range = selection.ranges[0];
   const colSelected = selection.kind === 'cols' || selection.kind === 'all';
   const rowSelected = selection.kind === 'rows' || selection.kind === 'all';
-  const hasCells = size.rows > 0 && size.cols > 0;
 
   const headers = (from: number, to: number) => {
     const out = [];
@@ -469,30 +475,36 @@ function GridView({ store, sheet }: { store: AppStore; sheet: SheetModel }) {
   );
 }
 
-/** 行や列が無いテーブルでも、キー操作（Ctrl+S・シートの切り替えなど）を受け付ける入力欄 */
+/** 行や列が無いテーブルでも、キー操作（Ctrl+S・シートの切り替えなど）と貼り付け（末尾に行を足す）を受け付ける入力欄 */
 function EmptySheetInput({ inputRef }: { inputRef: RefObject<HTMLTextAreaElement | null> }) {
   const store = useStore();
   return (
     <textarea
       ref={inputRef}
       className="sc-input idle"
-      style={{ left: 0, top: 0 }}
-      aria-hidden="true"
+      style={{ position: 'absolute', left: 0, top: 0 }}
+      aria-label={store.t('ui.grid.input')}
+      data-testid="cell-input"
       onKeyDown={(e) => {
-        const id = resolveGridShortcut(store, e.nativeEvent);
-        if (id !== null) {
+        const id = resolveShortcut(e.nativeEvent, store.platform, 'grid');
+        const def = id === null ? undefined : store.commands.byShortcut(id);
+        if (def?.native !== undefined) {
+          def.native.before?.(store);
+          return;
+        }
+        if (def !== undefined) {
           e.preventDefault();
-          void store.run(id);
+          void store.run(def.id);
         } else if (e.key.length === 1) e.preventDefault();
+      }}
+      onPaste={(e) => {
+        e.preventDefault();
+        const valuesOnly = store.pasteValuesPending;
+        store.pasteValuesPending = false;
+        pasteText(store, e.clipboardData.getData('text/plain'), valuesOnly);
       }}
     />
   );
-}
-
-function resolveGridShortcut(store: AppStore, e: KeyboardEvent): string | null {
-  const id = resolveShortcut(e, store.platform, 'grid');
-  const def = id === null ? undefined : store.commands.byShortcut(id);
-  return def === undefined || def.native !== undefined ? null : def.id;
 }
 
 interface SelectionLayerProps {

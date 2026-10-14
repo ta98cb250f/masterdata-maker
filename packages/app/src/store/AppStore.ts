@@ -44,6 +44,7 @@ import type { CommandDef } from '../commands/registry';
 import { CommandRegistry } from '../commands/registry';
 import type { ProjectSource } from '../fs/types';
 import { errorMessage } from '../fs/text';
+import { registerUiMessages } from '../i18n';
 import type { SheetModel } from '../sheet/model';
 import { buildSheetModel } from '../sheet/model';
 import { computeOrder } from '../sheet/sortFilter';
@@ -140,6 +141,7 @@ export class AppStore {
   pasteValuesPending = false;
 
   constructor(options: AppStoreOptions = {}) {
+    registerUiMessages();
     this.commands = new CommandRegistry(options.commands ?? []);
     this.platform = options.platform ?? detectPlatform();
     this.validatorFactory = options.validator ?? mainThreadValidator;
@@ -659,11 +661,14 @@ export class AppStore {
   /** 失敗の一覧を文言にする（位置が分かれば「2 行目: …」の形。§5.17 の 3 番） */
   formatFailures(failures: readonly EditFailure[], rowOf?: (f: EditFailure) => number | undefined): string[] {
     const sheet = this.sheet();
+    // 列が 1 つだけなら列名は添えない（「2 行目: abc は整数ではありません」。§5.17 の 3 番）
+    const withColumn = new Set(failures.map((f) => f.column)).size > 1;
     return failures.map((f) => {
       const row = rowOf?.(f) ?? (f.record !== undefined && sheet !== null ? sheet.rowOf(f.record) + 1 || undefined : undefined);
-      const column = f.column === undefined ? undefined : (sheet?.columns.find((c) => c.name === f.column)?.field.display_name ?? f.column);
       const message = formatInputError(f, this.state.locale);
-      if (row === undefined) return column === undefined ? message : `${column}: ${message}`;
+      if (row === undefined) return message;
+      const column =
+        !withColumn || f.column === undefined ? undefined : (sheet?.columns.find((c) => c.name === f.column)?.field.display_name ?? f.column);
       return column === undefined
         ? formatMessage('edit.failure.atRow', { row, message }, this.state.locale)
         : formatMessage('edit.failure.atCell', { row, column, message }, this.state.locale);
