@@ -239,7 +239,7 @@ interface Conversion {
   cells: { record: number; value: RawValue | undefined }[];
 }
 
-function planConversion(project: Project, table: Table, field: FieldDef, args: ChangeTypeArgs, ctx: InputContext): Conversion {
+function planConversion(table: Table, field: FieldDef, args: ChangeTypeArgs, ctx: InputContext): Conversion {
   const def = targetDef(field, args);
   const issues: TypeChangeIssue[] = [];
   const cells: Conversion['cells'] = [];
@@ -274,7 +274,7 @@ export function checkColumnTypeChange(
   if (!found.ok) return found;
   const r = tableField(project, found.table, args.column);
   if (!r.ok) return { ok: false, failures: [r.failure] };
-  return { ok: true, issues: planConversion(project, found.table, r.field, args, inputContext(project)).issues };
+  return { ok: true, issues: planConversion(found.table, r.field, args, inputContext(project)).issues };
 }
 
 /**
@@ -288,7 +288,7 @@ export function changeColumnType(project: Project, args: ChangeTypeArgs): Comman
   const r = tableField(project, table, args.column);
   if (!r.ok) return failed([r.failure]);
   const field = r.field;
-  const conversion = planConversion(project, table, field, args, inputContext(project));
+  const conversion = planConversion(table, field, args, inputContext(project));
   const er = enumRefFailure(table.uid, conversion.def);
   if (er !== null) return failed([er]);
   if (deepEqual(conversion.def, field)) return emptyResult(EditCode.opChangeColumnType);

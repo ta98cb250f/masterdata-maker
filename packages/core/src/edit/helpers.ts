@@ -103,7 +103,7 @@ function integerOf(value: unknown): bigint | undefined {
 }
 
 /** DR-16: 既存の最大値＋1 から count 個の番号（値が無ければ 1 から） */
-export function nextNumbers(project: Project, table: Table, column: FieldDef, count: number): (number | bigint)[] {
+export function nextNumbers(table: Table, column: FieldDef, count: number): (number | bigint)[] {
   let max = 0n;
   for (const record of table.records) {
     const n = integerOf(cellValue(record.cells.get(column.name)));

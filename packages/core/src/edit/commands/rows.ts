@@ -19,7 +19,7 @@ function missingRecords(project: Project, table: Table, uids: readonly number[])
 /** 採番する列ごとの番号（count 個） */
 function numberCells(project: Project, table: Table, count: number): [string, CellData][][] {
   const columns = numberingColumns(project, table);
-  const numbers = columns.map((c) => nextNumbers(project, table, c, count));
+  const numbers = columns.map((c) => nextNumbers(table, c, count));
   return Array.from({ length: count }, (_, k) => columns.map((c, ci): [string, CellData] => [c.name, { value: numbers[ci][k] }]));
 }
 

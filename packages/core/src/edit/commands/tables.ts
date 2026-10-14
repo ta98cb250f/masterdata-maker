@@ -219,7 +219,7 @@ function duplicateNames(names: readonly string[]): EditFailure[] {
 }
 
 /** 列挙型の一覧を置き換える */
-export function setEnums(project: Project, enums: readonly EnumDef[]): CommandResult {
+export function setEnums(_project: Project, enums: readonly EnumDef[]): CommandResult {
   const failures = duplicateNames(enums.map((e) => e.name));
   if (failures.length > 0) return failed(failures);
   const b = new TxBuilder();
@@ -228,7 +228,7 @@ export function setEnums(project: Project, enums: readonly EnumDef[]): CommandRe
 }
 
 /** セル色のプリセットの一覧を置き換える */
-export function setColors(project: Project, colors: readonly ColorDef[]): CommandResult {
+export function setColors(_project: Project, colors: readonly ColorDef[]): CommandResult {
   const failures = duplicateNames(colors.map((c) => c.key));
   if (failures.length > 0) return failed(failures);
   const b = new TxBuilder();

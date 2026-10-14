@@ -9,7 +9,7 @@ import { extensionOf } from '../model/source';
 import type { Table } from '../model/table';
 import { DEFAULT_HISTORY_LIMIT, UndoHistory } from '../sheet/history';
 import type { Patch } from './patch';
-import { applyPatches, commonVersion, tableListVersion, tableVersion } from './patch';
+import { applyPatches, commonVersion, patchTable, tableListVersion, tableVersion } from './patch';
 import type { CommandResult, EditFailure, FocusHint, Transaction } from './transaction';
 
 export type EditEvent =
@@ -20,7 +20,10 @@ export type EditEvent =
 
 export type EditListener = (event: EditEvent) => void;
 
-export type SaveTarget = { kind: 'table'; table: number; name: string } | { kind: 'common'; part: CommonPartName };
+export type SaveTarget =
+  /** state は planSave の時点のテーブルの状態の番号（markSaved で基準にする） */
+  | { kind: 'table'; table: number; name: string; state: number }
+  | { kind: 'common'; part: CommonPartName };
 
 export interface SaveFile {
   /** プロジェクトのルートからの相対パス */
@@ -47,8 +50,10 @@ interface TableBaseline {
   /** 読み込んだ（保存した）ファイル。新しいテーブルなら無い */
   path: string | null;
   format: StorageFormat;
-  /** 読み込んだときの内容を正規形にしたテキスト、または最後に保存したテキスト */
+  /** 読み込んだときのテキスト、または最後に保存したテキスト */
   text: string | null;
+  /** そのときのテーブルの状態の番号 */
+  state: number;
 }
 
 interface CommonBaseline {
@@ -72,18 +77,26 @@ export class EditSession {
   private readonly commonBaselines = new Map<CommonPartName, CommonBaseline>();
   private readonly tableTexts = new Map<number, { version: number; text: string | null }>();
   private readonly commonTexts = new Map<CommonPartName, { version: number; text: string | null }>();
+  /**
+   * テーブルの状態の番号。トランザクションを当てると新しい番号になり、元に戻すと前の番号に戻る。
+   * 基準と同じ番号なら中身も基準と同じなので、正規形のテキストを作らずに「未保存でない」と分かる
+   */
+  private readonly states = new Map<number, number>();
+  private readonly txStates = new WeakMap<Transaction, { id: number; prev: Map<number, number> }>();
+  private nextState = 1;
   private revisionValue = 0;
 
   constructor(project: Project, options: EditSessionOptions = {}) {
     this.project = project;
     this.history = new UndoHistory<Transaction>(options.historyLimit ?? DEFAULT_HISTORY_LIMIT);
-    // 基準は「読み込んだ内容を正規形にしたテキスト」。手で書いたファイルが正規形でなくても、開いた直後は未保存にしない
+    // 基準は読み込んだテキスト。開いた直後は状態の番号が基準と同じなので、正規形でないファイルでも未保存にしない
     for (const table of project.tables) {
       this.tableBaselines.set(table.uid, {
         name: table.name,
         path: table.source?.path ?? null,
         format: this.formatOf(table),
-        text: this.tableText(table),
+        text: table.source?.text ?? null,
+        state: 0,
       });
     }
     for (const part of COMMON_PART_NAMES) {
@@ -98,6 +111,7 @@ export class EditSession {
     if (tx.patches.length === 0) return tx;
     const inverse = applyPatches(this.project, tx.patches);
     const entry: Transaction = { ...tx, inverse };
+    this.enterNewState(entry);
     this.history.push(entry);
     this.emit({ kind: 'apply', transaction: entry, patches: entry.patches });
     return entry;
@@ -135,6 +149,7 @@ export class EditSession {
       entry.tables = [focus.table, ...tables.filter((t) => t !== focus.table)];
     }
     if (patches.length === 0) return { ok: true, tx: entry };
+    this.enterNewState(entry);
     this.history.push(entry);
     this.emit({ kind: 'apply', transaction: entry, patches });
     return { ok: true, tx: entry };
@@ -152,6 +167,7 @@ export class EditSession {
       throw e;
     }
     this.history.undo();
+    for (const [table, state] of this.txStates.get(entry)?.prev ?? []) this.states.set(table, state);
     this.emit({ kind: 'undo', transaction: entry, patches: entry.inverse });
     return entry;
   }
@@ -169,6 +185,8 @@ export class EditSession {
     }
     entry.inverse = inverse;
     this.history.redo();
+    const meta = this.txStates.get(entry);
+    if (meta !== undefined) for (const table of meta.prev.keys()) this.states.set(table, meta.id);
     this.emit({ kind: 'redo', transaction: entry, patches: entry.patches });
     return entry;
   }
@@ -211,6 +229,28 @@ export class EditSession {
   /** 変更（適用・元に戻す・やり直す・保存）のたびに増える数（useSyncExternalStore のスナップショットに使える） */
   get revision(): number {
     return this.revisionValue;
+  }
+
+  /** トランザクションが変えたテーブルに新しい状態の番号を振る（元に戻すときのために前の番号を覚える） */
+  private enterNewState(entry: Transaction): void {
+    const touched = new Set<number>();
+    for (const patch of entry.patches) {
+      const table = patchTable(patch);
+      if (table !== null) touched.add(table);
+      // 共通列はすべてのテーブルの列（書き出す内容も変わる）
+      else if (patch.op === 'setCommon' && patch.part === 'base_fields') for (const t of this.project.tables) touched.add(t.uid);
+    }
+    const id = this.nextState++;
+    const prev = new Map<number, number>();
+    for (const table of touched) {
+      prev.set(table, this.stateOf(table));
+      this.states.set(table, id);
+    }
+    this.txStates.set(entry, { id, prev });
+  }
+
+  private stateOf(table: number): number {
+    return this.states.get(table) ?? 0;
   }
 
   private emit(event: EditEvent): void {
@@ -275,14 +315,27 @@ export class EditSession {
 
   /**
    * テーブルに未保存の変更があるか: 今の内容を正規形にしたテキストが、読み込んだ（最後に保存した）テキストと違うか。
-   * 元に戻して保存時の内容に戻れば未保存でなくなる。新しく作ったテーブルは未保存
+   * 元に戻して読み込んだ（保存した）ときの状態に戻れば未保存でなくなる。新しく作ったテーブルは未保存。
+   * 状態の番号が基準と同じならテキストを作らずに答える。違えば正規形のテキストを作って比べる（版数でメモ化する。
+   * 1 万行 × 50 列では数百ミリ秒かかるので、画面は isTableModified で印を出し、正確な判定は保存や終了の確認で使える）
    */
   isTableDirty(table: number): boolean {
     const t = this.project.tables.find((x) => x.uid === table);
     if (t === undefined) return false;
     const baseline = this.tableBaselines.get(table);
     if (baseline === undefined) return true;
+    if (baseline.state === this.stateOf(table)) return false;
     return baseline.name !== t.name || baseline.text !== this.tableText(t);
+  }
+
+  /**
+   * 読み込み（保存）の後に変更があり、元に戻して基準の状態に戻っていないか（テキストを作らないので速い）。
+   * 手で元の値に入力し直した場合は true のまま（正確には isTableDirty）
+   */
+  isTableModified(table: number): boolean {
+    if (!this.project.tables.some((x) => x.uid === table)) return false;
+    const baseline = this.tableBaselines.get(table);
+    return baseline === undefined || baseline.state !== this.stateOf(table);
   }
 
   /** 未保存の変更があるテーブルの uid（project.tables の順） */
@@ -317,7 +370,6 @@ export class EditSession {
    * 書き出せない値（NaN・Infinity。DR-35）があれば SerializeError を投げる
    */
   planSave(): SavePlan {
-    const storage = this.project.config.storage.format;
     const paths = resolveProjectPaths(this.project.config);
     const files: SaveFile[] = [];
     const remove: string[] = [];
@@ -339,7 +391,7 @@ export class EditSession {
         path = joinPath(paths.tablesDir, fileName);
       }
       const text = serializeTable(table, baseFields, format);
-      files.push({ path, text, format, target: { kind: 'table', table: table.uid, name: table.name } });
+      files.push({ path, text, format, target: { kind: 'table', table: table.uid, name: table.name, state: this.stateOf(table.uid) } });
     }
     remove.push(...this.removedTableFiles());
     for (const part of COMMON_PART_NAMES) {
@@ -356,7 +408,6 @@ export class EditSession {
     }
     const written = new Set(files.map((f) => f.path));
     const toRemove = [...new Set(remove)].filter((p) => !written.has(p)).sort();
-    void storage;
     return { files, remove: toRemove };
   }
 
@@ -366,16 +417,17 @@ export class EditSession {
    */
   markSaved(files: readonly SaveFile[], removed: readonly string[] = []): void {
     const removedSet = new Set(removed);
+    // 削除したテーブルの基準は、そのファイルを消した（または別のテーブルで上書きした）ら要らない
+    const written = new Set(files.map((f) => f.path));
     for (const [uid, baseline] of [...this.tableBaselines]) {
-      if (baseline.path !== null && removedSet.has(baseline.path) && !this.project.tables.some((t) => t.uid === uid)) {
-        this.tableBaselines.delete(uid);
-      }
+      if (baseline.path === null || this.project.tables.some((t) => t.uid === uid)) continue;
+      if (removedSet.has(baseline.path) || written.has(baseline.path)) this.tableBaselines.delete(uid);
     }
     for (const file of files) {
       const source = { path: file.path, format: file.format, text: file.text };
       if (file.target.kind === 'table') {
         const uid = file.target.table;
-        this.tableBaselines.set(uid, { name: file.target.name, path: file.path, format: file.format, text: file.text });
+        this.tableBaselines.set(uid, { name: file.target.name, path: file.path, format: file.format, text: file.text, state: file.target.state });
         const table = this.project.tables.find((t) => t.uid === uid);
         if (table !== undefined) table.source = source;
       } else {

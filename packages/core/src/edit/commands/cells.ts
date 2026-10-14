@@ -42,7 +42,7 @@ function resolve(project: Project, tableUid: number, cells: readonly CellTarget[
 
 /** 入力の結果を、今のセルに当てた新しい中身にする（セル色・メモは残す） */
 export function applyParsedInput(parsed: Exclude<ParsedInput, { ok: false }>, old: CellData, type: FieldDef['type']): CellData {
-  const next = annotationsOf(undefined);
+  const next: CellData = {};
   if (old.color !== undefined) next.color = old.color;
   if (old.comment !== undefined) next.comment = old.comment;
   if (old.extra !== undefined) next.extra = old.extra;

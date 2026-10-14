@@ -228,7 +228,7 @@ function pasteInto(project: Project, args: PasteArgs, label: string): CommandRes
   const newUids: number[] = [];
   if (newCount > 0) {
     const numbering = numberingColumns(project, table).filter((c) => !columnNames.includes(c.name));
-    const numbers = numbering.map((c) => nextNumbers(project, table, c, newCount));
+    const numbers = numbering.map((c) => nextNumbers(table, c, newCount));
     const items: IndexedRecord[] = [];
     for (let k = 0; k < newCount; k++) {
       const uid = project.uids.next();
