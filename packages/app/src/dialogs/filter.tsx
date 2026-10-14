@@ -8,6 +8,7 @@ import { Popover } from '../components/Popover';
 import type { AnchorRect } from '../grid/domAnchors';
 import { filterValueList, formatFilterBound, parseFilterBound, supportsRange } from '../sheet/filterValues';
 import { useT } from '../store/hooks';
+import '../styles/sortFilter.css';
 import type { DialogProps } from './registry';
 import { defineDialog } from './registry';
 

@@ -1,0 +1,4 @@
+{
+  "ui.worker.timeout": "Validation did not finish within {seconds} seconds and was stopped (timed out). The validation results shown may be out of date",
+  "ui.worker.jobTimeout": "The task did not finish within {seconds} seconds and was stopped (timed out)"
+}

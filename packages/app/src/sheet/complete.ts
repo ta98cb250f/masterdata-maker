@@ -27,6 +27,11 @@ export interface CompletionItem {
 
 const IDENT_CHAR = /[A-Za-z0-9_]/;
 
+/** 列定義を補完の候補の列にする（表示名を添える） */
+export function completionColumnsOf(fields: readonly { name: string; display_name?: string }[]): CompletionColumn[] {
+  return fields.map((f) => ({ name: f.name, detail: f.display_name }));
+}
+
 /**
  * カーソルの位置で補完する語。式でない（requireEquals で `=` で始まらない）、文字列の中、数値、語が空なら null。
  * requireEquals が偽でも、先頭の `=` は飛ばす（列の設定の式の欄は `=` を付けずに書く）

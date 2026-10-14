@@ -96,6 +96,7 @@ export function SheetTabs() {
                 store.setActiveTable(tab.uid);
                 store.focusGrid();
               }}
+              onDoubleClick={() => void store.run('table.rename', { table: tab.uid })}
               onContextMenu={(e) => {
                 const handled = dispatchContextMenu(store, GRID_EXTENSIONS, { area: 'sheetTab', table: tab.uid, clientX: e.clientX, clientY: e.clientY });
                 if (handled) e.preventDefault();

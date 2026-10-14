@@ -1,0 +1,10 @@
+{
+  "ui.cellColor.command": "塗りつぶしの色",
+  "ui.cellColor.none": "なし",
+  "ui.note.insert": "メモを挿入",
+  "ui.note.edit": "メモを編集",
+  "ui.note.delete": "メモを削除",
+  "ui.note.title": "メモ",
+  "ui.note.placeholder": "メモを入力",
+  "ui.note.done": "完了"
+}

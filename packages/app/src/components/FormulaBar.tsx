@@ -1,10 +1,14 @@
-// 数式バー（FR-UI-02）とセル位置の表示（FR-UI-03 の表示。入力による移動は後の段階）。
+// 数式バー（FR-UI-02）とセル位置の表示（FR-UI-03。入力による移動は NameBox）。式の入力補完（FR-EDT-07）は FormulaAssist。
 // 値のセルは編集用のテキスト、セル単位式のセルは `=hp*2` のような式、列レベル式に従うセルは列の式を「列の式」と区別して出す
 import type { KeyboardEvent } from 'react';
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { AdvanceKey } from '@sheetcraft/core';
 import { cellEditText, cellValue, formatValueText, isEmptyValue, resolveShortcut } from '@sheetcraft/core';
+import { completionColumnsOf } from '../sheet/complete';
 import { useAppState, useStore, useT } from '../store/hooks';
+import type { FormulaAssistHandle } from './FormulaAssist';
+import { FormulaAssist } from './FormulaAssist';
+import { NameBox } from './NameBox';
 
 const ADVANCE: Readonly<Record<string, AdvanceKey>> = { enter: 'enter', shiftEnter: 'shiftEnter', tab: 'tab', shiftTab: 'shiftTab' };
 
@@ -22,6 +26,7 @@ export function FormulaBar() {
   const store = useStore();
   const t = useT();
   const ref = useRef<HTMLTextAreaElement>(null);
+  const assistRef = useRef<FormulaAssistHandle>(null);
   const composing = useRef(false);
   useAppState((s) => s.revision);
   const active = useAppState((s) => s.activeTable);
@@ -56,6 +61,7 @@ export function FormulaBar() {
   }
 
   const barEditing = editing !== null && editing.origin === 'formulaBar';
+  const completionColumns = useMemo(() => completionColumnsOf(sheet?.allColumns ?? []), [sheet]);
   const value = editing !== null ? editing.text : (info?.text ?? '');
 
   // 複数行の中身に合わせて高さを変える（最大 6 行）
@@ -83,6 +89,11 @@ export function FormulaBar() {
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing || composing.current || e.keyCode === 229) return;
+    // 式の入力補完が出ていれば、↑↓・Tab・Enter はそちらで使う（FR-EDT-07）
+    if (assistRef.current?.handleKey(e) === true) {
+      e.preventDefault();
+      return;
+    }
     const id = resolveShortcut(e.nativeEvent, store.platform, 'edit');
     if (id !== null && ADVANCE[id] !== undefined) {
       e.preventDefault();
@@ -110,9 +121,7 @@ export function FormulaBar() {
 
   return (
     <div className="sc-formulabar">
-      <div className="sc-namebox" title={info?.location} data-testid="name-box">
-        {info?.location ?? ''}
-      </div>
+      <NameBox location={info?.location ?? ''} />
       <div className="sc-fx-label">fx</div>
       {info?.badge !== null && info?.badge !== undefined && editing === null && (
         <span className={`sc-badge ${info.badge}`} data-testid="formula-badge">
@@ -139,6 +148,9 @@ export function FormulaBar() {
           composing.current = false;
         }}
       />
+      {barEditing && editing.text.startsWith('=') && (
+        <FormulaAssist ref={assistRef} inputRef={ref} text={editing.text} columns={completionColumns} requireEquals />
+      )}
       {barEditing && editing.error !== null && (
         <div className="sc-edit-error formula" role="alert" data-testid="formula-error">
           <div className="sc-edit-error-message">{editing.error.message}</div>

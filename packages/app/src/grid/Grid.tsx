@@ -347,7 +347,8 @@ function GridView({ store, sheet }: { store: AppStore; sheet: SheetModel }) {
   const onDoubleClick = (e: ReactMouseEvent<HTMLDivElement>) => {
     const { x, y } = viewportPoint(e);
     const hit = geometry.hitTest(x, y, currentScroll());
-    if (hit.area === 'cell' && !(e.target as HTMLElement).closest('[data-checkbox]')) store.beginEdit({ mode: 'edit' });
+    // フィルハンドルと範囲の枠のダブルクリックは、拡張（grid/extensions/fillHandle.tsx）が受け持つ
+    if (hit.area === 'cell' && !(e.target as HTMLElement).closest('[data-checkbox], [data-fill-handle], [data-range-border]')) store.beginEdit({ mode: 'edit' });
   };
 
   const onContextMenu = (e: ReactMouseEvent<HTMLDivElement>) => {

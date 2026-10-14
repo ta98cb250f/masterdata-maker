@@ -1,0 +1,18 @@
+{
+  "ui.backup.title": "Unsaved changes were found",
+  "ui.backup.message": "Changes that were not saved last time ({time}) remain in the browser. Restoring loads them as unsaved changes.",
+  "ui.backup.itemTable": "{name} ({path})",
+  "ui.backup.itemNewTable": "{name} (new table)",
+  "ui.backup.itemRemoved": "Deletion of {name} ({path})",
+  "ui.backup.itemCommon": "Common settings {path}",
+  "ui.backup.changedSince": "The file was modified after the changes were kept",
+  "ui.backup.willSkip": "The following files cannot be restored: {files}",
+  "ui.backup.note": "You can undo the restore. If you choose Don't restore, the kept changes are deleted.",
+  "ui.backup.restore": "Restore",
+  "ui.backup.discard": "Don't restore",
+  "ui.backup.restoreOp": "Restore unsaved changes",
+  "ui.backup.restored": "Restored the unsaved changes ({count} items)",
+  "ui.backup.failedTitle": "Could not restore",
+  "ui.backup.failedMessage": "The kept changes could not be applied to the current files.",
+  "ui.backup.skippedTitle": "Some changes could not be restored"
+}

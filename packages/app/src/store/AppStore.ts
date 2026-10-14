@@ -61,7 +61,7 @@ import type {
   ValidationState,
 } from './types';
 import type { Validator, ValidatorFactory } from './validation';
-import { allTableNames, changedTablesOf, mainThreadValidator, summarizeIssues } from './validation';
+import { ValidationFailure, allTableNames, changedTablesOf, mainThreadValidator, summarizeIssues } from './validation';
 
 export interface AppStoreOptions {
   commands?: Iterable<CommandDef>;
@@ -397,7 +397,10 @@ export class AppStore {
       output = await validator.run({ tables: names, common: pending.all });
     } catch (e) {
       this.setState((s) => ({ validation: { ...s.validation, running: false } }));
-      this.showStatus(this.t('ui.validation.failed', { message: errorMessage(e) }), 'error');
+      this.showStatus(
+        e instanceof ValidationFailure ? this.t(e.code, e.params) : this.t('ui.validation.failed', { message: errorMessage(e) }),
+        'error',
+      );
       return;
     }
     // 検査の間にプロジェクトを閉じた・開き直したら捨てる
@@ -840,6 +843,16 @@ export class AppStore {
     return this.saving;
   }
 
+  private readonly saveGuards = new Set<() => Promise<boolean>>();
+
+  /** 保存の直前に呼ぶ確認を登録する（外部での変更の検知など。false を返せば保存しない）。戻り値で登録をやめる */
+  addSaveGuard(guard: () => Promise<boolean>): () => void {
+    this.saveGuards.add(guard);
+    return () => {
+      this.saveGuards.delete(guard);
+    };
+  }
+
   /**
    * 変更のあるすべてのテーブル（と共通設定）を保存する。検査エラーがあっても止めない（FR-FIO-08）。
    * 名前を変えた・削除したテーブルのファイルの扱いは planSave に従う（P-43）
@@ -848,6 +861,7 @@ export class AppStore {
     const { session, source } = this.state;
     if (session === null || source === null || this.saving) return;
     if (this.state.editing !== null && !this.commitEdit(null)) return;
+    for (const guard of [...this.saveGuards]) if (!(await guard()) || this.state.session !== session || this.saving) return;
     let plan;
     try {
       plan = session.planSave();

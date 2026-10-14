@@ -1,0 +1,9 @@
+/* 参照列のセルに添える参照先の名前（grid/extensions/references.tsx） */
+.sc-ref-names {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #e8eaed;
+  color: #3c4043;
+  font-size: 11px;
+}

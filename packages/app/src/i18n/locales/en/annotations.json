@@ -1,0 +1,10 @@
+{
+  "ui.cellColor.command": "Fill color",
+  "ui.cellColor.none": "None",
+  "ui.note.insert": "Insert note",
+  "ui.note.edit": "Edit note",
+  "ui.note.delete": "Delete note",
+  "ui.note.title": "Note",
+  "ui.note.placeholder": "Enter a note",
+  "ui.note.done": "Done"
+}

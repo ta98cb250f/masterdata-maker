@@ -6,6 +6,9 @@ import { resolveShortcut } from '@sheetcraft/core';
 import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { toggleCheckboxes } from '../commands/edit';
+import type { FormulaAssistHandle } from '../components/FormulaAssist';
+import { FormulaAssist } from '../components/FormulaAssist';
+import { completionColumnsOf } from '../sheet/complete';
 import type { SheetModel } from '../sheet/model';
 import type { AppStore } from '../store/AppStore';
 import { useAppState, useT } from '../store/hooks';
@@ -55,6 +58,7 @@ export function CellInput({ store, sheet, geometry, scroll, viewport, inputRef }
   const localText = useRef('');
   const composing = useRef(false);
   const assistRef = useRef<AssistHandle>(null);
+  const formulaAssistRef = useRef<FormulaAssistHandle>(null);
   const cellEditing = editing !== null && editing.origin === 'cell';
   const pos = cellEditing ? editing.pos : anchor;
   const col = Math.min(pos.col, Math.max(0, sheet.columns.length - 1));
@@ -96,6 +100,8 @@ export function CellInput({ store, sheet, geometry, scroll, viewport, inputRef }
 
   // 式（= で始まる）の入力中は部品を出さない
   const isFormula = editingText.startsWith('=');
+  // 式の入力補完の候補（FR-EDT-07）
+  const formulaColumns = useMemo(() => completionColumnsOf(sheet.allColumns), [sheet]);
   const field = column?.field;
   const assist = useMemo(() => {
     const calc = store.calc;
@@ -130,7 +136,7 @@ export function CellInput({ store, sheet, geometry, scroll, viewport, inputRef }
   };
 
   const onEditKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (assistRef.current?.handleKey(e) === true) {
+    if (assistRef.current?.handleKey(e) === true || formulaAssistRef.current?.handleKey(e) === true) {
       e.preventDefault();
       return;
     }
@@ -256,6 +262,9 @@ export function CellInput({ store, sheet, geometry, scroll, viewport, inputRef }
           <div className="sc-edit-error-message">{editing.error.message}</div>
           {editing.error.hint !== '' && <div className="sc-edit-error-hint">{editing.error.hint}</div>}
         </div>
+      )}
+      {cellEditing && isFormula && (
+        <FormulaAssist ref={formulaAssistRef} inputRef={inputRef} text={editing.text} columns={formulaColumns} requireEquals />
       )}
       {cellEditing && editing.error === null && assist !== null && (
         <EditorAssist

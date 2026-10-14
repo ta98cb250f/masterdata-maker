@@ -5,6 +5,7 @@ import { NoColorIcon } from '../components/gridIcons';
 import { Popover } from '../components/Popover';
 import type { AnchorRect } from '../grid/domAnchors';
 import { useT } from '../store/hooks';
+import '../styles/notes.css';
 import type { DialogProps } from './registry';
 import { defineDialog } from './registry';
 

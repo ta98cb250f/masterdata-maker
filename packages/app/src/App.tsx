@@ -2,6 +2,7 @@
 import { resolveShortcut } from '@sheetcraft/core';
 import { useEffect } from 'react';
 import { BrokenTableView } from './components/BrokenTableView';
+import { FindBar } from './components/FindBar';
 import { FormulaBar } from './components/FormulaBar';
 import { ContextMenuHost, DialogHost, PanelHost } from './components/Hosts';
 import { MenuBar } from './components/MenuBar';
@@ -19,7 +20,10 @@ function MainArea() {
   const entry = active === null ? undefined : store.entry(active);
   if (entry === undefined) return <div className="sc-grid-area" />;
   return (
-    <div className="sc-grid-area">{entry.kind === 'broken' ? <BrokenTableView key={entry.uid} table={entry} /> : <Grid key={entry.uid} tableUid={entry.uid} />}</div>
+    <div className="sc-grid-area">
+      {entry.kind === 'broken' ? <BrokenTableView key={entry.uid} table={entry} /> : <Grid key={entry.uid} tableUid={entry.uid} />}
+      <FindBar />
+    </div>
   );
 }
 

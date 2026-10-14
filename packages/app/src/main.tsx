@@ -8,7 +8,11 @@ import { isSampleName } from './fs/sample';
 import { registerUiMessages } from './i18n';
 import { PANELS } from './panels';
 import { AppStore } from './store/AppStore';
+import { installBackup } from './store/backup';
+import { installExternalChanges } from './store/externalChanges';
 import { StoreContext } from './store/hooks';
+import { installLocale, loadSavedLocale } from './store/locale';
+import { createValidatorFactory } from './store/workerValidator';
 import './styles.css';
 
 registerUiMessages();
@@ -16,7 +20,16 @@ registerUiMessages();
 const store = new AppStore({
   commands: allCommands(),
   panelPositions: new Map(PANELS.map((p) => [p.id, p.position])),
+  // 検査は Web Worker で行う（FR-VAL-10）。メインスレッドを止めないので、編集から検査までの待ち時間を短くする（FR-VAL-09）
+  validator: createValidatorFactory(),
+  validationDelay: 20,
+  // 選んだ言語はブラウザに覚えている（FR-ETC-02）
+  locale: loadSavedLocale(),
 });
+installLocale(store);
+// 外部での変更の検知（FR-FIO-07）と、未保存の変更の退避と復元（FR-FIO-06）
+installExternalChanges(store);
+installBackup(store);
 
 // 開発・画面テスト用に、外から store を触れるようにする
 (globalThis as { sheetcraft?: AppStore }).sheetcraft = store;

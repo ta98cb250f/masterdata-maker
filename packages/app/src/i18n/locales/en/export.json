@@ -1,0 +1,19 @@
+{
+  "ui.command.export": "Export…",
+  "ui.export.title": "Export",
+  "ui.export.toFolder": "Writes the selected tables as {format} to {dir} in the project folder (the folder is created if missing).",
+  "ui.export.toDownload": "Downloads the selected tables as {format} (a ZIP file if there are several).",
+  "ui.export.includesUnsaved": "Unsaved changes are included in the output.",
+  "ui.export.allTables": "All tables",
+  "ui.export.run": "Export",
+  "ui.export.running": "Exporting…",
+  "ui.export.hasErrors": "Nothing was exported because there are {count} validation errors. Fix the errors and export again.",
+  "ui.export.moreErrors": "and {count} more",
+  "ui.export.back": "Back",
+  "ui.export.force": "Export despite errors",
+  "ui.export.empty": "There are no tables to export (tables with load errors cannot be exported)",
+  "ui.export.failed": "Could not export: {message}",
+  "ui.export.writeFailedTitle": "Some files could not be written",
+  "ui.export.written": "Exported {count} files to {dir}",
+  "ui.export.downloaded": "Downloaded {name} ({count} files)"
+}

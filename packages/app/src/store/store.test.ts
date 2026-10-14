@@ -356,7 +356,8 @@ describe('操作の登録簿・ダイアログ・パネル', () => {
     const edit = store.commands.menuGroups('edit');
     expect(edit[0].map((d) => d.id)).toEqual(['edit.undo', 'edit.redo']);
     expect(store.isEnabled('edit.undo')).toBe(false);
-    expect(store.isEnabled('table.create')).toBe(false);
+    // シートタブの + の操作（段階6・7 で登録した）
+    expect(store.isEnabled('table.create')).toBe(true);
     // 識別子の重複が無い
     const ids = allCommands().map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);

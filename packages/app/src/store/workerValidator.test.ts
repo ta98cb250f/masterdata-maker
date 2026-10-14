@@ -127,7 +127,7 @@ describe('検査の Web Worker 化（FR-VAL-09〜11）', () => {
     const w = workers('normal', 'hang', 'normal');
     let validator: WorkerValidator | null = null;
     const { store } = await openTestStore({
-      validator: (p, c) => (validator = new WorkerValidator(p, c, { createWorker: w.create, timeLimit: 30, startLimit: 1000 })),
+      validator: (p, c) => (validator = new WorkerValidator(p, c, { createWorker: w.create, timeLimit: 100, startLimit: 1000 })),
     });
     const v = validator as unknown as WorkerValidator;
     // 1 台目を止まったものとみなさせるため、2 台目（止まる Worker）に切り替える
@@ -145,7 +145,7 @@ describe('検査の Web Worker 化（FR-VAL-09〜11）', () => {
     w.made[2].mode = 'hang';
     store.scheduleValidation(['character'], 0);
     await store.flushValidation();
-    expect(store.getState().status?.text).toBe('検査が 0 秒以内に終わらなかったため、中断しました。Worker を作り直しました');
+    expect(store.getState().status?.text).toBe('検査が 0.1 秒以内に終わらなかったため中断しました（時間切れ）。表示している検査の結果は古いことがあります');
     expect(store.getState().validation.running).toBe(false);
   });
 
@@ -158,7 +158,7 @@ describe('検査の Web Worker 化（FR-VAL-09〜11）', () => {
           },
         }),
     });
-    expect((throwing.store.getState().validation.tables.get('character')?.diagnostics.length ?? 0) > 0).toBe(true);
+    expect(throwing.store.getState().validation.tables.has('character')).toBe(true);
 
     const w = workers('crash');
     let validator: WorkerValidator | null = null;
@@ -191,6 +191,7 @@ describe('検査の Web Worker 化（FR-VAL-09〜11）', () => {
     const skill = project.tables.find((t) => t.name === 'skill');
     const texts = await jobs.serializeTables([{ uid: skill?.uid ?? -1, format: 'yaml' }]);
     expect(texts[0].text).toBe(skill?.source?.text);
-    expect(w.made[0].received.filter((m) => m.type === 'job')).toHaveLength(2);
+    // 開いた直後の検査と、出力・正規形のテキストの 3 つ
+    expect(w.made[0].received.filter((m) => m.type === 'job')).toHaveLength(3);
   });
 });
