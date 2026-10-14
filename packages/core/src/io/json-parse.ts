@@ -33,6 +33,9 @@ const LF = 0x0a;
 const DQ = 0x22;
 const BACKSLASH = 0x5c;
 
+/** 使い回すキーの数の上限（大きいオブジェクトの後ろで、探す手間が膨らまないように） */
+const MAX_CACHED_KEYS = 256;
+
 function isDigit(c: number): boolean {
   return c >= 0x30 && c <= 0x39;
 }
@@ -341,7 +344,9 @@ class Parser {
       if (sep === '}') {
         this.pos++;
         this.depth--;
-        if (!inCache && allRaw) this.keyCache[depth] = entries.map((entry) => entry.key);
+        if (!inCache && allRaw && entries.length <= MAX_CACHED_KEYS) {
+          this.keyCache[depth] = entries.map((entry) => entry.key);
+        }
         return { kind: 'map', entries, pos };
       }
       throw this.unexpectedOrEnd(this.pos);

@@ -33,6 +33,10 @@ const RBRACE = 0x7d;
 const MAX_DEPTH = 64;
 /** yaml ライブラリはブロックのマッピングのキーの先頭から `:` まで 1024 文字を超えるとエラーにする */
 const MAX_KEY_SPAN = 1000;
+/** 使い回すキーの数の上限（大きいマッピングの後ろで、探す手間が膨らまないように） */
+const MAX_CACHED_KEYS = 256;
+/** フローのマッピングで、重複キーを Set で調べ始めるキーの数 */
+const FLOW_KEYS_LINEAR = 16;
 
 // 引用符なしのスカラーの先頭に来ると、YAML では別の意味になる文字（emit.ts の YAML_INDICATOR_START と同じ）
 const INDICATOR = new Uint8Array(128);
@@ -88,9 +92,9 @@ const ESCAPES: Record<string, string> = {
   t: '\t',
   v: '\v',
   N: '\u0085',
-  _: ' ',
-  L: ' ',
-  P: ' ',
+  _: '\u00a0',
+  L: '\u2028',
+  P: '\u2029',
   ' ': ' ',
   '"': '"',
   '/': '/',
@@ -330,7 +334,9 @@ class CanonicalYamlParser {
       const next = this.atEnd() ? -1 : this.indent();
       if (next > indent) decline();
       if (next < indent) {
-        if (!inCache && allPlain) this.keyCache[depth] = entries.map((entry) => entry.key);
+        if (!inCache && allPlain && entries.length <= MAX_CACHED_KEYS) {
+          this.keyCache[depth] = entries.map((entry) => entry.key);
+        }
         return map;
       }
     }
@@ -497,6 +503,7 @@ class CanonicalYamlParser {
     }
     if (first !== SP) decline();
     i++;
+    let keys: Set<string> | undefined;
     for (;;) {
       let key: string;
       let e: number;
@@ -508,7 +515,17 @@ class CanonicalYamlParser {
         key = this.plainKey(i, e);
       }
       if (text.charCodeAt(e) !== COLON || text.charCodeAt(e + 1) !== SP) decline();
-      for (const entry of entries) if (entry.key === key) decline();
+      if (keys !== undefined) {
+        if (keys.has(key)) decline();
+        keys.add(key);
+      } else {
+        for (const entry of entries) if (entry.key === key) decline();
+        if (entries.length >= FLOW_KEYS_LINEAR) {
+          keys = new Set();
+          for (const entry of entries) keys.add(entry.key);
+          keys.add(key);
+        }
+      }
       const keyPos = this.posAt(i);
       const value = this.flowNode(e + 2, depth + 1);
       entries.push({ key, keyPos, value });

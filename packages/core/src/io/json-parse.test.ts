@@ -58,6 +58,23 @@ describe('JSON の厳密なパーサー（DR-50）', () => {
     ]);
   });
 
+  it('同じキーを持つオブジェクトが続いても、重複キーとエスケープしたキーを正しく扱う', () => {
+    const result = parseJson('[{ "a": 1, "b": 2 }, { "a": 1, "a": 2 }, { "\\u0061": 1, "a": 2 }, { "ab": 1, "a": 2, "b": 3 }]');
+    expect(result.node).toBeNull();
+    expect(result.diagnostics).toEqual([
+      { severity: 'error', code: IoCode.duplicateKey, params: { key: 'a' }, line: 1, column: 32 },
+      { severity: 'error', code: IoCode.duplicateKey, params: { key: 'a' }, line: 1, column: 57 },
+    ]);
+    const ok = parseJson('[{ "a": 1, "b": 2 }, { "a": 1, "c": 3 }, { "b": 1, "a\\"": 2, "a": 3 }]');
+    expect(ok.diagnostics).toEqual([]);
+    const items = ok.node?.kind === 'seq' ? ok.node.items : [];
+    expect(items.map((item) => (item.kind === 'map' ? item.entries.map((e) => e.key) : []))).toEqual([
+      ['a', 'b'],
+      ['a', 'c'],
+      ['b', 'a"', 'a'],
+    ]);
+  });
+
   it('単引用符・引用符なしのキー・NaN・Infinity を拒否する', () => {
     expect(firstError("{ 'a': 1 }")).toMatchObject({ code: IoCode.jsonSingleQuote });
     expect(firstError("['a']")).toMatchObject({ code: IoCode.jsonSingleQuote });
