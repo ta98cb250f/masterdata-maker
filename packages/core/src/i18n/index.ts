@@ -1,6 +1,18 @@
 // 文言の多言語化（FR-ETC-02）。文言ファイルは「キー → `{name}` 形式の差し込みを含む文」の平らな JSON
+import enCalc from './locales/en/calc.json';
+import enCli from './locales/en/cli.json';
+import enExport from './locales/en/export.json';
+import enFormula from './locales/en/formula.json';
 import enIo from './locales/en/io.json';
+import enSheet from './locales/en/sheet.json';
+import enValidate from './locales/en/validate.json';
+import jaCalc from './locales/ja/calc.json';
+import jaCli from './locales/ja/cli.json';
+import jaExport from './locales/ja/export.json';
+import jaFormula from './locales/ja/formula.json';
 import jaIo from './locales/ja/io.json';
+import jaSheet from './locales/ja/sheet.json';
+import jaValidate from './locales/ja/validate.json';
 
 export type Locale = 'ja' | 'en';
 export type Messages = Readonly<Record<string, string>>;
@@ -24,6 +36,18 @@ export function registerMessages(locale: string, messages: Messages): void {
 const BUNDLES: readonly [Locale, Messages][] = [
   ['ja', jaIo],
   ['en', enIo],
+  ['ja', jaFormula],
+  ['en', enFormula],
+  ['ja', jaSheet],
+  ['en', enSheet],
+  ['ja', jaCalc],
+  ['en', enCalc],
+  ['ja', jaValidate],
+  ['en', enValidate],
+  ['ja', jaExport],
+  ['en', enExport],
+  ['ja', jaCli],
+  ['en', enCli],
 ];
 for (const [locale, messages] of BUNDLES) registerMessages(locale, messages);
 

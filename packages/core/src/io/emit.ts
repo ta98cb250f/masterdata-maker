@@ -181,11 +181,15 @@ function yamlBlockSeq(node: OutSeq, indent: number, lines: string[], path: strin
   });
 }
 
-/** YAML 1.2 のテキストにする（インデント 2、LF、末尾の改行 1 つ。DR-31、DR-40） */
-export function emitYaml(root: OutMap): string {
+/**
+ * YAML 1.2 のテキストにする（インデント 2、LF、末尾の改行 1 つ。DR-31、DR-40）。
+ * トップレベルはマッピング（リソースファイル）かシーケンス（出力ファイル。FR-OUT-02）
+ */
+export function emitYaml(root: OutMap | OutSeq): string {
   if (!isBlock(root)) return `${yamlInline(root, false, '')}\n`;
   const lines: string[] = [];
-  yamlBlockMap(root, 0, lines, '');
+  if (root.kind === 'map') yamlBlockMap(root, 0, lines, '');
+  else yamlBlockSeq(root, 0, lines, '');
   return `${lines.join('\n')}\n`;
 }
 
@@ -226,7 +230,7 @@ function jsonNode(node: OutNode, indent: number, path: string): string {
   return `{\n${entries.join(',\n')}\n${end}}`;
 }
 
-/** JSON のテキストにする（インデント 2、LF、末尾の改行 1 つ。DR-31、DR-50〜51） */
-export function emitJson(root: OutMap): string {
+/** JSON のテキストにする（インデント 2、LF、末尾の改行 1 つ。DR-31、DR-50〜51）。トップレベルはマッピングかシーケンス */
+export function emitJson(root: OutMap | OutSeq): string {
   return `${jsonNode(root, 0, '')}\n`;
 }

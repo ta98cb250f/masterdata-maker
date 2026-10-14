@@ -2,13 +2,25 @@ import { isAlias, isMap, isScalar, isSeq, LineCounter, parseDocument } from 'yam
 import { IoCode } from './codes';
 import type { ParseResult, SrcEntry, SrcNode, SrcPos } from './tree';
 import { Reporter } from './tree';
+import { parseCanonicalYaml } from './yaml-fast';
 
 // YAML 1.2 として読み、構文木（tree.ts）にする。
 // 複数ドキュメント・アンカー・エイリアス・タグ（DR-43）、1.2 以外の %YAML 指示は読み込みエラー
 
 type YamlNode = ReturnType<typeof parseDocument>['contents'];
 
+/**
+ * YAML のテキストを構文木にする。本ツールが書き出す正規形なら専用の処理（yaml-fast.ts）で速く読み、
+ * 正規形と判定できなければ yaml ライブラリで読む（どちらでも同じ構文木と診断になる）
+ */
 export function parseYaml(text: string, reporter: Reporter = new Reporter()): ParseResult {
+  const node = parseCanonicalYaml(text);
+  if (node !== null) return { node, diagnostics: reporter.items };
+  return parseYamlWithLibrary(text, reporter);
+}
+
+/** yaml ライブラリで読む経路（正規形でない入力・エラーの報告。テストでは専用の処理との突き合わせに使う） */
+export function parseYamlWithLibrary(text: string, reporter: Reporter = new Reporter()): ParseResult {
   const before = reporter.items.length;
   const lineCounter = new LineCounter();
   const doc = parseDocument(text, {
