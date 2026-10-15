@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '@sheetcraft/core';
-import { createTable, deleteTable, enterInput, setEnums } from '@sheetcraft/core';
+import { createTable, deleteTable, enterInput, setEnums, snapshotProject } from '@sheetcraft/core';
+import { ValidationEngine } from '../worker/engine';
+import type { FromWorker, ToWorker } from '../worker/protocol';
 import { MemoryBackupStorage } from '../fs/backupStore';
 import { basicSampleFiles } from '../fs/sample';
 import type { ProjectSource } from '../fs/types';
 import type { AppStore } from './AppStore';
 import type { BackupRecord, RestoreDialogArgs } from './backup';
-import { BACKUP_DIALOG, backupKey, buildBackup, hashText, installBackup, isSameProject, planRestore, projectIdentity } from './backup';
+import { BACKUP_DIALOG, backupKey, buildBackup, hashText, installBackup, isSameProject, planBackup, planRestore, projectIdentity } from './backup';
+import { hashTextSliced, persistBackup } from './backupRecord';
 import { openTestStore } from './testProject';
 
 function table(store: AppStore, name: string) {
@@ -184,5 +187,38 @@ describe('退避と復元の流れ', () => {
     await tick();
     await h2.manager.idle();
     expect(storage.data.size).toBe(0);
+  });
+});
+
+describe('退避の書き込み（Worker で行う部分）', () => {
+  it('区切って求めたハッシュは、まとめて求めたものと同じ', async () => {
+    const text = basicSampleFiles()['tables/character.yaml'].repeat(20);
+    expect(await hashTextSliced(text, 1000)).toBe(hashText(text));
+    expect(await hashTextSliced('')).toBe(hashText(''));
+  });
+
+  it('Worker の中で正規形のテキストを作って書き込む。読み込み元と同じ中身のテーブルは除き、何も無ければ消す', async () => {
+    const { store } = await openTestStore();
+    setCell(store, 'character', 'hp', '4321');
+    const plan = await planBackup(store, 99);
+    if (plan === null) throw new Error('no plan');
+    expect(plan.targets.map((t) => t.basePath)).toEqual(['tables/character.yaml']);
+    expect(plan.record.tables).toEqual([]);
+    const storage = new MemoryBackupStorage();
+    const posted: FromWorker[] = [];
+    const engine = new ValidationEngine((m) => posted.push(m), storage);
+    engine.handle(structuredClone({ type: 'init', snapshot: snapshotProject(store.project as Project) }) as ToWorker);
+    const sync = { tableSources: [], commonSources: [] };
+    engine.handle(structuredClone({ type: 'job', id: 1, job: { kind: 'backup', ...plan }, sync }) as ToWorker);
+    await tick();
+    expect(posted.at(-1)).toEqual({ type: 'done', id: 1, result: true });
+    const record = storage.data.get(plan.key) as BackupRecord;
+    expect(record.savedAt).toBe(99);
+    expect(record.tables.map((t) => t.text)).toEqual([savePlanOf(store).files['tables/character.yaml']]);
+
+    // 中身が読み込み元と同じテーブルだけなら、退避を消す
+    const unchanged = { ...plan, targets: plan.targets.map((t) => ({ ...t, uid: table(store, 'skill').uid, baseHash: hashText(basicSampleFiles()['tables/skill.yaml']) })) };
+    expect(await persistBackup(store.project as Project, storage, plan.key, plan.record, unchanged.targets)).toBe(false);
+    expect(storage.data.has(plan.key)).toBe(false);
   });
 });
