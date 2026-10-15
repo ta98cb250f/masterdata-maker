@@ -421,7 +421,7 @@ paths:
   tables: tables/
   config: config/
 output:
-  format: json          # 出力ファイルの形式: json | yaml（既定は json）
+  format: json          # 出力ファイルの形式: json | yaml | csv | protobuf（既定は json）
   out_dir: build/
 ```
 
@@ -610,9 +610,35 @@ records:
 ]
 ```
 
+出力ファイル（CSV の場合。1 行目は列名、未入力は空欄、リストは JSON の配列。P-62）:
+
+```csv
+id,hp,defense,effective_hp
+2,800,30,1040
+```
+
+出力ファイル（Protocol Buffers の場合。テーブルごとにスキーマ `character.proto` とデータ `character.pb` を出す。`.pb` は `CharacterTable` を符号化したもの。P-63）:
+
+```proto
+syntax = "proto3";
+
+package sheetcraft;
+
+message Character {
+  optional int64 id = 1;
+  optional int64 hp = 2;
+  optional int64 defense = 3;
+  optional double effective_hp = 4;
+}
+
+message CharacterTable {
+  repeated Character records = 1;
+}
+```
+
 | ID | 要件 | 優先度 |
 |---|---|---|
-| FR-OUT-01 | 出力ファイルの形式は、JSON か YAML をプロジェクト設定で選ぶ（既定は JSON）。リソースファイルの形式とは別に選べる | 必須 |
+| FR-OUT-01 | 出力ファイルの形式は、JSON・YAML・CSV・Protocol Buffers から選ぶ。既定はプロジェクト設定の `output.format`（無ければ JSON）で、画面の出力のダイアログと CLI の `export --format` でその回だけ変えられる。リソースファイルの形式とは別に選べる。CSV と Protocol Buffers の書き方は P-62・P-63（実装計画書） | 必須 |
 | FR-OUT-02 | 出力の決まり: `export: false` の列は除く、式は計算結果にする、セル色とメモは含めない、共通列は含める、1 テーブル＝1 ファイル＝レコードの配列 | 必須 |
 | FR-OUT-03 | 出力ファイルにも正規形（DR-30〜36、YAML は DR-40〜41、JSON は DR-50〜51）を当てはめる。キーは列定義の順。同じ入力からは必ず同じ出力にする | 必須 |
 | FR-OUT-04 | 未入力のセルは、列の `default` があればその値、無ければ `null` を出力する（DR-15） | 必須 |

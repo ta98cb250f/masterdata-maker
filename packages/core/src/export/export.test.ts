@@ -112,8 +112,8 @@ describe('サンプルの出力（FR-OUT-01〜04）', () => {
       expect(result.ok).toBe(true);
       expect(result.diagnostics).toEqual([]);
       expect(result.files.map((f) => f.path)).toEqual(['build/character.json', 'build/skill.json', 'build/stage.json']);
-      expect(result.files.map((f) => f.text)).toEqual([CHARACTER_JSON, SKILL_JSON, STAGE_JSON]);
-      expect(result.files[0].text).not.toContain('memo');
+      expect(result.files.map((f) => f.content)).toEqual([CHARACTER_JSON, SKILL_JSON, STAGE_JSON]);
+      expect(result.files[0].content).not.toContain('memo');
       // 同じ入力からは必ず同じ出力（FR-OUT-03）
       expect(planExport(project, new Calculator(project))).toEqual(result);
       // エラーが無ければ、force を付けても出力は同じ（P-51 で値が null になるのは型に合わない値だけ）
@@ -127,7 +127,7 @@ describe('サンプルの出力（FR-OUT-01〜04）', () => {
     const calc = new Calculator(project);
     const result = planExport(project, calc, { format: 'yaml', outDir: 'out/yaml' });
     expect(result.files.map((f) => f.path)).toEqual(['out/yaml/character.yaml', 'out/yaml/skill.yaml', 'out/yaml/stage.yaml']);
-    const character = result.files[0].text;
+    const character = result.files[0].content as string;
     expect(character.split('\n').slice(0, 13)).toEqual([
       '- id: 1',
       '  version: null',
@@ -145,7 +145,7 @@ describe('サンプルの出力（FR-OUT-01〜04）', () => {
     ]);
     expect(character).toContain('\n  code: "1.10"\n');
     expect(character).toContain('\n  code: "null"\n');
-    expect(result.files[2].text).toBe(STAGE_YAML);
+    expect(result.files[2].content).toBe(STAGE_YAML);
     // YAML 1.1 と 1.2 のどちらで読んでも、文字列は文字列のまま
     for (const version of ['1.1', '1.2'] as const) {
       const rows = parseYamlLib(character, { version, intAsBigInt: true }) as Record<string, unknown>[];
@@ -154,8 +154,8 @@ describe('サンプルの出力（FR-OUT-01〜04）', () => {
       expect(rows[2].start_at).toBeNull();
     }
     // JSON と YAML で同じデータ
-    const json = planExport(project, calc).files[1].text;
-    expect(JSON.parse(json)).toEqual(parseYamlLib(result.files[1].text));
+    const json = planExport(project, calc).files[1].content as string;
+    expect(JSON.parse(json)).toEqual(parseYamlLib(result.files[1].content as string));
   });
 });
 
@@ -180,7 +180,7 @@ records:
       {
         path: 'build/character.json',
         table: 'character',
-        text: '[\n  {\n    "id": 2,\n    "hp": 800,\n    "defense": 30,\n    "effective_hp": 1040\n  }\n]\n',
+        content: '[\n  {\n    "id": 2,\n    "hp": 800,\n    "defense": 30,\n    "effective_hp": 1040\n  }\n]\n',
       },
     ]);
   });
@@ -205,14 +205,14 @@ records:
     });
     const result = planExport(project, new Calculator(project));
     expect(result.ok).toBe(true);
-    expect(result.files[0].text).toBe(
+    expect(result.files[0].content).toBe(
       '[\n  {\n    "id": 1,\n    "s": "",\n    "l": [],\n    "n": 5,\n    "none": null\n  },\n' +
         '  {\n    "id": 2,\n    "s": "a",\n    "l": [1],\n    "n": 1,\n    "none": "b"\n  }\n]\n',
     );
     // 列定義に無いキーは読み込み時の警告（DR-34）。警告だけなら出力する
     expect(result.diagnostics.map((d) => `${d.severity} ${d.code}`)).toEqual(['warning io.unknownRecordKey']);
     // キーの n は YAML 1.1 で false と読まれるので引用符で囲む（DR-41）
-    expect(planExport(project, new Calculator(project), { format: 'yaml' }).files[0].text).toBe(
+    expect(planExport(project, new Calculator(project), { format: 'yaml' }).files[0].content).toBe(
       '- id: 1\n  s: ""\n  l: []\n  "n": 5\n  none: null\n- id: 2\n  s: a\n  l: [1]\n  "n": 1\n  none: b\n',
     );
   });
@@ -220,8 +220,8 @@ records:
   it('レコードが無ければ空の配列', async () => {
     const project = await testProject({ tables: { t: 'fields: []\nrecords: []\n' } });
     const calc = new Calculator(project);
-    expect(planExport(project, calc).files[0].text).toBe('[]\n');
-    expect(planExport(project, calc, { format: 'yaml' }).files[0].text).toBe('[]\n');
+    expect(planExport(project, calc).files[0].content).toBe('[]\n');
+    expect(planExport(project, calc, { format: 'yaml' }).files[0].content).toBe('[]\n');
   });
 });
 
@@ -255,7 +255,7 @@ records:
     expect(forced.ok).toBe(true);
     expect(forced.diagnostics).toEqual(blocked.diagnostics);
     expect(forced.files.map((f) => f.path)).toEqual(['build/bad.json', 'build/good.json']);
-    expect(forced.files[0].text).toContain('"v": 11,\n    "w": null\n');
+    expect(forced.files[0].content).toContain('"v": 11,\n    "w": null\n');
   });
 
   it('テーブルを選べる。選ばなかったテーブルのエラーでは止めない。無いテーブルはエラー', async () => {
@@ -324,14 +324,14 @@ records:
       '4 nums validate.typeMismatch',
     ]);
     const empty = { n: null, big: null, f: null, flag: null, kind: null, when: null, nums: null, kinds: null, d: null, e: '' };
-    expect(JSON.parse(forced.files[0].text)).toEqual([
+    expect(JSON.parse(forced.files[0].content as string)).toEqual([
       { id: 1, n: 1, big: 2, f: 1.5, flag: true, kind: 'a', when: '2026-10-13T12:00:00+09:00', nums: [1, 2], kinds: ['a', 'b'], d: 3, e: 'b' },
       // 型に合わない default（d の abc）も null。default に書ける ""（e）はそのまま
       { id: 2, ...empty },
       { id: 3, ...empty },
       { id: 4, ...empty },
     ]);
-    const yaml = planExport(project, calc, { force: true, format: 'yaml' }).files[0].text;
+    const yaml = planExport(project, calc, { force: true, format: 'yaml' }).files[0].content as string;
     expect(yaml.split('\n').slice(11, 22)).toEqual([
       '- id: 2',
       '  "n": null',
@@ -386,7 +386,7 @@ records:
       '2 code validate.duplicateValue',
       '3 hp validate.warnAbove',
     ]);
-    expect(JSON.parse(forced.files[0].text)).toEqual([
+    expect(JSON.parse(forced.files[0].content as string)).toEqual([
       { id: 1, name: 'ABCD', hp: 0, code: 'x', tags: ['a', 'b'], when: '2025-12-31T00:00:00+09:00', skill: 9, skills: [1, 9] },
       // required の違反は未入力なので null（FR-OUT-04）
       { id: 2, name: null, hp: 101, code: 'x', tags: null, when: null, skill: null, skills: null },

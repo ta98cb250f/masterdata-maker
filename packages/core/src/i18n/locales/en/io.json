@@ -57,7 +57,7 @@
   "io.unsupportedFormatVersion": "format_version {version} is not supported (this tool supports up to {supported}). Update the tool",
   "io.invalidFormatVersion": "format_version {version} is invalid (it must be an integer of 1 or more)",
   "io.invalidStorageFormat": "storage.format cannot be {value} (use yaml or json)",
-  "io.invalidOutputFormat": "output.format cannot be {value} (use json or yaml)",
+  "io.invalidOutputFormat": "output.format cannot be {value} (use json, yaml, csv, or protobuf)",
   "io.invalidTimezone": "Time zone {value} was not found. The browser's time zone is used instead",
   "io.multipleCommonFiles": "There is more than one file for the shared setting {name} ({files}). Keep only one",
   "io.formatMismatch": "The format of {path} differs from storage.format ({expected}) in the project settings",

@@ -1,7 +1,7 @@
 // 画面からの出力（FR-OUT-06）。検査エラーがあれば出力しない（強制して出力することもできる。FR-OUT-05）。
 // 直接保存方式ではプロジェクト設定の出力先のフォルダ（output.out_dir。無ければ作る）へ書き込み、
 // ダウンロード保存方式ではダウンロードする（複数なら ZIP）。出力するのはエディタの今の内容（保存していない変更も含む）
-import type { Diagnostic, ExportFile } from '@sheetcraft/core';
+import type { Diagnostic, ExportFile, OutputFormat } from '@sheetcraft/core';
 import { formatDiagnostic, isError, resolveProjectPaths } from '@sheetcraft/core';
 import type { DownloadFn } from '../fs/download';
 import { browserDownload, zipFiles } from '../fs/download';
@@ -15,11 +15,14 @@ export interface ExportRequest {
   tables: readonly string[];
   /** 検査エラーがあっても出力する */
   force: boolean;
+  /** 出力の形式（省略時はプロジェクト設定の output.format） */
+  format?: OutputFormat;
 }
 
 export type ExportOutcome =
   /** 検査エラーがあって出力しなかった（errors はエラーだけ） */
-  | { status: 'errors'; errors: Diagnostic[] }
+  /** forceable: 強制すれば出力できるか（protobuf の名前の問題は強制しても出力しない。P-63） */
+  | { status: 'errors'; errors: Diagnostic[]; forceable: boolean }
   /** 出力先のフォルダへ書き込んだ（直接保存方式） */
   | { status: 'written'; outDir: string; files: string[]; failed: SaveFailure[] }
   | { status: 'downloaded'; name: string; files: string[] }
@@ -28,7 +31,7 @@ export type ExportOutcome =
 
 /** フォルダへ書き込める読み込み口（直接保存方式の DirectoryProjectFs） */
 interface WritableFs {
-  write(path: string, text: string): Promise<void>;
+  write(path: string, data: string | Uint8Array): Promise<void>;
 }
 
 function writableFs(fs: unknown): WritableFs | null {
@@ -43,8 +46,8 @@ export interface ExportDeps {
 export async function runExport(store: AppStore, request: ExportRequest, deps: ExportDeps = {}): Promise<ExportOutcome> {
   const { project, calc, source } = store.getState();
   if (project === null || calc === null || source === null) return { status: 'empty' };
-  const plan = await backgroundJobs(project, calc).exportPlan({ tables: [...request.tables], force: request.force });
-  if (!plan.ok) return { status: 'errors', errors: plan.diagnostics.filter(isError) };
+  const plan = await backgroundJobs(project, calc).exportPlan({ tables: [...request.tables], force: request.force, format: request.format });
+  if (!plan.ok) return { status: 'errors', errors: plan.diagnostics.filter(isError), forceable: !plan.blocked };
   if (plan.files.length === 0) return { status: 'empty' };
   const outDir = resolveProjectPaths(project.config).outDir;
   const writer = source.capabilities.directSave ? writableFs(source.fs) : null;
@@ -53,7 +56,7 @@ export async function runExport(store: AppStore, request: ExportRequest, deps: E
     const failed: SaveFailure[] = [];
     for (const file of plan.files) {
       try {
-        await writer.write(file.path, file.text);
+        await writer.write(file.path, file.content);
         files.push(file.path);
       } catch (e) {
         failed.push({ path: file.path, message: errorMessage(e) });
@@ -64,15 +67,40 @@ export async function runExport(store: AppStore, request: ExportRequest, deps: E
   return downloadExport(plan.files, `${source.name}-${outDir === '' ? 'export' : baseName(outDir)}`, deps.download ?? browserDownload);
 }
 
+/** ダウンロードするファイルの種類（拡張子から） */
+function mediaType(name: string): string {
+  const ext = name.slice(name.lastIndexOf('.') + 1);
+  switch (ext) {
+    case 'json':
+      return 'application/json';
+    case 'yaml':
+      return 'application/yaml';
+    case 'csv':
+      return 'text/csv';
+    case 'pb':
+      return 'application/x-protobuf';
+    default:
+      return 'text/plain';
+  }
+}
+
+/** Blob に渡す中身（Uint8Array は ArrayBuffer を持つものに写す） */
+function blobPart(content: string | Uint8Array): string | ArrayBuffer {
+  if (typeof content === 'string') return content;
+  const bytes = new Uint8Array(content.byteLength);
+  bytes.set(content);
+  return bytes.buffer;
+}
+
 function downloadExport(files: readonly ExportFile[], zipStem: string, download: DownloadFn): ExportOutcome {
   if (files.length === 1) {
     const file = files[0];
     const name = baseName(file.path);
-    download(new Blob([file.text], { type: name.endsWith('.json') ? 'application/json' : 'application/yaml' }), name);
+    download(new Blob([blobPart(file.content)], { type: mediaType(name) }), name);
     return { status: 'downloaded', name, files: [file.path] };
   }
   // ZIP の中はプロジェクトのルートからのパス（出力先のフォルダを含む）。プロジェクトのフォルダに展開すれば出力先に置かれる
-  const zip = zipFiles(files);
+  const zip = zipFiles(files.map((f) => ({ path: f.path, text: f.content })));
   const bytes = new Uint8Array(zip.byteLength);
   bytes.set(zip);
   const name = `${zipStem}.zip`;

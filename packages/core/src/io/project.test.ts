@@ -123,7 +123,7 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
       ['format_version: 1\n', IoCode.missingKey],
       ['storage:\n  format: yaml\n', IoCode.missingKey],
       ['format_version: 1\nstorage:\n  format: toml\n', IoCode.invalidStorageFormat],
-      [`${CONFIG_YAML}output:\n  format: csv\n`, IoCode.invalidOutputFormat],
+      [`${CONFIG_YAML}output:\n  format: xml\n`, IoCode.invalidOutputFormat],
     ];
     for (const [text, code] of cases) {
       const result = await loadProject(new MemoryProjectFs({ 'sheetcraft.yaml': text }));

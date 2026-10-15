@@ -57,7 +57,7 @@
   "io.unsupportedFormatVersion": "format_version {version} には対応していません（このツールが扱えるのは {supported} までです）。ツールを更新してください",
   "io.invalidFormatVersion": "format_version {version} は正しくありません（1 以上の整数にしてください）",
   "io.invalidStorageFormat": "storage.format に {value} は使えません（yaml か json にしてください）",
-  "io.invalidOutputFormat": "output.format に {value} は使えません（json か yaml にしてください）",
+  "io.invalidOutputFormat": "output.format に {value} は使えません（json・yaml・csv・protobuf のいずれかにしてください）",
   "io.invalidTimezone": "タイムゾーン {value} が見つかりません。ブラウザのタイムゾーンを使います",
   "io.multipleCommonFiles": "共通設定 {name} のファイルが複数あります（{files}）。1 つにしてください",
   "io.formatMismatch": "{path} の形式がプロジェクト設定の storage.format（{expected}）と違います",

@@ -1,4 +1,5 @@
 // 出力ファイルの生成（§9.1、FR-OUT-01〜05）。1 テーブル＝1 ファイル＝レコードの配列
+// （protobuf だけはテーブルごとにスキーマの .proto とバイナリの .pb の 2 ファイル。P-63）
 import type { RawValue } from '../model/cell';
 import type { Diagnostic } from '../model/diagnostic';
 import { hasErrors } from '../model/diagnostic';
@@ -13,6 +14,8 @@ import { emitJson, emitYaml, map, scalar, seq, SerializeError } from '../io/emit
 import { validateCommon, validateTable } from '../validate';
 import { checkDefaultValue, checkRawValue } from '../validate/values';
 import { ExportCode } from './codes';
+import { emitCsv } from './csv';
+import { emitProtoSchema, encodeProtoTable, isProtoIdentifier, protoFieldConflicts, protoMessageNames } from './protobuf';
 
 export interface ExportOptions {
   /** 出力するテーブル（省略時はすべて） */
@@ -29,12 +32,15 @@ export interface ExportFile {
   /** プロジェクトのルートからの相対パス */
   path: string;
   table: string;
-  text: string;
+  /** テキスト（UTF-8 で書く）か、バイナリ（protobuf の .pb） */
+  content: string | Uint8Array;
 }
 
 export interface ExportResult {
   /** 出力してよいか（エラーが無い、または force） */
   ok: boolean;
+  /** force でも出力できないエラーがある（protobuf の名前の問題。P-63） */
+  blocked: boolean;
   /** 出力するファイル。ok でなければ空（FR-OUT-05） */
   files: ExportFile[];
   /** 読み込み時の診断と検査の結果（出力するテーブルと共通設定の分） */
@@ -77,25 +83,79 @@ function outValue(raw: RawValue | undefined, type: FieldType): OutNode {
   return scalar(raw);
 }
 
+/** 出力する列（export: false の列を除く。共通列が先）と、レコードごとの型付きの値（未入力・型に合わない値は undefined） */
+function exportRows(calc: Calculator, table: Table): { columns: FieldDef[]; rows: (RawValue | undefined)[][] } {
+  const columns = uniqueColumns(calc.columns(table)).filter(isFieldExported);
+  const enums = columns.map((column) => calc.enumValues(column));
+  const rows = table.records.map((record) =>
+    columns.map((column, i) => typedRaw(calc.getCell(table, record.uid, column.name), column, enums[i])),
+  );
+  return { columns, rows };
+}
+
 /**
  * テーブルの出力ファイルのテキスト（FR-OUT-02〜04）。キーは列の順（共通列が先）で、export: false の列と
  * 列定義に無いキーは出さない。式は計算結果、未入力は default か null（実効値。P-10）。
  * 列の型に合わない値と式のエラーは null（P-51。各列は「その列の型の値か null」になる）
  */
-export function exportTableText(calc: Calculator, table: Table, format: OutputFormat): string {
-  const columns = uniqueColumns(calc.columns(table)).filter(isFieldExported);
-  const enums = columns.map((column) => calc.enumValues(column));
-  const rows = table.records.map((record) =>
-    map(
-      columns.map((column, i): [string, OutNode] => [
-        column.name,
-        outValue(typedRaw(calc.getCell(table, record.uid, column.name), column, enums[i]), column.type),
-      ]),
-      false,
+export function exportTableText(calc: Calculator, table: Table, format: 'json' | 'yaml' | 'csv'): string {
+  const { columns, rows } = exportRows(calc, table);
+  if (format === 'csv') return emitCsv(columns, rows);
+  const root = seq(
+    rows.map((row) =>
+      map(
+        columns.map((column, i): [string, OutNode] => [column.name, outValue(row[i], column.type)]),
+        false,
+      ),
     ),
+    false,
   );
-  const root = seq(rows, false);
   return format === 'yaml' ? emitYaml(root) : emitJson(root);
+}
+
+/** テーブルの出力ファイル（パスは出力先のフォルダからの相対パス）。protobuf はスキーマとバイナリの 2 つ */
+function exportTableFiles(calc: Calculator, table: Table, format: OutputFormat): { name: string; content: string | Uint8Array }[] {
+  if (format !== 'protobuf') return [{ name: `${table.name}.${format}`, content: exportTableText(calc, table, format) }];
+  const { columns, rows } = exportRows(calc, table);
+  return [
+    { name: `${table.name}.proto`, content: emitProtoSchema(table.name, table.display_name, columns) },
+    { name: `${table.name}.pb`, content: encodeProtoTable(columns, rows) },
+  ];
+}
+
+/**
+ * protobuf で出せないテーブルの診断（P-63）: 同じパッケージの中でメッセージ名が重なるテーブル（foo の FooTable と
+ * foo_table など）、JSON 名が重なる列（a_1 と a1 など。protoc がエラーにする）、proto の識別子にならない名前
+ * （_1 のメッセージ名 1、ファイルで書いた書式に合わないテーブル名・列名。--force では列名の書式エラーも出力に進むため）
+ */
+function protobufDiagnostics(calc: Calculator, all: readonly (Table | BrokenTable)[], selected: readonly Table[]): Diagnostic[] {
+  const owners = new Map<string, string[]>();
+  for (const t of all) {
+    for (const message of protoMessageNames(t.name)) owners.set(message, [...(owners.get(message) ?? []), t.name]);
+  }
+  const ds: Diagnostic[] = [];
+  for (const table of selected) {
+    const [record] = protoMessageNames(table.name);
+    if (!isProtoIdentifier(record)) {
+      ds.push({ severity: 'error', code: ExportCode.protoInvalidName, table: table.name, params: { name: table.name, proto: record } });
+    }
+    for (const message of protoMessageNames(table.name)) {
+      const others = (owners.get(message) ?? []).filter((name) => name !== table.name);
+      if (others.length > 0) {
+        ds.push({ severity: 'error', code: ExportCode.protoMessageConflict, table: table.name, params: { message, other: others.join(', ') } });
+      }
+    }
+    const columns = uniqueColumns(calc.columns(table)).filter(isFieldExported);
+    for (const column of columns) {
+      if (!isProtoIdentifier(column.name)) {
+        ds.push({ severity: 'error', code: ExportCode.protoInvalidName, table: table.name, field: column.name, params: { name: column.name, proto: column.name } });
+      }
+    }
+    for (const [a, b] of protoFieldConflicts(columns)) {
+      ds.push({ severity: 'error', code: ExportCode.protoFieldConflict, table: table.name, field: b, params: { field: b, other: a } });
+    }
+  }
+  return ds;
 }
 
 /**
@@ -126,16 +186,22 @@ export function planExport(project: Project, calc: Calculator, options: ExportOp
     if (table.kind === 'table') diagnostics.push(...validateTable(project, calc, table));
   }
 
-  const force = options.force === true;
-  if (hasErrors(diagnostics) && !force) return { ok: false, files: [], diagnostics };
+  const tables = selected.filter((t): t is Table => t.kind === 'table');
+  // 名前の重なりは force でも出さない（protoc が読めないスキーマになる）
+  const blocking = format === 'protobuf' ? protobufDiagnostics(calc, all, tables) : [];
+  diagnostics.push(...blocking);
 
-  const ext = format === 'yaml' ? 'yaml' : 'json';
+  const force = options.force === true;
+  const blocked = blocking.length > 0;
+  if (blocked || (hasErrors(diagnostics) && !force)) return { ok: false, blocked, files: [], diagnostics };
+
   const files: ExportFile[] = [];
   let failed = false;
-  for (const table of selected) {
-    if (table.kind !== 'table') continue;
+  for (const table of tables) {
     try {
-      files.push({ path: joinPath(outDir, `${table.name}.${ext}`), table: table.name, text: exportTableText(calc, table, format) });
+      for (const file of exportTableFiles(calc, table, format)) {
+        files.push({ path: joinPath(outDir, file.name), table: table.name, content: file.content });
+      }
     } catch (e) {
       // DR-35: NaN・Infinity は書き出せない（ファイルの値も式の結果も型の検査で除かれるので、通常は起きない）
       if (!(e instanceof SerializeError)) throw e;
@@ -143,6 +209,6 @@ export function planExport(project: Project, calc: Calculator, options: ExportOp
       failed = true;
     }
   }
-  if (failed && !force) return { ok: false, files: [], diagnostics };
-  return { ok: true, files, diagnostics };
+  if (failed && !force) return { ok: false, blocked: false, files: [], diagnostics };
+  return { ok: true, blocked: false, files, diagnostics };
 }

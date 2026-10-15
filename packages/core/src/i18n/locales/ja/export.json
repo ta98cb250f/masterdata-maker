@@ -1,3 +1,6 @@
 {
-  "export.unknownTable": "テーブル {name} はありません"
+  "export.unknownTable": "テーブル {name} はありません",
+  "export.protoMessageConflict": "Protocol Buffers のメッセージ名 {message} がテーブル {other} と重なるため出力できません（テーブル名を変えてください）",
+  "export.protoFieldConflict": "列 {field} と列 {other} は Protocol Buffers の JSON 名が重なるため出力できません（どちらかの列名を変えてください）",
+  "export.protoInvalidName": "名前 {name} は Protocol Buffers の名前（{proto}）にできないため出力できません（英小文字で始まり、英小文字・数字・_ だけの名前にしてください）"
 }

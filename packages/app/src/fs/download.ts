@@ -77,9 +77,9 @@ export function browserDownload(blob: Blob, fileName: string): void {
 }
 
 /** 保存する内容を ZIP にする（パスはプロジェクトのルートからの相対パス） */
-export function zipFiles(files: readonly { path: string; text: string }[]): Uint8Array {
+export function zipFiles(files: readonly { path: string; text: string | Uint8Array }[]): Uint8Array {
   const data: Record<string, Uint8Array> = {};
-  for (const file of files) data[file.path] = strToU8(file.text);
+  for (const file of files) data[file.path] = typeof file.text === 'string' ? strToU8(file.text) : file.text;
   return zipSync(data, { level: 6, mtime: new Date() });
 }
 

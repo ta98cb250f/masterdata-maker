@@ -1,7 +1,7 @@
 import type { ColorDef, CommonPartName, EnumDef } from '../model/common';
 import type { FieldDef } from '../model/field';
-import type { OutputFormat, ProjectConfig } from '../model/project';
-import { CURRENT_FORMAT_VERSION } from '../model/project';
+import type { ProjectConfig } from '../model/project';
+import { CURRENT_FORMAT_VERSION, isOutputFormat } from '../model/project';
 import type { SourceFile, StorageFormat } from '../model/source';
 import { IoCode } from './codes';
 import { decodeFieldList } from './decode-field';
@@ -100,7 +100,7 @@ export function decodeProjectConfig(root: SrcNode | null, r: Reporter, source: S
         for (const e of map.entries) {
           if (e.key === 'format') {
             const v = decodeStringValue(e.value, r, 'output.format');
-            if (v === 'json' || v === 'yaml') output.format = v as OutputFormat;
+            if (v !== undefined && isOutputFormat(v)) output.format = v;
             else if (v !== undefined) r.error(IoCode.invalidOutputFormat, e.value.pos, { value: v });
           } else if (e.key === 'out_dir') {
             const v = decodeStringValue(e.value, r, 'output.out_dir');
