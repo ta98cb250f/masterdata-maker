@@ -1,7 +1,9 @@
-// メニューバー（FR-UI-01）。項目は操作の登録簿から作る。Alt+Shift+F などで開ける（Googleスプレッドシートと同じ。NFR-40）
+// メニューバー（FR-UI-01）。項目は操作の登録簿から作る。Alt+Shift+F などで開ける（Googleスプレッドシートと同じ。NFR-40）。
+// F6 で移ってきたときは ← → で隣のメニューへ、Enter・↓ で開き、Esc でグリッドへ戻る
 import { useEffect, useRef, useState } from 'react';
 import type { MenuId } from '../commands/registry';
 import { MENU_IDS } from '../commands/registry';
+import { moveAmongButtons } from './focusRegions';
 import { useAppState, useStore, useT } from '../store/hooks';
 import type { MenuListItem } from './MenuList';
 import { MenuList, shortcutText } from './MenuList';
@@ -78,7 +80,15 @@ export function MenuBar() {
   const anchor = open === null ? undefined : buttons.current.get(open)?.getBoundingClientRect();
 
   return (
-    <nav ref={navRef} className="sc-menubar" aria-label={t('ui.menu.label')}>
+    <nav
+      ref={navRef}
+      className="sc-menubar"
+      aria-label={t('ui.menu.label')}
+      data-region="menubar"
+      onKeyDown={(e) => {
+        if (open === null) moveAmongButtons(e, navRef.current);
+      }}
+    >
       {MENU_IDS.map((menu) => (
         <button
           key={menu}

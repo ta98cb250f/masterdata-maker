@@ -44,6 +44,7 @@ export const FORMULA_MESSAGE_CODES = [
   'formula.dateOutOfRange',
   // REF と循環参照（ホスト側が使う）
   'formula.ref.tableNotFound',
+  'formula.ref.tableBroken',
   'formula.ref.columnNotFound',
   'formula.ref.keyNotFound',
   'formula.circular',
@@ -73,6 +74,11 @@ export function formulaError(
 /** REF の参照先のテーブルが無い（P-31）。EvalScope.ref の実装で使う */
 export function refTableNotFound(table: string): FormulaError {
   return formulaError('#REF!', 'formula.ref.tableNotFound', { table });
+}
+
+/** REF の参照先のテーブルが読み込みエラー（P-40）。テーブルはあるので「ありません」とは言わない */
+export function refTableBroken(table: string): FormulaError {
+  return formulaError('#REF!', 'formula.ref.tableBroken', { table });
 }
 
 /** REF の参照先の列が無い（P-31） */

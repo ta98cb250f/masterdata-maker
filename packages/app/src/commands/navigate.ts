@@ -15,6 +15,7 @@ import {
   selectCols,
   selectRows,
 } from '@sheetcraft/core';
+import { openSheetList } from '../components/focusRegions';
 import type { AppStore } from '../store/AppStore';
 import { emptyCellTest, gridReady } from './helpers';
 import type { CommandDef } from './registry';
@@ -88,5 +89,15 @@ export const navigateCommands: CommandDef[] = [
     shortcut: 'prevSheet',
     enabled: (store) => store.tabs().length > 1,
     run: (store) => store.moveActiveTable(-1),
+  },
+  {
+    // 全シートの一覧（シートタブの ≡ と同じ一覧）を開く
+    id: 'nav.sheetList',
+    labelKey: 'sheet.shortcut.showSheetList',
+    shortcut: 'showSheetList',
+    enabled: (store) => store.tabs().length > 0,
+    run: (store) => {
+      openSheetList(store);
+    },
   },
 ];

@@ -7,7 +7,7 @@ export type Platform = 'mac' | 'other';
 /** grid: セルを選んでいるとき（編集していない） / edit: セルを編集しているとき */
 export type ShortcutContext = 'grid' | 'edit';
 
-export type ShortcutCategory = 'common' | 'navigate' | 'select' | 'edit' | 'notes' | 'rowsCols' | 'sheets';
+export type ShortcutCategory = 'common' | 'navigate' | 'select' | 'edit' | 'notes' | 'rowsCols' | 'sheets' | 'focus';
 
 export type ShortcutId =
   | 'copy'
@@ -61,7 +61,11 @@ export type ShortcutId =
   | 'deleteRowsCols'
   | 'hideColumns'
   | 'nextSheet'
-  | 'prevSheet';
+  | 'prevSheet'
+  | 'showSheetList'
+  | 'focusNextRegion'
+  | 'focusPrevRegion'
+  | 'focusPanel';
 
 /** キーの組み合わせ */
 export interface KeyChord {
@@ -177,6 +181,16 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   // シート（Mac は Option+↓ / Option+↑）
   def('nextSheet', 'sheets', GRID, [mod('PageDown', { shift: true })], [plain('ArrowDown', { alt: true })]),
   def('prevSheet', 'sheets', GRID, [mod('PageUp', { shift: true })], [plain('ArrowUp', { alt: true })]),
+  // 全シートの一覧: 公式ヘルプの本文は未検証（解説サイトでは Alt+Shift+K / Option+Shift+K）
+  def('showSheetList', 'sheets', GRID, [plain('k', { alt: true, shift: true })]),
+
+  // フォーカスの移動（NFR-40）。グリッドでは Tab がセルの移動に使われるので、メニューバー・ツールバー・数式バー・グリッド・
+  // パネル・シートタブの間は F6 / Shift+F6 で巡回する（Googleスプレッドシートの公式ヘルプでは確かめられなかった。
+  // Excel・ブラウザの「次の領域へ」の慣例に合わせた判断）
+  def('focusNextRegion', 'focus', BOTH, [plain('F6')]),
+  def('focusPrevRegion', 'focus', BOTH, [plain('F6', { shift: true })]),
+  // パネルへ移る: Googleスプレッドシートの「サイドパネルに移動」（Ctrl+Alt+. / Ctrl+Alt+,）。Mac の ⌘+Option は未検証
+  def('focusPanel', 'focus', BOTH, [mod('.', { alt: true }), mod(',', { alt: true })]),
 ];
 
 const SHORTCUT_BY_ID: ReadonlyMap<ShortcutId, ShortcutDef> = new Map(SHORTCUTS.map((s) => [s.id, s]));
@@ -215,6 +229,8 @@ const CODE_KEYS: Readonly<Record<string, string>> = {
   Equal: '=',
   Minus: '-',
   Slash: '/',
+  Period: '.',
+  Comma: ',',
   Space: 'Space',
 };
 

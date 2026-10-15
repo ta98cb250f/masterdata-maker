@@ -20,6 +20,7 @@ import {
   rawToValue,
   refColumnNotFound,
   refKeyNotFound,
+  refTableBroken,
   refTableNotFound,
 } from '../formula';
 import type { EvalScope, FormulaDependencies, FValue, ParseResult } from '../formula';
@@ -210,6 +211,11 @@ export class Calculator {
   /** テーブルの主キーの列 */
   primaryColumn(table: Table | string): FieldDef | undefined {
     return this.stateFor(table)?.primary;
+  }
+
+  /** 読み込みエラーのテーブル（P-40）の名前か。findTable で見つからない理由を見分ける（参照先の文言を「ありません」にしない） */
+  isBrokenTable(name: string): boolean {
+    return this.project.brokenTables.some((t) => t.name === name);
   }
 
   /** 名前でテーブルを探す（読み込みエラーのテーブルは含まない） */
@@ -663,7 +669,7 @@ export class Calculator {
   /** REF の解決（P-31）。参照先テーブルの主キーで照合する */
   private lookupRef(tableName: string, key: FValue, columnName: string): FValue {
     const table = this.findTable(tableName);
-    if (table === undefined) return refTableNotFound(tableName);
+    if (table === undefined) return this.isBrokenTable(tableName) ? refTableBroken(tableName) : refTableNotFound(tableName);
     const state = this.states.get(table) ?? this.createState(table);
     const column = state.byLower.get(columnName);
     if (column === undefined) return refColumnNotFound(tableName, columnName);

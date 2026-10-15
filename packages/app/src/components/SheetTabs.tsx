@@ -1,9 +1,14 @@
 // シートタブ（FR-UI-05）: 新しいテーブルを足す +、全シートの一覧（≡）、テーブルごとのタブ（未保存の印・エラーの件数）。
-// 並びは P-06（テーブル名の昇順）
-import { useLayoutEffect, useRef, useState } from 'react';
+// 並びは P-06（テーブル名の昇順）。
+// キー操作（NFR-40）: F6 で移ってくると表示中のタブにフォーカスが入る。← → と Home / End でボタンの間を動き、Enter・Space で
+// そのテーブルを開く。Shift+F10（ContextMenu キー）でタブの右クリックメニュー、F2 で名前の変更、Esc でグリッドへ戻る。
+// 全シートの一覧は Alt+Shift+K でも開け、Esc で閉じると開く前の場所へフォーカスを戻す
+import type { KeyboardEvent, MouseEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { dispatchContextMenu } from '../grid/extensions';
 import { GRID_EXTENSIONS } from '../grid/extensions/index';
 import { useAppState, useStore, useT } from '../store/hooks';
+import { moveAmongButtons, registerSheetListOpener } from './focusRegions';
 import { ErrorIcon, ListIcon, PlusIcon } from './icons';
 import type { MenuListItem } from './MenuList';
 import { MenuList } from './MenuList';
@@ -21,11 +26,44 @@ export function SheetTabs() {
   const [listOpen, setListOpen] = useState(false);
   const listButton = useRef<HTMLButtonElement>(null);
   const activeTab = useRef<HTMLButtonElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  /** 全シートの一覧を開く前にフォーカスがあった要素（Esc で閉じたときに戻す） */
+  const returnFocus = useRef<Element | null>(null);
   const tabs = store.tabs();
 
   useLayoutEffect(() => {
     activeTab.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [active]);
+
+  useEffect(() => {
+    registerSheetListOpener(store, () => {
+      returnFocus.current = document.activeElement;
+      setListOpen(true);
+    });
+    return () => registerSheetListOpener(store, null);
+  }, [store]);
+
+  const closeList = () => {
+    setListOpen(false);
+    const back = returnFocus.current;
+    returnFocus.current = null;
+    if (back instanceof HTMLElement && back.isConnected && back !== document.body) back.focus({ preventScroll: true });
+    else store.focusGrid();
+  };
+
+  const openTabMenu = (uid: number, x: number, y: number): boolean =>
+    dispatchContextMenu(store, GRID_EXTENSIONS, { area: 'sheetTab', table: uid, clientX: x, clientY: y });
+
+  const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>, uid: number) => {
+    if ((e.key === 'F10' && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) || e.key === 'ContextMenu') {
+      const r = e.currentTarget.getBoundingClientRect();
+      e.preventDefault();
+      openTabMenu(uid, r.left + 8, r.top);
+    } else if (e.key === 'F2' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      void store.run('table.rename', { table: uid });
+    }
+  };
 
   const listItems: MenuListItem[] = tabs.map((tab) => ({
     kind: 'item',
@@ -41,7 +79,7 @@ export function SheetTabs() {
   const rect = listButton.current?.getBoundingClientRect();
 
   return (
-    <div className="sc-sheetbar">
+    <div className="sc-sheetbar" ref={barRef} data-region="sheetTabs" onKeyDown={(e) => !listOpen && moveAmongButtons(e, barRef.current)}>
       <button
         type="button"
         className="sc-icon-button"
@@ -49,6 +87,8 @@ export function SheetTabs() {
         aria-label={t('ui.sheets.add')}
         disabled={!store.isEnabled(CREATE_TABLE_COMMAND)}
         onClick={() => void store.run(CREATE_TABLE_COMMAND)}
+        // テーブルが 1 つも無いときは、F6 で入ったときにここにフォーカスを置く
+        data-region-fallback=""
         data-testid="sheet-add"
       >
         <PlusIcon />
@@ -60,7 +100,10 @@ export function SheetTabs() {
         title={t('ui.sheets.all')}
         aria-label={t('ui.sheets.all')}
         aria-haspopup="menu"
-        onClick={() => setListOpen(!listOpen)}
+        onClick={() => {
+          returnFocus.current = document.activeElement;
+          setListOpen(!listOpen);
+        }}
         data-testid="sheet-list"
       >
         <ListIcon />
@@ -69,7 +112,7 @@ export function SheetTabs() {
         <div className="sc-menu-layer" onMouseDown={(e) => e.target === e.currentTarget && setListOpen(false)}>
           <MenuList
             items={listItems}
-            onClose={() => setListOpen(false)}
+            onClose={closeList}
             initialIndex={Math.max(0, tabs.findIndex((tab) => tab.uid === active))}
             style={{ position: 'fixed', left: rect.left, bottom: window.innerHeight - rect.top + 4 }}
             testId="sheet-list-menu"
@@ -88,6 +131,9 @@ export function SheetTabs() {
               type="button"
               role="tab"
               aria-selected={selected}
+              // Tab で入るのは表示中のタブだけ（ほかのタブへは ← →）
+              tabIndex={selected ? 0 : -1}
+              data-region-focus={selected ? '' : undefined}
               className={`sc-tab${selected ? ' active' : ''}${tab.broken ? ' broken' : ''}`}
               title={tab.label === tab.name ? tab.name : `${tab.label} (${tab.name})`}
               data-testid={`sheet-tab-${tab.name}`}
@@ -97,9 +143,14 @@ export function SheetTabs() {
                 store.focusGrid();
               }}
               onDoubleClick={() => void store.run('table.rename', { table: tab.uid })}
-              onContextMenu={(e) => {
-                const handled = dispatchContextMenu(store, GRID_EXTENSIONS, { area: 'sheetTab', table: tab.uid, clientX: e.clientX, clientY: e.clientY });
-                if (handled) e.preventDefault();
+              onKeyDown={(e) => onTabKeyDown(e, tab.uid)}
+              onContextMenu={(e: MouseEvent<HTMLButtonElement>) => {
+                // キーで開いたメニューの後に、ブラウザの contextmenu が続いても開き直さない
+                if (store.getState().contextMenu !== null) {
+                  e.preventDefault();
+                  return;
+                }
+                if (openTabMenu(tab.uid, e.clientX, e.clientY)) e.preventDefault();
               }}
             >
               {tab.broken && (

@@ -8,6 +8,7 @@
   "sheet.shortcutCategory.notes": "メモ",
   "sheet.shortcutCategory.rowsCols": "行と列",
   "sheet.shortcutCategory.sheets": "シート",
+  "sheet.shortcutCategory.focus": "フォーカスの移動",
   "sheet.shortcut.copy": "コピー",
   "sheet.shortcut.cut": "切り取り",
   "sheet.shortcut.paste": "貼り付け",
@@ -59,5 +60,9 @@
   "sheet.shortcut.deleteRowsCols": "行を削除（行を選択しているとき）・列を削除（列を選択しているとき）",
   "sheet.shortcut.hideColumns": "列を非表示",
   "sheet.shortcut.nextSheet": "次のシートへ移動",
-  "sheet.shortcut.prevSheet": "前のシートへ移動"
+  "sheet.shortcut.prevSheet": "前のシートへ移動",
+  "sheet.shortcut.showSheetList": "全シートの一覧を表示",
+  "sheet.shortcut.focusNextRegion": "次の領域へ移る（メニューバー・ツールバー・数式バー・グリッド・パネル・シートタブ）",
+  "sheet.shortcut.focusPrevRegion": "前の領域へ移る",
+  "sheet.shortcut.focusPanel": "開いているパネルへ移る"
 }

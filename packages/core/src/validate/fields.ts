@@ -8,7 +8,7 @@ import { parseIsoOffset } from '../util/datetime';
 import { ValidateCode } from './codes';
 import { formulaIssue, staticFormulaErrors, withCause } from './formula';
 import { compileRegex } from './regex';
-import { checkRawValue, rawText } from './values';
+import { checkDefaultValue, rawText } from './values';
 
 /** J-13: 列名の書式（英小文字・数字・_。先頭は数字以外。true / false は不可） */
 const COLUMN_NAME_RE = /^[a-z_][a-z0-9_]*$/;
@@ -149,13 +149,8 @@ export function checkFieldDef(ctx: FieldCheckContext, field: FieldDef, sink: Dia
   // default の値が型に合うこと（"" は文字列と列挙型、[] はリストで使える。J-02、P-11）
   const def = field.default;
   if (def !== undefined) {
-    const emptyAllowed =
-      (def === '' && (type === 'string' || type === 'enum')) ||
-      (Array.isArray(def) && def.length === 0 && isListType(type));
-    if (!emptyAllowed) {
-      for (const issue of checkRawValue(def, field, ctx.calc.enumValues(field))) {
-        error(ValidateCode.invalidDefault, withCause({ value: rawText(def) }, issue.code, issue.params));
-      }
+    for (const issue of checkDefaultValue(def, field, ctx.calc.enumValues(field))) {
+      error(ValidateCode.invalidDefault, withCause({ value: rawText(def) }, issue.code, issue.params));
     }
   }
   return formulaFailed;
@@ -174,7 +169,8 @@ function checkRef(
   }
   const table = ctx.calc.findTable(target.table);
   if (table === undefined) {
-    error(ValidateCode.refTableNotFound, { ref, table: target.table });
+    // 読み込みエラーのテーブル（P-40）はファイルがあるので、「ありません」ではなく読み込みエラーであることを示す
+    error(ctx.calc.isBrokenTable(target.table) ? ValidateCode.refTableBroken : ValidateCode.refTableNotFound, { ref, table: target.table });
     return;
   }
   const column = ctx.calc.columns(table).find((c) => c.name === target.column);

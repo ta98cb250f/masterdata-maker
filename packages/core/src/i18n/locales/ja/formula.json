@@ -32,6 +32,7 @@
   "formula.dateYearOutOfRange": "年（{value}）は 0 以上 10000 未満にしてください",
   "formula.dateOutOfRange": "日時が扱える範囲を超えました",
   "formula.ref.tableNotFound": "テーブル「{table}」はありません",
+  "formula.ref.tableBroken": "テーブル「{table}」は読み込みエラーのため参照できません",
   "formula.ref.columnNotFound": "テーブル「{table}」に列「{column}」はありません",
   "formula.ref.keyNotFound": "テーブル「{table}」にキー「{key}」のレコードはありません",
   "formula.circular": "循環参照があります",

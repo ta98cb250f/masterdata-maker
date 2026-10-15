@@ -120,7 +120,7 @@ export function FormulaBar() {
   };
 
   return (
-    <div className="sc-formulabar">
+    <div className="sc-formulabar" data-region="formulaBar">
       <NameBox location={info?.location ?? ''} />
       <div className="sc-fx-label">fx</div>
       {info?.badge !== null && info?.badge !== undefined && editing === null && (

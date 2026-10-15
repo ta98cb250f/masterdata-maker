@@ -2,6 +2,7 @@
 import type { ShortcutId } from '@sheetcraft/core';
 import type { ComponentType } from 'react';
 import type { CommandDef } from '../commands/registry';
+import { panelRegion, requestRegionFocus } from '../components/focusRegions';
 import type { AppStore } from '../store/AppStore';
 import type { PanelPosition } from '../store/types';
 
@@ -23,7 +24,7 @@ export interface PanelDef {
   shortcut?: ShortcutId;
 }
 
-/** パネルの開閉の操作（`panel.<id>`）。表示メニューやキー操作から呼ぶ */
+/** パネルの開閉の操作（`panel.<id>`）。表示メニューやキー操作から呼ぶ。開いたらフォーカスをパネルへ移す（NFR-40） */
 export function panelCommand(def: PanelDef): CommandDef {
   return {
     id: `panel.${def.id}`,
@@ -32,6 +33,9 @@ export function panelCommand(def: PanelDef): CommandDef {
     menu: def.menu === undefined ? undefined : { menu: 'view', ...def.menu },
     enabled: (store) => store.project !== null,
     checked: (store) => store.isPanelOpen(def.id),
-    run: (store) => store.togglePanel(def.id, def.position),
+    run: (store) => {
+      if (store.getState().panels[def.position] !== def.id) requestRegionFocus(store, panelRegion(def.position));
+      store.togglePanel(def.id, def.position);
+    },
   };
 }

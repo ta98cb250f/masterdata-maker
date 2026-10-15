@@ -21,6 +21,7 @@ export {
   formulaError,
   refColumnNotFound,
   refKeyNotFound,
+  refTableBroken,
   refTableNotFound,
 } from './errors';
 export type { FormulaMessageCode } from './errors';

@@ -103,6 +103,8 @@ export function NameBox({ location }: { location: string }) {
         tabIndex={0}
         role="button"
         aria-label={t('ui.nameBox.label')}
+        // F6 で数式バーの領域に入ったときは、ここにフォーカスを置く（Tab で数式の入力欄へ。NFR-40）
+        data-region-focus=""
         data-testid="name-box"
         onClick={start}
         onKeyDown={(e) => {

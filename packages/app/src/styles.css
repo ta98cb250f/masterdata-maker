@@ -338,6 +338,12 @@ button {
   flex: 1;
   overflow: auto;
 }
+/* F6 などでキーから入ったときに、フォーカスの位置が分かるようにする（NFR-40） */
+.sc-panel-body:focus-visible,
+.sc-tab:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: -2px;
+}
 
 /* ---- グリッド ---- */
 .sc-grid {

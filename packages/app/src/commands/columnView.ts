@@ -1,12 +1,13 @@
-// 列の固定・非表示（FR-COL-07、08）。表示設定のパッチとして当てるので、元に戻せる（FR-HIS-01）
+// 列の固定・非表示・幅（FR-COL-06〜08）。表示設定のパッチとして当てるので、元に戻せる（FR-HIS-01）。
+// 列のサイズの変更は、境界のドラッグ（grid/Grid.tsx）をキーボードだけでも行えるようにするもの（NFR-40。dialogs/columnResize.tsx）
 import { setColumnsHidden, setFrozenColumns } from '@sheetcraft/core';
 import type { AppStore } from '../store/AppStore';
 import { gridReady } from './helpers';
 import type { CommandDef } from './registry';
 import { columnTarget } from './sortFilter';
 
-/** 非表示にする列: 引数の列が選択範囲の中なら選択範囲の列、そうでなければ引数の列（省略時は選択範囲の列） */
-function columnsToHide(store: AppStore, args?: unknown): { uid: number; columns: string[] } | null {
+/** 対象の列（非表示・幅）: 引数の列が選択範囲の中なら選択範囲の列、そうでなければ引数の列（省略時は選択範囲の列） */
+export function targetColumns(store: AppStore, args?: unknown): { uid: number; columns: string[] } | null {
   const uid = store.getState().activeTable;
   const sheet = store.sheet(uid);
   if (uid === null || sheet === null || sheet.size.cols === 0) return null;
@@ -51,12 +52,12 @@ export const columnViewCommands: CommandDef[] = [
   {
     id: 'column.hide',
     labelKey: 'ui.colView.hide',
-    label: (store) => store.t('ui.colView.hideCount', { count: columnsToHide(store)?.columns.length ?? 1 }),
+    label: (store) => store.t('ui.colView.hideCount', { count: targetColumns(store)?.columns.length ?? 1 }),
     shortcut: 'hideColumns',
     menu: { menu: 'view', group: 10, order: 2 },
-    enabled: (store) => gridReady(store) && columnsToHide(store) !== null,
+    enabled: (store) => gridReady(store) && targetColumns(store) !== null,
     run: (store, args) => {
-      const t = columnsToHide(store, args);
+      const t = targetColumns(store, args);
       const project = store.project;
       const sheet = store.sheet();
       if (t === null || project === null || sheet === null) return;
@@ -66,6 +67,17 @@ export const columnViewCommands: CommandDef[] = [
         return;
       }
       store.applyOrReport(setColumnsHidden(project, { table: t.uid, columns: t.columns, hidden: true }));
+    },
+  },
+  {
+    // 列のサイズを変更（Googleスプレッドシートの列ヘッダーの右クリックメニューと同じ）。ピクセル数か既定の幅を選ぶ
+    id: 'column.resize',
+    labelKey: 'ui.colResize.command',
+    menu: { menu: 'view', group: 10, order: 4 },
+    enabled: (store) => gridReady(store) && targetColumns(store) !== null,
+    run: (store, args) => {
+      const t = targetColumns(store, args);
+      if (t !== null) store.openDialog('column.resize', t);
     },
   },
   {

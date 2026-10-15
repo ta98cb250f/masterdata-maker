@@ -1,5 +1,7 @@
-// ツールバー（FR-UI-01）。項目は操作の登録簿から作る。押してもグリッドのフォーカスを奪わない
-import { createElement } from 'react';
+// ツールバー（FR-UI-01）。項目は操作の登録簿から作る。押してもグリッドのフォーカスを奪わない。
+// F6 で移ってきたときは ← → と Home / End でボタンの間を動き、Enter・Space で押す（NFR-40）
+import { createElement, useRef } from 'react';
+import { moveAmongButtons } from './focusRegions';
 import { useAppState, useStore } from '../store/hooks';
 import { ICONS } from './icons';
 import { shortcutText } from './MenuList';
@@ -9,8 +11,9 @@ export function Toolbar() {
   // 使える・使えないは状態から決まるので、状態が変わるたびに描き直す（項目は少ない）
   useAppState((s) => s);
   const groups = store.commands.toolbarGroups();
+  const ref = useRef<HTMLDivElement>(null);
   return (
-    <div className="sc-toolbar" role="toolbar">
+    <div className="sc-toolbar" role="toolbar" ref={ref} data-region="toolbar" aria-label={store.t('ui.toolbar.label')} onKeyDown={(e) => moveAmongButtons(e, ref.current)}>
       {groups.map((group, gi) => (
         <div key={gi} className="sc-toolbar-group">
           {group.map((def) => {

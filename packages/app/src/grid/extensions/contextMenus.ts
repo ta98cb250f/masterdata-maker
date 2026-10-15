@@ -84,6 +84,8 @@ function columnHeaderMenu(store: AppStore, request: ContextMenuRequest): MenuEnt
     command('column.hide', { args }),
   ];
   if ((store.table(request.table)?.view.hidden_columns?.length ?? 0) > 0) items.push(command('column.showHidden'));
+  // 列のサイズを変更（境界のドラッグと同じことをキーボードでも。NFR-40）
+  items.push(command('column.resize', { args }));
   items.push(SEP, command('sort.asc', { args }), command('sort.desc', { args }), command('filter.open', { args }));
   return items;
 }

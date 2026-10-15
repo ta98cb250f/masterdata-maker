@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { MemoryProjectFs, RichCell, enterInput, extendTo, resolveShortcut, selectCell, selectColRange, selectRowRange } from '@sheetcraft/core';
+import { DEFAULT_COLUMN_WIDTH, MemoryProjectFs, RichCell, enterInput, extendTo, resolveShortcut, selectCell, selectColRange, selectRowRange, setColumnWidth } from '@sheetcraft/core';
 import { menuEntriesToItems } from '../components/MenuList';
+import { MAX_COLUMN_WIDTH, parseColumnWidth } from '../dialogs/columnResize';
 import { downloadSource } from '../fs/download';
 import { basicSampleFiles } from '../fs/sample';
 import { copySelection, pasteText } from '../grid/clipboard';
 import { planFill } from '../grid/dragMath';
+import { MIN_COLUMN_WIDTH } from '../grid/layout';
 import { contextMenuExtension } from '../grid/extensions/contextMenus';
 import { applyFill, autoFillDown, moveRange } from '../grid/extensions/fillHandle';
 import { moveDisplayedColumns, moveDisplayedRows } from '../grid/extensions/reorder';
@@ -293,6 +295,51 @@ describe('列の固定・非表示（FR-COL-07、08）と行の複製（FR-ROW-0
     expect(store.selection()?.ranges[0].top).toBe(1);
     store.undo();
     expect(sheet().size.rows).toBe(3);
+  });
+});
+
+describe('列のサイズを変更（FR-COL-06 をキーだけで。NFR-40）', () => {
+  it('選んだ列を対象にダイアログを開く。右クリックした列が選択の外なら、その列だけ。列ヘッダーの右クリックと表示メニューに載る', async () => {
+    const { store, sheet, col } = await open();
+    const table = store.getState().activeTable!;
+    const lastArgs = () => store.getState().dialogs.at(-1);
+    store.setSelection(selectColRange(col('name'), col('hp'), sheet().size));
+    store.run('column.resize');
+    expect(lastArgs()).toMatchObject({ id: 'column.resize', args: { uid: table, columns: ['name', 'rarity', 'hp'] } });
+    store.closeDialog();
+    store.run('column.resize', { column: 'rarity' });
+    expect(lastArgs()?.args).toMatchObject({ columns: ['name', 'rarity', 'hp'] });
+    store.closeDialog();
+    store.run('column.resize', { column: 'defense' });
+    expect(lastArgs()?.args).toMatchObject({ columns: ['defense'] });
+    store.closeDialog();
+
+    const colItems = contextMenuExtension.contextMenu?.({ area: 'columnHeader', table, col: col('hp'), column: 'hp', clientX: 0, clientY: 0 }, store) ?? [];
+    expect(colItems.flatMap((e) => (e.kind === 'command' ? [e.command] : []))).toContain('column.resize');
+    expect(store.commands.menuGroups('view').flat().map((d) => d.id)).toContain('column.resize');
+    expect(store.commandLabel('column.resize')).toBe('列のサイズを変更');
+  });
+
+  it('複数の列に同じ幅を当て、1 回で元に戻る。既定の幅（100）に戻すと view から消える', async () => {
+    const { store, sheet } = await open();
+    const table = store.getState().activeTable!;
+    const widths = () => sheet().columns.filter((c) => ['name', 'rarity', 'hp'].includes(c.name)).map((c) => c.width);
+    expect(widths()).toEqual([160, 100, 80]);
+    store.applyOrReport(setColumnWidth(store.project!, { table, columns: ['name', 'rarity', 'hp'], width: 120 }));
+    expect(widths()).toEqual([120, 120, 120]);
+    store.undo();
+    expect(widths()).toEqual([160, 100, 80]);
+    store.applyOrReport(setColumnWidth(store.project!, { table, columns: ['name', 'hp'], width: DEFAULT_COLUMN_WIDTH }));
+    expect(sheet().table.view.column_widths.map(([name]) => name)).not.toContain('name');
+    expect(sheet().table.view.column_widths.map(([name]) => name)).not.toContain('hp');
+  });
+
+  it('幅の入力の解釈（全角の数字も受け付ける。整数でない・範囲の外は受け付けない）', () => {
+    expect(parseColumnWidth('160')).toBe(160);
+    expect(parseColumnWidth(' １６０ ')).toBe(160);
+    expect(parseColumnWidth(String(MIN_COLUMN_WIDTH))).toBe(MIN_COLUMN_WIDTH);
+    expect(parseColumnWidth(String(MAX_COLUMN_WIDTH))).toBe(MAX_COLUMN_WIDTH);
+    for (const bad of ['', 'abc', '12.5', '-50', String(MIN_COLUMN_WIDTH - 1), String(MAX_COLUMN_WIDTH + 1)]) expect(parseColumnWidth(bad), bad).toBeNull();
   });
 });
 

@@ -23,7 +23,7 @@ export function TitleBar() {
     });
 
   return (
-    <header className="sc-titlebar">
+    <header className="sc-titlebar" data-region="title">
       <div className="sc-logo" aria-hidden="true">
         <span />
       </div>

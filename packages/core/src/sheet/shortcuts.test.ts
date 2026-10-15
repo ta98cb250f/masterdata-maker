@@ -62,6 +62,11 @@ describe('Windows のキー', () => {
     [ev('=', { ctrlKey: true, altKey: true }), 'insertRowsCols'],
     [ev('-', { ctrlKey: true, altKey: true }), 'deleteRowsCols'],
     [ev('PageDown', { ctrlKey: true, shiftKey: true }), 'nextSheet'],
+    [ev('K', { altKey: true, shiftKey: true }, 'KeyK'), 'showSheetList'],
+    [ev('F6'), 'focusNextRegion'],
+    [ev('F6', { shiftKey: true }), 'focusPrevRegion'],
+    [ev('.', { ctrlKey: true, altKey: true }, 'Period'), 'focusPanel'],
+    [ev(',', { ctrlKey: true, altKey: true }, 'Comma'), 'focusPanel'],
   ];
   it.each(cases)('%o → %s', (e, id) => {
     expect(win(e)).toBe(id);
@@ -109,6 +114,32 @@ describe('Mac のキー（⌘ を Ctrl として扱う）', () => {
     expect(mac(ev('–', { metaKey: true, altKey: true }, 'Minus'))).toBe('deleteRowsCols');
     expect(mac(ev('º', { metaKey: true, altKey: true }, 'Digit0'))).toBe('hideColumns');
     expect(mac(ev('ArrowDown', { altKey: true }))).toBe('nextSheet');
+    // Mac では Option+Shift+K は U+F8FF の文字、⌘+Option+. は ≥ になるので、物理キーの位置で判定する
+    expect(mac(ev('\uf8ff', { altKey: true, shiftKey: true }, 'KeyK'))).toBe('showSheetList');
+    expect(mac(ev('≥', { metaKey: true, altKey: true }, 'Period'))).toBe('focusPanel');
+    expect(mac(ev('≤', { metaKey: true, altKey: true }, 'Comma'))).toBe('focusPanel');
+  });
+});
+
+describe('フォーカスの移動（NFR-40）', () => {
+  it('F6 / Shift+F6 とパネルへ移るキーは、編集中も効く', () => {
+    for (const ctx of ['grid', 'edit'] as ShortcutContext[]) {
+      expect(win(ev('F6'), ctx)).toBe('focusNextRegion');
+      expect(win(ev('F6', { shiftKey: true }), ctx)).toBe('focusPrevRegion');
+      expect(mac(ev('F6'), ctx)).toBe('focusNextRegion');
+      expect(win(ev('.', { ctrlKey: true, altKey: true }, 'Period'), ctx)).toBe('focusPanel');
+    }
+    // 全シートの一覧は、セルを選んでいるときだけ（編集中の Alt+Shift+K は文字の入力に任せる）
+    expect(win(ev('K', { altKey: true, shiftKey: true }, 'KeyK'), 'edit')).toBeNull();
+  });
+
+  it('一覧に出す表記', () => {
+    expect(shortcutLabels(getShortcut('focusNextRegion')!, 'other')).toEqual(['F6']);
+    expect(shortcutLabels(getShortcut('focusPrevRegion')!, 'mac')).toEqual(['Shift+F6']);
+    expect(shortcutLabels(getShortcut('focusPanel')!, 'other')).toEqual(['Ctrl+Alt+.', 'Ctrl+Alt+,']);
+    expect(shortcutLabels(getShortcut('focusPanel')!, 'mac')).toEqual(['⌘+Option+.', '⌘+Option+,']);
+    expect(shortcutLabels(getShortcut('showSheetList')!, 'other')).toEqual(['Alt+Shift+K']);
+    expect(getShortcut('focusNextRegion')?.category).toBe('focus');
   });
 });
 

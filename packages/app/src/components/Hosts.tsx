@@ -1,10 +1,12 @@
 // ダイアログ・パネル・右クリックメニューを、store の状態に従って描く
 import type { ComponentType } from 'react';
+import { useEffect } from 'react';
 import { DIALOGS } from '../dialogs';
 import type { DialogProps } from '../dialogs/registry';
 import { PANELS } from '../panels';
 import type { PanelPosition } from '../store/types';
 import { useAppState, useStore, useT } from '../store/hooks';
+import { panelRegion, takeRegionFocus } from './focusRegions';
 import { CloseIcon } from './icons';
 import { MenuList, menuEntriesToItems } from './MenuList';
 
@@ -31,6 +33,10 @@ export function PanelHost({ position }: { position: PanelPosition }) {
   const t = useT();
   const id = useAppState((s) => s.panels[position]);
   const def = id === null ? undefined : PANEL_BY_ID.get(id);
+  // パネルを開く操作の後は、フォーカスをパネルへ移す（NFR-40。グリッドの Tab はセルの移動なので、Tab では入れない）
+  useEffect(() => {
+    if (id !== null) takeRegionFocus(store, panelRegion(position));
+  }, [store, id, position]);
   if (def === undefined) return null;
   const Component = def.component;
   const size = def.size ?? (position === 'right' ? 320 : 200);
@@ -39,6 +45,8 @@ export function PanelHost({ position }: { position: PanelPosition }) {
       className={`sc-panel sc-panel-${position}`}
       style={position === 'right' ? { width: size } : { height: size }}
       data-testid={`panel-${def.id}`}
+      data-region={panelRegion(position)}
+      aria-label={t(def.titleKey)}
     >
       <header className="sc-panel-header">
         <span>{t(def.titleKey)}</span>
@@ -46,7 +54,8 @@ export function PanelHost({ position }: { position: PanelPosition }) {
           <CloseIcon />
         </button>
       </header>
-      <div className="sc-panel-body">
+      {/* フォーカスを置ける部品が無いパネル（セル情報）は本体にフォーカスを置き、矢印キーでスクロールできるようにする */}
+      <div className="sc-panel-body" tabIndex={-1} data-region-fallback="">
         <Component store={store} close={() => store.closePanel(position)} />
       </div>
     </aside>

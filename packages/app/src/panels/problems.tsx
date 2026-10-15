@@ -1,5 +1,6 @@
 // 問題パネル（FR-UI-06。下側）: 全テーブルのエラー・警告の一覧（重大度・テーブル・主キー・列・メッセージ。FR-VAL-08）。
-// 行を押すと（または Enter）、そのテーブルに切り替えてセルを選ぶ。重大度で絞り込める
+// 行を押すと（または Enter）、そのテーブルに切り替えてセルを選ぶ。重大度で絞り込める。
+// パネルを開くと一覧にフォーカスが入り（NFR-40）、↑↓・Home / End・PageUp / PageDown で行を選んで Enter で移る。Esc でグリッドへ戻る
 import type { Diagnostic, Locale } from '@sheetcraft/core';
 import { formatDiagnostic, selectCell, selectColRange, selectRowRange } from '@sheetcraft/core';
 import type { KeyboardEvent } from 'react';
@@ -111,6 +112,11 @@ function ProblemsPanel({ store }: PanelProps) {
     return () => ro.disconnect();
   }, []);
 
+  // 一覧にフォーカスがあるのに行を選んでいなければ（開いた直後で検査の結果がまだ無かったときなど）、先頭の行を選ぶ
+  useLayoutEffect(() => {
+    if (active < 0 && rows.length > 0 && listRef.current !== null && document.activeElement === listRef.current) setActive(0);
+  }, [active, rows.length]);
+
   const open = (i: number) => {
     const row = rows[i];
     if (row === undefined) return;
@@ -119,7 +125,8 @@ function ProblemsPanel({ store }: PanelProps) {
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (rows.length === 0) return;
+    if (rows.length === 0 || e.altKey || e.ctrlKey || e.metaKey) return;
+    const page = Math.max(1, Math.floor((listRef.current?.clientHeight ?? ROW_HEIGHT) / ROW_HEIGHT) - 1);
     const go = (i: number) => {
       const next = Math.max(0, Math.min(rows.length - 1, i));
       setActive(next);
@@ -135,6 +142,12 @@ function ProblemsPanel({ store }: PanelProps) {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       go(active - 1);
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      go(e.key === 'Home' ? 0 : rows.length - 1);
+    } else if (e.key === 'PageDown' || e.key === 'PageUp') {
+      e.preventDefault();
+      go(Math.max(0, active) + (e.key === 'PageDown' ? page : -page));
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (active >= 0) open(active);
@@ -182,7 +195,13 @@ function ProblemsPanel({ store }: PanelProps) {
         tabIndex={0}
         aria-label={t('ui.problems.title')}
         onKeyDown={onKeyDown}
+        // キーで入ってきたら先頭の行を選んでおき、すぐ Enter で移れるようにする
+        onFocus={() => {
+          if (active < 0 && rows.length > 0) setActive(0);
+        }}
         onScroll={(e) => setScroll(e.currentTarget.scrollTop)}
+        aria-activedescendant={active >= 0 && active < rows.length ? `problem-${active}` : undefined}
+        data-region-focus=""
         data-testid="problems-list"
       >
         {rows.length === 0 && <div className="sc-problems-empty">{t(all.length === 0 ? 'ui.problems.none' : 'ui.problems.filtered')}</div>}
@@ -193,6 +212,7 @@ function ProblemsPanel({ store }: PanelProps) {
             return (
               <div
                 key={i}
+                id={`problem-${i}`}
                 role="option"
                 aria-selected={i === active}
                 className={`sc-problems-row ${sev}${i === active ? ' active' : ''}`}

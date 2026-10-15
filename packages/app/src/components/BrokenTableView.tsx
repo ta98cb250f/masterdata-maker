@@ -22,6 +22,7 @@ export function BrokenTableView({ table }: { table: BrokenTable }) {
       className="sc-broken"
       ref={ref}
       tabIndex={-1}
+      data-region-focus=""
       data-testid="broken-table"
       onKeyDown={(e) => {
         const id = resolveShortcut(e.nativeEvent, store.platform, 'grid');

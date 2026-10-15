@@ -40,6 +40,7 @@
   "validate.enumNotFound": "The enum {enum} does not exist",
   "validate.refInvalidFormat": "Write ref \"{ref}\" as <table>.<column>",
   "validate.refTableNotFound": "The table {table} referenced by ref \"{ref}\" does not exist",
+  "validate.refTableBroken": "The table {table} referenced by ref \"{ref}\" cannot be referenced because it failed to load. Fix that table's file first",
   "validate.refColumnNotFound": "The table {table} referenced by ref \"{ref}\" has no column {column}",
   "validate.refTargetNotUnique": "The column referenced by ref \"{ref}\" must be the primary key or a unique column",
   "validate.refTypeMismatch": "The type of the column referenced by ref \"{ref}\" ({target}) does not match the column type ({type})",

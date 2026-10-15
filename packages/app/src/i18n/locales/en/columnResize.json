@@ -1,0 +1,11 @@
+{
+  "ui.colResize.command": "Resize column",
+  "ui.colResize.titleOne": "Resize column \"{column}\"",
+  "ui.colResize.titleMany": "Resize {count} columns",
+  "ui.colResize.columns": "The same width is applied to the selected columns ({names})",
+  "ui.colResize.columnsMore": "The same width is applied to the selected columns ({names} and {count} more)",
+  "ui.colResize.pixels": "Enter a width in pixels",
+  "ui.colResize.unit": "pixels",
+  "ui.colResize.default": "Reset to the default width ({width} pixels)",
+  "ui.colResize.invalid": "Enter a whole number from {min} to {max}"
+}

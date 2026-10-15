@@ -391,6 +391,35 @@ records:
     });
     expect(summary(ds)).toEqual(['error - f validate.columnFormulaError']);
   });
+
+  it('読み込みエラーのテーブルを ref・REF で指すと、「ありません」ではなく読み込みエラーであることを示す', async () => {
+    const project = await testProject({
+      tables: {
+        t: `fields:
+  - { name: s, type: int, ref: skill.id }
+  - { name: c, type: int, formula: 'REF("skill", s, "cost")' }
+  - { name: g, type: int, ref: ghost.id }
+records:
+  - { id: 1, s: 1 }
+`,
+        // 列の直下の required は読み込みエラー（DR-12）
+        skill: 'fields:\n  - { name: cost, type: int, required: true }\nrecords:\n  - { id: 1, cost: 10 }\n',
+      },
+    });
+    expect(project.brokenTables.map((b) => b.name)).toEqual(['skill']);
+    const calc = new Calculator(project);
+    const ds = validateTable(project, calc, tableOf(project, 't'));
+    expect(summary(ds)).toEqual(['error - s validate.refTableBroken', 'error - c validate.columnFormulaError', 'error - g validate.refTableNotFound']);
+    expect(formatDiagnostic(ds[0])).toBe('ref「skill.id」の参照先のテーブル skill は読み込みエラーのため参照できません。先にそのテーブルのファイルを直してください');
+    expect(formatDiagnostic(ds[0], 'en')).toBe('The table skill referenced by ref "skill.id" cannot be referenced because it failed to load. Fix that table\'s file first');
+    expect(formatDiagnostic(ds[1])).toContain('テーブル「skill」は読み込みエラーのため参照できません');
+    expect(formatDiagnostic(ds[2])).toBe('ref「ghost.id」の参照先のテーブル ghost はありません');
+    // 計算の結果（セル単位式で REF を使ったときも同じ文言）
+    const t = tableOf(project, 't');
+    const r = calc.getCell(t, t.records[0].uid, 'c');
+    expect(r.error?.code).toBe('#REF!');
+    expect(r.error?.messageCode).toBe('formula.ref.tableBroken');
+  });
 });
 
 describe('プロジェクト全体と共通設定', () => {

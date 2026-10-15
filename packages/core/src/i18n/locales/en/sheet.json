@@ -8,6 +8,7 @@
   "sheet.shortcutCategory.notes": "Notes",
   "sheet.shortcutCategory.rowsCols": "Rows and columns",
   "sheet.shortcutCategory.sheets": "Sheets",
+  "sheet.shortcutCategory.focus": "Focus",
   "sheet.shortcut.copy": "Copy",
   "sheet.shortcut.cut": "Cut",
   "sheet.shortcut.paste": "Paste",
@@ -59,5 +60,9 @@
   "sheet.shortcut.deleteRowsCols": "Delete rows (with rows selected) or columns (with columns selected)",
   "sheet.shortcut.hideColumns": "Hide columns",
   "sheet.shortcut.nextSheet": "Move to next sheet",
-  "sheet.shortcut.prevSheet": "Move to previous sheet"
+  "sheet.shortcut.prevSheet": "Move to previous sheet",
+  "sheet.shortcut.showSheetList": "Show the list of all sheets",
+  "sheet.shortcut.focusNextRegion": "Move to the next area (menu bar, toolbar, formula bar, grid, panels, sheet tabs)",
+  "sheet.shortcut.focusPrevRegion": "Move to the previous area",
+  "sheet.shortcut.focusPanel": "Move to the open panel"
 }

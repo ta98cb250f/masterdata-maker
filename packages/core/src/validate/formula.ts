@@ -1,7 +1,7 @@
 // 式のエラーの診断（FR-FML-13）と、列レベル式の静的な検査（構文・列名・関数名・引数の数・REF の参照先）
 import type { DiagnosticParams } from '../model/diagnostic';
 import type { Calculator } from '../calc';
-import { formulaError, refColumnNotFound, refTableNotFound, walk } from '../formula';
+import { formulaError, refColumnNotFound, refTableBroken, refTableNotFound, walk } from '../formula';
 import type { FormulaError } from '../formula';
 import { FUNCTIONS, VOLATILE_FUNCTIONS } from '../formula/functions';
 import { refTarget } from '../formula/functions/ref';
@@ -80,7 +80,7 @@ export function staticFormulaErrors(calc: Calculator, text: string, columns: Rea
     }
     const table = calc.findTable(target.table);
     if (table === undefined) {
-      errors.push(refTableNotFound(target.table).at(n.start, n.end));
+      errors.push((calc.isBrokenTable(target.table) ? refTableBroken(target.table) : refTableNotFound(target.table)).at(n.start, n.end));
     } else if (!calc.columns(table).some((c) => c.name.toLowerCase() === target.column)) {
       errors.push(refColumnNotFound(target.table, target.column).at(n.start, n.end));
     }

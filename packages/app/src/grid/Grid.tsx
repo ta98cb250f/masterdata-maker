@@ -486,6 +486,7 @@ function EmptySheetInput({ inputRef }: { inputRef: RefObject<HTMLTextAreaElement
       className="sc-input idle"
       style={{ position: 'absolute', left: 0, top: 0 }}
       aria-label={store.t('ui.grid.input')}
+      data-region-focus=""
       data-testid="cell-input"
       onKeyDown={(e) => {
         const id = resolveShortcut(e.nativeEvent, store.platform, 'grid');

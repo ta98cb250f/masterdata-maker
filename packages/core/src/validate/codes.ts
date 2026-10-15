@@ -50,6 +50,7 @@ export const ValidateCode = {
   enumNotFound: 'validate.enumNotFound',
   refInvalidFormat: 'validate.refInvalidFormat',
   refTableNotFound: 'validate.refTableNotFound',
+  refTableBroken: 'validate.refTableBroken',
   refColumnNotFound: 'validate.refColumnNotFound',
   refTargetNotUnique: 'validate.refTargetNotUnique',
   refTypeMismatch: 'validate.refTypeMismatch',

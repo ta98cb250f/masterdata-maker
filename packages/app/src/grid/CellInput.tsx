@@ -247,6 +247,7 @@ export function CellInput({ store, sheet, geometry, scroll, viewport, inputRef }
         autoCapitalize="off"
         wrap="soft"
         aria-label={t('ui.grid.input')}
+        data-region-focus=""
         data-testid="cell-input"
         onKeyDown={onKeyDown}
         onInput={onInput}

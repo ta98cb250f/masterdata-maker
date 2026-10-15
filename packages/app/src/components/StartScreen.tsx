@@ -12,7 +12,7 @@ export function StartScreen() {
   const direct = supportsDirectAccess();
   const loading = phase === 'loading';
   return (
-    <div className="sc-start" data-testid="start-screen">
+    <div className="sc-start" data-testid="start-screen" data-region="main">
       <div className="sc-start-card">
         <h1>{t('ui.app.name')}</h1>
         <p className="sc-start-lead">{t('ui.start.lead')}</p>

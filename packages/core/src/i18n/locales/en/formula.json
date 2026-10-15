@@ -32,6 +32,7 @@
   "formula.dateYearOutOfRange": "The year ({value}) must be at least 0 and less than 10000",
   "formula.dateOutOfRange": "The date is out of the supported range",
   "formula.ref.tableNotFound": "There is no table \"{table}\"",
+  "formula.ref.tableBroken": "The table \"{table}\" cannot be referenced because it failed to load",
   "formula.ref.columnNotFound": "Table \"{table}\" has no column \"{column}\"",
   "formula.ref.keyNotFound": "Table \"{table}\" has no record with key \"{key}\"",
   "formula.circular": "Circular reference detected",

@@ -40,6 +40,7 @@
   "validate.enumNotFound": "列挙型 {enum} はありません",
   "validate.refInvalidFormat": "ref「{ref}」は <テーブル>.<列> の形で書いてください",
   "validate.refTableNotFound": "ref「{ref}」の参照先のテーブル {table} はありません",
+  "validate.refTableBroken": "ref「{ref}」の参照先のテーブル {table} は読み込みエラーのため参照できません。先にそのテーブルのファイルを直してください",
   "validate.refColumnNotFound": "ref「{ref}」の参照先のテーブル {table} に列 {column} はありません",
   "validate.refTargetNotUnique": "ref「{ref}」の参照先は、主キーか一意（unique）の列にしてください",
   "validate.refTypeMismatch": "ref「{ref}」の参照先の型（{target}）と列の型（{type}）が合いません",
