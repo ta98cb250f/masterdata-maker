@@ -84,5 +84,6 @@
   "edit.op.editBaseFields": "共通列の編集",
   "edit.op.editColors": "セル色の編集",
   "edit.op.renameBaseField": "共通列の名前の変更",
-  "edit.op.renameEnum": "列挙型の名前の変更"
+  "edit.op.renameEnum": "列挙型の名前の変更",
+  "edit.op.renameEnumValues": "列挙型の値の名前の変更"
 }

@@ -2,14 +2,14 @@
 // 3 つのタブの変更は「保存」でまとめて 1 回の操作にする（元に戻すと全部戻る）
 import type { FieldType } from '@sheetcraft/core';
 import { formatInputError, inputContext } from '@sheetcraft/core';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import { completionColumnsOf } from '../sheet/complete';
 import type { AppStore } from '../store/AppStore';
 import { useT } from '../store/hooks';
 import type { DraftErrors, DraftKey, FieldError } from './columnDraft';
 import { ColumnForm } from './ColumnForm';
-import type { BaseFieldDraft, ColorDraft, CommonDraft, EnumDraft } from './commonDraft';
+import type { BaseFieldDraft, ColorDraft, CommonDraft, EnumDraft, EnumValueDraft } from './commonDraft';
 import {
   baseFieldValueCount,
   colorUsage,
@@ -18,9 +18,11 @@ import {
   countCells,
   draftId,
   enumUsage,
+  enumValueCounts,
   enumValues,
   hasCommonErrors,
   newBaseFieldDraft,
+  newEnumValueDraft,
   planCommonChange,
 } from './commonDraft';
 import { Failures, Field, errorText, useLocale } from './formParts';
@@ -53,6 +55,19 @@ function deletionWarnings(store: AppStore, draft: CommonDraft): string[] {
     if (keptEnums.has(e.name)) continue;
     const used = enumUsage(project, e.name);
     if (used.length > 0) out.push(t('ui.settings.warn.enumUsed', { name: e.name, columns: used.join(', ') }));
+  }
+  for (const d of draft.enums) {
+    const def = d.original === null ? undefined : project.common.enums.items.find((e) => e.name === d.original);
+    if (def === undefined) continue;
+    // 空にした行は削除。消した値をもう一度足した場合は削除ではない
+    const kept = new Set([...d.values.filter((v) => v.value.trim() !== '').map((v) => v.original), ...enumValues(d.values)]);
+    const deleted = def.values.filter((v) => !kept.has(v));
+    if (deleted.length === 0) continue;
+    const counts = enumValueCounts(project, def.name);
+    for (const v of deleted) {
+      const n = counts.get(v) ?? 0;
+      if (n > 0) out.push(t('ui.settings.warn.enumValueUsed', { name: d.name.trim(), value: v, count: n }));
+    }
   }
   const keptBase = new Set(draft.baseFields.map((d) => d.original?.name));
   for (const f of project.common.base_fields.items) {
@@ -215,7 +230,7 @@ function EnumsTab({
 
   const add = () => {
     const name = freshName('enum', items.map((x) => x.name));
-    const item: EnumDraft = { id: draftId(), original: null, name, display_name: '', values: '' };
+    const item: EnumDraft = { id: draftId(), original: null, name, display_name: '', values: [] };
     onChange([...items, item]);
     onSelect(item.id);
   };
@@ -268,12 +283,115 @@ function EnumsTab({
           <Field label={t('ui.settings.enum.displayName')} htmlFor="enum-display">
             <input id="enum-display" className="sc-text" value={current.display_name} onChange={(ev) => onChange(replaceItem(items, current.id, { display_name: ev.target.value }))} data-testid="enum-display" />
           </Field>
-          <Field label={t('ui.settings.enum.values')} htmlFor="enum-values" error={show('values') ? errorText(e?.values, locale) : undefined} hint={t('ui.settings.enum.valuesHint')}>
-            <textarea id="enum-values" className="sc-textarea mono" rows={8} value={current.values} spellCheck={false} onChange={(ev) => onChange(replaceItem(items, current.id, { values: ev.target.value }))} data-testid="enum-values" />
+          <Field label={t('ui.settings.enum.values')} error={show('values') ? errorText(e?.values, locale) : undefined} hint={t('ui.settings.enum.valuesHint')}>
+            <EnumValuesEditor
+              key={current.id}
+              store={store}
+              enumName={current.original}
+              values={current.values}
+              onChange={(values) => onChange(replaceItem(items, current.id, { values }))}
+            />
           </Field>
           {usage.length > 0 && <p className="sc-form-info">{t('ui.settings.enum.usedBy', { columns: usage.join(', ') })}</p>}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * 列挙型の値の一覧。1 行に 1 つの入力欄で、行はもとの値を覚えている（文字を変えると、保存のときにその値のセルも書き換える）。
+ * Enter で下に行を足し、複数行の貼り付けは行に分ける
+ */
+function EnumValuesEditor({
+  store,
+  enumName,
+  values,
+  onChange,
+}: {
+  store: AppStore;
+  /** もとの列挙型の名前。新しく足した列挙型は null */
+  enumName: string | null;
+  values: EnumValueDraft[];
+  onChange(values: EnumValueDraft[]): void;
+}) {
+  const t = useT();
+  const project = store.project;
+  const counts = useMemo(() => (project === null || enumName === null ? new Map<string, number>() : enumValueCounts(project, enumName)), [project, enumName]);
+  // 足した行に入力の焦点を移す（autoFocus は行を作ったときだけ効く）
+  const created = useRef(new Set<number>());
+
+  const insert = (index: number, texts: string[]) => {
+    const rows = texts.map((v) => newEnumValueDraft(v));
+    rows.forEach((r) => created.current.add(r.id));
+    onChange([...values.slice(0, index), ...rows, ...values.slice(index)]);
+  };
+  const move = (i: number, delta: number) => {
+    const next = [...values];
+    const [x] = next.splice(i, 1);
+    next.splice(i + delta, 0, x);
+    onChange(next);
+  };
+
+  return (
+    <div data-testid="enum-values">
+      <table className="sc-color-table">
+        <tbody>
+          {values.map((x, i) => {
+            const renamed = x.original !== null && x.value.trim() !== '' && x.value.trim() !== x.original;
+            return (
+              <tr key={x.id} data-testid={`enum-value-row-${i}`}>
+                <td>
+                  <input
+                    className="sc-text mono"
+                    value={x.value}
+                    aria-label={t('ui.settings.enum.value', { index: i + 1 })}
+                    spellCheck={false}
+                    autoFocus={created.current.has(x.id)}
+                    onChange={(ev) => onChange(replaceItem(values, x.id, { value: ev.target.value }))}
+                    onKeyDown={(ev) => {
+                      if (ev.key !== 'Enter' || ev.nativeEvent.isComposing) return;
+                      ev.preventDefault();
+                      insert(i + 1, ['']);
+                    }}
+                    onPaste={(ev) => {
+                      const lines = ev.clipboardData.getData('text/plain').split(/\r?\n/).map((v) => v.trim()).filter((v) => v !== '');
+                      if (lines.length < 2) return;
+                      ev.preventDefault();
+                      if (x.value.trim() === '') {
+                        const rows = lines.slice(1).map((v) => newEnumValueDraft(v));
+                        onChange([...values.slice(0, i), { ...x, value: lines[0] }, ...rows, ...values.slice(i + 1)]);
+                      } else insert(i + 1, lines);
+                    }}
+                    data-testid="enum-value"
+                  />
+                  {renamed && (
+                    <div className="sc-field-hint" data-testid="enum-value-renamed">
+                      {t('ui.settings.enum.valueRenamed', { from: x.original as string, count: counts.get(x.original as string) ?? 0 })}
+                    </div>
+                  )}
+                </td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  <button type="button" className="sc-button small" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('ui.settings.moveUp')}>
+                    ↑
+                  </button>{' '}
+                  <button type="button" className="sc-button small" onClick={() => move(i, 1)} disabled={i === values.length - 1} aria-label={t('ui.settings.moveDown')}>
+                    ↓
+                  </button>{' '}
+                  <button type="button" className="sc-button small" onClick={() => onChange(values.filter((y) => y.id !== x.id))} data-testid="enum-value-remove">
+                    {t('ui.settings.remove')}
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div className="sc-master-actions" style={{ marginTop: 4 }}>
+        <button type="button" className="sc-button small" onClick={() => insert(values.length, [''])} data-testid="enum-value-add">
+          {t('ui.settings.enum.addValue')}
+        </button>
+      </div>
     </div>
   );
 }

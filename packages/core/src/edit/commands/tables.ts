@@ -1,5 +1,6 @@
 // テーブルの作成・複製・名前の変更・削除（FR-TBL-01〜02）と共通設定の編集（FR-TBL-03）
-import { isRichCell } from '../../model/cell';
+import type { RawValue } from '../../model/cell';
+import { cellValue, isRichCell } from '../../model/cell';
 import type { ColorDef, EnumDef } from '../../model/common';
 import type { FieldDef } from '../../model/field';
 import { cloneFieldDef } from '../../model/field';
@@ -10,9 +11,9 @@ import { extractDependencies } from '../../formula/dependencies';
 import { ParseCache } from '../../formula/parser';
 import { renameColumnInFormula, renameRefColumnInFormula, renameRefTableInFormula } from '../../formula/rename';
 import { EditCode } from '../codes';
-import { editableTable, isValidIdentifier, unique } from '../helpers';
+import { columnsOf, editableTable, isValidIdentifier, unique } from '../helpers';
 import type { TableData } from '../patch';
-import { cloneColorDef, cloneEnumDef, cloneView, toTableData } from '../patch';
+import { cloneColorDef, cloneEnumDef, cloneView, toCellData, toTableData } from '../patch';
 import type { CommandResult, EditFailure } from '../transaction';
 import { emptyResult, failed, TxBuilder } from '../transaction';
 import { addDefinitionRewrites, renameInView, splitRef } from './rewrite';
@@ -342,4 +343,63 @@ export function renameEnum(project: Project, args: { from: string; to: string })
     }
   }
   return b.result(EditCode.opRenameEnum);
+}
+
+export interface EnumValueRename {
+  from: string;
+  to: string;
+}
+
+/** 値（リストは要素ごと）を対応表で置き換える。変わらなければ同じものを返す */
+function renameEnumValue(value: RawValue, map: ReadonlyMap<string, string>): RawValue {
+  if (typeof value === 'string') return map.get(value) ?? value;
+  if (!Array.isArray(value)) return value;
+  let changed = false;
+  const next = value.map((v) => {
+    const r = typeof v === 'string' ? (map.get(v) ?? v) : v;
+    if (r !== v) changed = true;
+    return r;
+  });
+  return changed ? next : value;
+}
+
+/**
+ * 列挙型の値の名前の変更。その列挙型を使う列（enum・list<enum>）のセルの値と、列定義の default を書き換える。
+ * 対応表はまとめて当てるので、入れ替え（A→B と B→A）もそのまま渡せる。
+ * 列挙型の値の一覧は変えない（setEnums で置き換える）。式（列の式・セル単位式）の中の文字列は、値を指すとは限らないので変えない
+ */
+export function renameEnumValues(project: Project, args: { enum: string; renames: readonly EnumValueRename[] }): CommandResult {
+  if (!project.common.enums.items.some((e) => e.name === args.enum)) return failed([{ code: EditCode.enumNotFound, params: { name: args.enum } }]);
+  const map = new Map<string, string>();
+  for (const r of args.renames) if (r.from !== r.to) map.set(r.from, r.to);
+  if (map.size === 0) return emptyResult(EditCode.opRenameEnumValues);
+  const uses = (f: FieldDef) => (f.type === 'enum' || f.type === 'list<enum>') && f.enum_ref === args.enum;
+  const withDefault = (f: FieldDef): FieldDef | null => {
+    if (!uses(f) || f.default === undefined) return null;
+    const value = renameEnumValue(f.default, map);
+    return value === f.default ? null : { ...cloneFieldDef(f), default: value };
+  };
+  const b = new TxBuilder();
+  const base = project.common.base_fields.items;
+  if (base.some((f) => withDefault(f) !== null)) {
+    b.add({ op: 'setCommon', part: 'base_fields', items: base.map((f) => withDefault(f) ?? cloneFieldDef(f)), isDefault: false });
+  }
+  for (const table of project.tables) {
+    for (const field of table.fields) {
+      const next = withDefault(field);
+      if (next !== null) b.add({ op: 'updateField', table: table.uid, name: field.name, field: next });
+    }
+    const columns = columnsOf(project, table).filter(uses);
+    for (const record of table.records) {
+      for (const column of columns) {
+        const cell = record.cells.get(column.name);
+        const value = cellValue(cell);
+        if (value === undefined) continue;
+        const renamed = renameEnumValue(value, map);
+        if (renamed === value) continue;
+        b.setCell(table.uid, record.uid, column.name, cell, { ...toCellData(cell), value: renamed });
+      }
+    }
+  }
+  return b.result(EditCode.opRenameEnumValues);
 }

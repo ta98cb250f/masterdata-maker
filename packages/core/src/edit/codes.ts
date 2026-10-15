@@ -96,6 +96,7 @@ export const EditCode = {
   opEditColors: 'edit.op.editColors',
   opRenameBaseField: 'edit.op.renameBaseField',
   opRenameEnum: 'edit.op.renameEnum',
+  opRenameEnumValues: 'edit.op.renameEnumValues',
 } as const;
 
 export type EditCodeValue = (typeof EditCode)[keyof typeof EditCode];

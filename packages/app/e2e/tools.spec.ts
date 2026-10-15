@@ -40,7 +40,9 @@ test('共通設定: 列挙型の名前の変更（列の参照も書き換え）
   await expect(dialog).toBeVisible();
   await page.getByTestId('enum-item-rarity').click();
   await page.getByTestId('enum-name').fill('grade');
-  await page.getByTestId('enum-values').fill('N\nR\nSR\nSSR\nUR');
+  // 最後の値で Enter を押すと下に行が足され、そこに入力が移る
+  await page.getByTestId('enum-values').getByTestId('enum-value').last().press('Enter');
+  await page.keyboard.type('UR');
   await page.getByTestId('settings-tab-colors').click();
   await page.getByTestId('color-row-0').getByTestId('color-key').fill('danger');
   await page.getByTestId('color-row-0').getByTestId('color-label').fill('危険');
@@ -72,6 +74,24 @@ test('共通設定: 列挙型の名前の変更（列の参照も書き換え）
   expect(await state()).toEqual({ enums: ['grade:5', 'element:5'], rarityRef: 'grade', firstColor: 'danger', hpColor: 'danger' });
   await page.keyboard.press('Control+z');
   await expect.poll(state).toEqual({ enums: ['rarity:4', 'element:5'], rarityRef: 'rarity', firstColor: 'red', hpColor: 'red' });
+});
+
+test('共通設定: 列挙型の値の名前を変えると、その値のセルも書き換える。消す値が使われていれば注意を出す', async ({ page }) => {
+  const rarity = 'rarity';
+  expect(await cellText(page, 1, rarity)).toBe('SR');
+  await openMenuItem(page, 'file', 'settings.common');
+  await page.getByTestId('enum-item-rarity').click();
+  const values = page.getByTestId('enum-values');
+  await values.getByTestId('enum-value-row-2').getByTestId('enum-value').fill('SuperRare');
+  await expect(values.getByTestId('enum-value-row-2').getByTestId('enum-value-renamed')).toHaveText('もとは SR（1 セルを書き換えます）');
+  await values.getByTestId('enum-value-row-1').getByTestId('enum-value-remove').click();
+  await expect(page.getByTestId('settings-warnings')).toContainText('削除する値 R（列挙型 rarity）は 1 セルで使われています');
+  await page.getByTestId('settings-ok').click();
+  await expect(page.getByTestId('common-settings-dialog')).toHaveCount(0);
+  await expect.poll(() => cellText(page, 1, rarity)).toBe('SuperRare');
+  expect(await cellText(page, 2, rarity)).toBe('R');
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => cellText(page, 1, rarity)).toBe('SR');
 });
 
 test('共通設定: 共通列を追加すると、全テーブルの先頭に列が付く', async ({ page }) => {
