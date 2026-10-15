@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { allCommands } from './commands';
 import { loadLastFolderName, openSample } from './commands/file';
+import { generateLargeProjectFiles } from './fs/largeSample';
 import { isSampleName } from './fs/sample';
 import { registerUiMessages } from './i18n';
 import { PANELS } from './panels';
@@ -31,8 +32,9 @@ installLocale(store);
 installExternalChanges(store);
 installBackup(store);
 
-// 開発・画面テスト用に、外から store を触れるようにする
+// 開発・画面テスト用に、外から store を触れるようにする。性能の確認用のプロジェクトの生成（NFR-11）も呼べるようにする
 (globalThis as { sheetcraft?: AppStore }).sheetcraft = store;
+(globalThis as { sheetcraftSamples?: unknown }).sheetcraftSamples = { generateLargeProjectFiles };
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>

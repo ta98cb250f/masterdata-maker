@@ -430,4 +430,140 @@ test.describe('サンプルのプロジェクト', () => {
     await expect(page.getByTestId('grid')).toHaveAttribute('data-table', 'character');
     expect(await selection(page)).toMatchObject({ table: 'character', column: 'id', id: 2 });
   });
+  test('右クリックメニューのセル色はサブメニュー: 一覧の外（右）に出て切れず、マウスでもキーでも選べる（FR-ANN-01）', async ({ page }) => {
+    const hp = await colIndex(page, 'hp');
+    await clickCell(page, 0, hp);
+    await page.keyboard.press('Shift+ArrowDown');
+    await page.keyboard.press('Shift+ArrowDown');
+    const p = await cellPoint(page, 1, hp);
+    await page.mouse.click(p.x, p.y, { button: 'right' });
+    const menu = page.getByTestId('context-menu');
+    await menu.getByTestId('menu-cell.color').hover();
+    const sub = page.getByTestId('menu-cell.color-submenu');
+    await expect(sub).toBeVisible();
+    await expect(sub).toContainText('なし');
+    await expect(sub).toContainText('緑');
+    // 親の一覧（overflow-y: auto）の外に描くので、親の右に出て切れない
+    const menuBox = await menu.boundingBox();
+    const subBox = await sub.boundingBox();
+    if (menuBox === null || subBox === null) throw new Error('menu is not visible');
+    expect(subBox.x).toBeGreaterThanOrEqual(menuBox.x + menuBox.width - 1);
+    const green = sub.getByTestId('menu-cell.color-green');
+    const box = await green.boundingBox();
+    if (box === null) throw new Error('item is not visible');
+    const hit = await page.evaluate(
+      ({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid]')?.getAttribute('data-testid'),
+      { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+    );
+    expect(hit).toBe('menu-cell.color-green');
+    await green.click();
+    await expect(menu).toHaveCount(0);
+    await expect(sub).toHaveCount(0);
+    for (const row of [0, 1, 2]) await expect(await cellAt(page, row, 'hp')).toHaveCSS('background-color', 'rgb(217, 234, 211)');
+    // 1 回の Ctrl+Z で戻る
+    await page.keyboard.press('Control+z');
+    await expect(await cellAt(page, 0, 'hp')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(await cellAt(page, 1, 'hp')).toHaveCSS('background-color', 'rgb(244, 204, 204)');
+
+    // キーだけ: Shift+F10 で開き、↓ でセル色まで進み、→ でサブメニュー、← で戻る、→ と ↓ で選んで Enter
+    const activeItem = (list: typeof menu) => list.locator('.sc-menu-item.active').getAttribute('data-testid');
+    // マウスの下に出た項目が選ばれないように、マウスをグリッドの外に動かしておく
+    await page.mouse.move(0, 0);
+    await page.keyboard.press('Shift+F10');
+    await expect(menu).toBeVisible();
+    for (let i = 0; i < 20 && (await activeItem(menu)) !== 'menu-cell.color'; i++) await page.keyboard.press('ArrowDown');
+    expect(await activeItem(menu)).toBe('menu-cell.color');
+    await page.keyboard.press('ArrowRight');
+    await expect(sub).toBeVisible();
+    expect(await activeItem(sub)).toBe('menu-cell.color-none');
+    await page.keyboard.press('ArrowLeft');
+    await expect(sub).toHaveCount(0);
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('ArrowRight');
+    for (let i = 0; i < 20 && (await activeItem(sub)) !== 'menu-cell.color-blue'; i++) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(menu).toHaveCount(0);
+    for (const row of [0, 1, 2]) await expect(await cellAt(page, row, 'hp')).toHaveCSS('background-color', 'rgb(207, 226, 243)');
+    // サブメニューで Esc を押すとサブメニューだけ閉じ、もう一度 Esc で全体を閉じる
+    await page.keyboard.press('Shift+F10');
+    for (let i = 0; i < 20 && (await activeItem(menu)) !== 'menu-cell.color'; i++) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowRight');
+    await expect(sub).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(sub).toHaveCount(0);
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+
+    // 画面の右端の近くでは、サブメニューを親の左に出す
+    const width = page.viewportSize()?.width ?? 1400;
+    await page.mouse.click(width - 20, p.y, { button: 'right' });
+    await menu.getByTestId('menu-cell.color').hover();
+    await expect(sub).toBeVisible();
+    const nearEdge = await menu.boundingBox();
+    const flipped = await sub.boundingBox();
+    if (nearEdge === null || flipped === null) throw new Error('menu is not visible');
+    expect(flipped.x + flipped.width).toBeLessThanOrEqual(nearEdge.x + 1);
+    expect(flipped.x).toBeGreaterThanOrEqual(0);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+  });
+
+  test('Ctrl+Alt+= / Ctrl+Alt+-: 行を選べば行（上に選んだ行数だけ）、列を選べば列（左）を挿入・削除し、セル範囲なら行か列かを選ぶ', async ({ page }) => {
+    const rowHeads = page.locator('.sc-pane-frozen .sc-rowhead');
+    // 行: 2〜3 行目を選んで挿入すると、上に 2 行入る
+    await rowHeads.nth(1).click();
+    await rowHeads.nth(2).click({ modifiers: ['Shift'] });
+    expect((await selection(page)).kind).toBe('rows');
+    await page.keyboard.press('Control+Alt+Equal');
+    await expect(rowHeads).toHaveCount(5);
+    expect(await cellText(page, 1, 'id')).toBe('4');
+    expect(await cellText(page, 2, 'id')).toBe('5');
+    expect(await cellText(page, 3, 'name')).toBe('魔法使いリナ');
+    await page.keyboard.press('Control+z');
+    await expect(rowHeads).toHaveCount(3);
+    // 削除
+    await rowHeads.nth(1).click();
+    await rowHeads.nth(2).click({ modifiers: ['Shift'] });
+    await page.keyboard.press('Control+Alt+Minus');
+    await expect(rowHeads).toHaveCount(1);
+    expect(await cellText(page, 0, 'name')).toBe('勇者アルス');
+    await page.keyboard.press('Control+z');
+    await expect(rowHeads).toHaveCount(3);
+
+    // 列: 列ヘッダーを押して列全体を選ぶと、挿入は左に列を挿入するダイアログ、削除は確認を出す
+    await (await header(page, 'hp')).click();
+    expect((await selection(page)).kind).toBe('cols');
+    await page.keyboard.press('Control+Alt+Equal');
+    await expect(page.getByTestId('column-insert-dialog')).toBeVisible();
+    await page.getByTestId('col-insert-name').fill('rank');
+    await page.getByTestId('column-insert-ok').click();
+    await expect(page.getByTestId('column-insert-dialog')).toHaveCount(0);
+    expect(await colIndex(page, 'rank')).toBe((await colIndex(page, 'hp')) - 1);
+    await (await header(page, 'rank')).click();
+    await page.keyboard.press('Control+Alt+Minus');
+    await expect(page.getByTestId('confirm-dialog')).toContainText('rank');
+    await page.getByTestId('confirm-dialog').getByRole('button', { name: '削除' }).click();
+    await expect(page.locator('.sc-colhead-name', { hasText: /^rank$/ })).toHaveCount(0);
+
+    // セル範囲: 行か列かを選ぶ一覧を出す
+    await clickCell(page, 0, await colIndex(page, 'hp'));
+    await page.keyboard.press('Shift+ArrowDown');
+    await page.keyboard.press('Control+Alt+Equal');
+    const menu = page.getByTestId('context-menu');
+    await expect(menu.getByTestId('menu-row.insertAbove')).toHaveText('上に 2 行挿入');
+    await expect(menu.getByTestId('menu-column.insertLeft')).toBeVisible();
+    await menu.getByTestId('menu-row.insertAbove').click();
+    await expect(rowHeads).toHaveCount(5);
+    await page.keyboard.press('Control+z');
+    await expect(rowHeads).toHaveCount(3);
+    await clickCell(page, 0, await colIndex(page, 'hp'));
+    await page.keyboard.press('Control+Alt+Minus');
+    await expect(menu.getByTestId('menu-row.delete')).toHaveText('1 行を削除');
+    await expect(menu.getByTestId('menu-column.delete')).toHaveText('列を削除');
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+    await expect(rowHeads).toHaveCount(3);
+  });
 });

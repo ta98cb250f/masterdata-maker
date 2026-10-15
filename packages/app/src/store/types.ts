@@ -76,10 +76,13 @@ export type PanelPosition = 'right' | 'bottom';
 
 /** 右クリックメニューなどの項目 */
 export type MenuEntry =
-  /** label は組み立て済みの名前（参照先の名前など、文言キーで表せないもの。labelKey より優先） */
-  | { kind: 'command'; command: string; args?: unknown; labelKey?: string; label?: string }
+  /**
+   * label は組み立て済みの名前（参照先の名前など、文言キーで表せないもの。labelKey より優先）。
+   * swatch は色の見本（null は「なし」の印）。testId は画面テスト用の名前（省略時は操作の識別子）
+   */
+  | { kind: 'command'; command: string; args?: unknown; labelKey?: string; label?: string; swatch?: string | null; testId?: string }
   | { kind: 'separator' }
-  | { kind: 'submenu'; labelKey: string; items: MenuEntry[] };
+  | { kind: 'submenu'; labelKey: string; items: MenuEntry[]; testId?: string };
 
 export interface ContextMenuState {
   /** クライアント座標 */

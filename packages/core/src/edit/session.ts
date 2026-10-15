@@ -598,4 +598,21 @@ export class EditSession {
     }
     this.emit({ kind: 'saved' });
   }
+
+  /**
+   * 変更したが、正規形のテキストが読み込んだ（保存した）ファイルと同じに戻ったテーブル（手で元の値に入れ直したなど）を保存済みにする。
+   * 書き込まなくてもファイルと同じなので、未保存の印（isTableModified）を消すために保存の後に呼ぶ。保存済みにしたテーブルの uid を返す
+   */
+  markUnchangedSaved(): number[] {
+    const settled: number[] = [];
+    for (const table of this.project.tables) {
+      const baseline = this.tableBaselines.get(table.uid);
+      if (baseline === undefined || baseline.text === null || baseline.state === this.stateOf(table.uid)) continue;
+      if (baseline.name !== table.name || this.tableText(table) !== baseline.text) continue;
+      this.tableBaselines.set(table.uid, { ...baseline, state: this.stateOf(table.uid) });
+      settled.push(table.uid);
+    }
+    if (settled.length > 0) this.emit({ kind: 'saved' });
+    return settled;
+  }
 }

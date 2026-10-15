@@ -118,3 +118,62 @@ export async function openOpfsProject(page: Page, files?: Record<string, string>
 export async function returnToWindow(page: Page): Promise<void> {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
 }
+
+/** 性能の確認用のプロジェクトの生成の条件（src/fs/largeSample.ts の LargeSampleOptions と同じ） */
+export interface GeneratedProjectOptions {
+  rows?: number;
+  columns?: number;
+  format?: 'yaml' | 'json';
+  bigTables?: number;
+}
+
+/**
+ * 性能の確認用のプロジェクト（src/fs/largeSample.ts）をページの中で生成して、OPFS の proj フォルダに置く（中身は Node 側に運ばない）。
+ * ページを開いた後に呼ぶ。戻り値は置いたファイルの数と合計の大きさ（UTF-8 のバイト数）
+ */
+export async function putGeneratedProject(page: Page, options: GeneratedProjectOptions): Promise<{ files: number; bytes: number }> {
+  return page.evaluate(
+    async ({ dir, options }) => {
+      type Samples = { generateLargeProjectFiles(o: GeneratedProjectOptions): Record<string, string> };
+      const files = (globalThis as unknown as { sheetcraftSamples: Samples }).sheetcraftSamples.generateLargeProjectFiles(options);
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry(dir, { recursive: true }).catch(() => undefined);
+      const proj = await root.getDirectoryHandle(dir, { create: true });
+      const encoder = new TextEncoder();
+      let bytes = 0;
+      for (const [path, text] of Object.entries(files)) {
+        const parts = path.split('/');
+        let d = proj;
+        for (const part of parts.slice(0, -1)) d = await d.getDirectoryHandle(part, { create: true });
+        const data = encoder.encode(text);
+        bytes += data.byteLength;
+        const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
+        await w.write(data);
+        await w.close();
+      }
+      return { files: Object.keys(files).length, bytes };
+    },
+    { dir: OPFS_DIR, options },
+  );
+}
+
+/** OPFS の proj フォルダの全ファイルのバイト列（16 進）と更新日時 */
+export async function snapshotOpfs(page: Page): Promise<Record<string, { hex: string; lastModified: number }>> {
+  return page.evaluate(async (dir) => {
+    const out: Record<string, { hex: string; lastModified: number }> = {};
+    type Dir = FileSystemDirectoryHandle & { entries(): AsyncIterable<[string, FileSystemFileHandle | FileSystemDirectoryHandle]> };
+    const walk = async (d: Dir, prefix: string): Promise<void> => {
+      for await (const [name, handle] of d.entries()) {
+        const path = prefix === '' ? name : `${prefix}/${name}`;
+        if (handle.kind === 'directory') await walk(handle as Dir, path);
+        else {
+          const file = await (handle as FileSystemFileHandle).getFile();
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          out[path] = { hex: Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join(''), lastModified: file.lastModified };
+        }
+      }
+    };
+    await walk((await (await navigator.storage.getDirectory()).getDirectoryHandle(dir)) as Dir, '');
+    return out;
+  }, OPFS_DIR);
+}

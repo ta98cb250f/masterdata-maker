@@ -1,4 +1,5 @@
-// 性能の確認用（NFR-10）: 1 万行 × 50 列のテーブルを含むプロジェクトをメモリ上に生成する（`?sample=large`）
+// 性能の確認用（NFR-10、NFR-11）: 1 万行 × 50 列のテーブルを含むプロジェクトをメモリ上に生成する（`?sample=large`）。
+// 画面テストでは、大きなテーブルの数と大きさを変えて生成する（globalThis.sheetcraftSamples。main.tsx）
 import type { Cell, ColorDef, EnumDef, FieldDef, FieldType, RawValue, StorageFormat, Table, TableRecord } from '@sheetcraft/core';
 import {
   RichCell,
@@ -16,6 +17,8 @@ export interface LargeSampleOptions {
   /** 列数（共通列の id・version を含む。既定 50） */
   columns?: number;
   format?: StorageFormat;
+  /** 大きなテーブルの数（既定 1。1 なら名前は big、2 以上なら big_001 から。どれも skill を参照する） */
+  bigTables?: number;
 }
 
 const ENUMS: EnumDef[] = [
@@ -69,8 +72,8 @@ function skillTable(uid: () => number): Table {
   };
 }
 
-function bigTable(rows: number, columns: number, uid: () => number): Table {
-  const rand = random(42);
+function bigTable(rows: number, columns: number, uid: () => number, name = 'big', seed = 42): Table {
+  const rand = random(seed);
   const fields: FieldDef[] = [
     { name: 'name', type: 'string', display_name: '名前' },
     { name: 'hp', type: 'int', display_name: 'HP', validation: { min: 1, max: 99999 }, anomaly: { warn_above: 9900 } },
@@ -140,8 +143,8 @@ function bigTable(rows: number, columns: number, uid: () => number): Table {
   return {
     kind: 'table',
     uid: uid(),
-    name: 'big',
-    display_name: '大きなテーブル',
+    name,
+    display_name: name === 'big' ? '大きなテーブル' : `大きなテーブル ${name.slice(4)}`,
     fields,
     records,
     view: { column_widths: [['name', 140]], frozen_columns: 2 },
@@ -169,8 +172,11 @@ export function generateLargeProjectFiles(options: LargeSampleOptions = {}): Rec
     [`config/enums.${ext}`]: serializeEnums(ENUMS, format),
     [`config/colors.${ext}`]: serializeColors(colors, format),
   };
-  for (const table of [skillTable(uid), bigTable(rows, columns, uid)]) {
-    files[`tables/${table.name}.${ext}`] = serializeTable(table, baseFields, format);
+  const bigTables = options.bigTables ?? 1;
+  files[`tables/skill.${ext}`] = serializeTable(skillTable(uid), baseFields, format);
+  for (let i = 1; i <= bigTables; i++) {
+    const name = bigTables === 1 ? 'big' : `big_${String(i).padStart(3, '0')}`;
+    files[`tables/${name}.${ext}`] = serializeTable(bigTable(rows, columns, uid, name, 41 + i), baseFields, format);
   }
   return files;
 }

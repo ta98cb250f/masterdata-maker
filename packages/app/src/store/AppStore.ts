@@ -871,6 +871,8 @@ export class AppStore {
       return;
     }
     if (plan.files.length === 0 && plan.remove.length === 0) {
+      // 手で元の値に戻したテーブルは、書き込まずに未保存の印を消す
+      session.markUnchangedSaved();
       this.showStatus(this.t('ui.save.nothing'));
       return;
     }
@@ -879,6 +881,7 @@ export class AppStore {
     try {
       const outcome = await source.save(plan);
       session.markSaved(outcome.written, outcome.removed);
+      session.markUnchangedSaved();
       if (outcome.failed.length > 0) {
         this.openDialog('message', {
           titleKey: 'ui.save.failedTitle',

@@ -271,6 +271,36 @@ describe('AppStore: 保存（FR-FIO-02〜05）', () => {
     expect(store.session?.canUndo()).toBe(true);
   });
 
+  it('手で元の値に入れ直したテーブルは、保存しても書き込まず、未保存の印を消す（ページを閉じるときにも確かめない）', async () => {
+    const o = await openSample();
+    const { store, saved } = o;
+    const enter = (row: number, column: string, text: string) => {
+      select(store, row, o.col(column));
+      store.beginEdit({ mode: 'overwrite', text });
+      store.commitEdit(null);
+    };
+    enter(0, 'defense', '31');
+    enter(0, 'defense', '30');
+    const character = o.uid('character');
+    expect(store.isTableModified(character)).toBe(true);
+    expect(store.isProjectModified()).toBe(true);
+    await store.save();
+    expect(saved).toHaveLength(0);
+    expect(store.getState().status?.text).toBe('保存する変更はありません');
+    expect(store.isTableModified(character)).toBe(false);
+    expect(store.isProjectModified()).toBe(false);
+
+    // ほかのテーブルを保存するときも、元に戻ったテーブルは書かずに印を消す
+    enter(0, 'defense', '31');
+    enter(0, 'defense', '30');
+    store.setActiveTable(o.uid('skill'));
+    enter(0, 'cost', '99');
+    await store.save();
+    expect(saved.map((p) => p.files.map((f) => f.path))).toEqual([['tables/skill.yaml']]);
+    expect(store.isTableModified(character)).toBe(false);
+    expect(store.isProjectModified()).toBe(false);
+  });
+
   it('編集中に保存すると、先に確定する（確定できなければ保存しない）', async () => {
     const o = await openSample();
     select(o.store, 0, o.col('hp'));

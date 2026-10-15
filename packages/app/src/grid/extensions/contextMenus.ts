@@ -20,7 +20,24 @@ function external(store: AppStore, id: string, fallbackLabelKey: string, args: u
   return store.commands.has(id) ? command(id, { args }) : command(id, { args, labelKey: fallbackLabelKey });
 }
 
-function cellMenu(store: AppStore, request: ContextMenuRequest): MenuEntry[] {
+/**
+ * セル色（FR-ANN-01）: 「なし」とプリセットの色をサブメニューに並べ、選んだ色を選択範囲に当てる。
+ * 押した位置にパレットを開くより 1 手少なく、矢印キーでも選べる（ツールバーのボタンはパレットを開く）
+ */
+function cellColorMenu(store: AppStore): MenuEntry {
+  const colors = store.project?.common.colors.items ?? [];
+  return {
+    kind: 'submenu',
+    labelKey: 'ui.ctx.cellColor',
+    testId: 'cell.color',
+    items: [
+      { kind: 'command', command: 'cell.color', args: null, labelKey: 'ui.cellColor.none', swatch: null, testId: 'cell.color-none' },
+      ...colors.map((c): MenuEntry => ({ kind: 'command', command: 'cell.color', args: c.key, label: c.label ?? c.key, swatch: c.color, testId: `cell.color-${c.key}` })),
+    ],
+  };
+}
+
+function cellMenu(store: AppStore): MenuEntry[] {
   const items: MenuEntry[] = [
     command('edit.cut'),
     command('edit.copy'),
@@ -31,7 +48,7 @@ function cellMenu(store: AppStore, request: ContextMenuRequest): MenuEntry[] {
     command('row.insertBelow'),
     command('row.delete'),
     SEP,
-    command('cell.color', { args: { at: { x: request.clientX, y: request.clientY } }, labelKey: 'ui.ctx.cellColor' }),
+    cellColorMenu(store),
     command('cell.comment'),
   ];
   if (anchorComment(store) !== undefined) items.push(command('cell.comment', { args: { remove: true }, labelKey: 'ui.note.delete' }));
@@ -77,7 +94,7 @@ export const contextMenuExtension: GridExtension = {
     if (store.table(request.table) === undefined) return null;
     switch (request.area) {
       case 'cell':
-        return cellMenu(store, request);
+        return cellMenu(store);
       case 'rowHeader':
         return rowHeaderMenu();
       case 'columnHeader':

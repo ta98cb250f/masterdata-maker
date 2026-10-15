@@ -10,8 +10,9 @@ import { localeCommands } from './locale';
 import { navigateCommands } from './navigate';
 import type { CommandDef } from './registry';
 import { rowCommands } from './rows';
+import { rowsColsCommands } from './rowsCols';
 
-export const COMMAND_MODULES: readonly (readonly CommandDef[])[] = [fileCommands, editCommands, navigateCommands, rowCommands, gridFeatureCommands, exportCommands, localeCommands, dialogPanelCommands];
+export const COMMAND_MODULES: readonly (readonly CommandDef[])[] = [fileCommands, editCommands, navigateCommands, rowCommands, rowsColsCommands, gridFeatureCommands, exportCommands, localeCommands, dialogPanelCommands];
 
 /** 登録するすべての操作（パネルの開閉の操作 `panel.<id>` を含む） */
 export function allCommands(): CommandDef[] {

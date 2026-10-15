@@ -171,6 +171,27 @@ describe('未保存の判定（FR-FIO-03〜05）', () => {
     expect(session.isTableModified(uid('skill'))).toBe(false);
   });
 
+  it('手で元の値に入れ直したテーブルは、markUnchangedSaved で保存済みになる（書き込まずに未保存の印を消す）', () => {
+    session.run(setHp('1000'));
+    session.run(setHp('1200'));
+    session.run(setCost('99'));
+    expect(session.planSave().files.map((f) => f.path)).toEqual(['tables/skill.yaml']);
+    const events: EditEvent[] = [];
+    session.subscribe((e) => events.push(e));
+    // まだ内容が違う skill は保存済みにしない
+    expect(session.markUnchangedSaved()).toEqual([uid('character')]);
+    expect(events.map((e) => e.kind)).toEqual(['saved']);
+    expect(session.isTableModified(uid('character'))).toBe(false);
+    expect(session.isTableModified(uid('skill'))).toBe(true);
+    expect(session.markUnchangedSaved()).toEqual([]);
+    expect(events).toHaveLength(1);
+    // 元に戻すと、ファイルと違う内容（hp 1000）になるので未保存になる
+    session.undo();
+    session.undo();
+    expect(session.isTableModified(uid('character'))).toBe(true);
+    expect(session.isTableDirty(uid('character'))).toBe(true);
+  });
+
   it('保存すると保存したテキストが新しい基準になる。履歴は消えず、元に戻すと未保存になる', () => {
     session.run(setHp('1000'));
     const plan = session.planSave();

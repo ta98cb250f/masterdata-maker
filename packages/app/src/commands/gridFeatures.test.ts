@@ -10,6 +10,7 @@ import { applyFill, autoFillDown, moveRange } from '../grid/extensions/fillHandl
 import { moveDisplayedColumns, moveDisplayedRows } from '../grid/extensions/reorder';
 import { refKeys, refNamesText, refTargetOf } from '../sheet/references';
 import { AppStore } from '../store/AppStore';
+import type { MenuEntry } from '../store/types';
 import { allCommands } from './index';
 import { setColumnFilter } from './sortFilter';
 
@@ -369,7 +370,10 @@ describe('右クリックメニュー（FR-CTX-01）', () => {
     const table = store.getState().activeTable!;
     select(0, col('skill_ids'));
     const cell = contextMenuExtension.contextMenu?.({ area: 'cell', table, row: 0, col: col('skill_ids'), clientX: 10, clientY: 10 }, store) ?? [];
-    const ids = cell.flatMap((e) => (e.kind === 'command' ? [e.command] : []));
+    // セル色はサブメニュー（色ごとの項目）
+    const commandIds = (entries: readonly MenuEntry[]): string[] =>
+      entries.flatMap((e) => (e.kind === 'command' ? [e.command] : e.kind === 'submenu' ? commandIds(e.items) : []));
+    const ids = commandIds(cell);
     expect(ids).toEqual(
       expect.arrayContaining(['edit.cut', 'edit.copy', 'edit.paste', 'edit.pasteValues', 'row.insertAbove', 'row.insertBelow', 'row.delete', 'cell.color', 'cell.comment', 'edit.clear', 'cell.gotoRef']),
     );

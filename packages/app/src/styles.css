@@ -140,9 +140,6 @@ button {
   outline: none;
   font-size: 14px;
 }
-.sc-menu .sc-menu {
-  position: absolute;
-}
 .sc-menu-item {
   position: relative;
   display: flex;
@@ -165,6 +162,16 @@ button {
 }
 .sc-menu-label {
   flex: 1;
+}
+.sc-menu-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+}
+.sc-menu-swatch-none {
+  display: inline-flex;
+  color: var(--sc-muted);
 }
 .sc-menu-shortcut {
   margin-left: 32px;

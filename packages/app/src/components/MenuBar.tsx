@@ -42,11 +42,13 @@ export function MenuBar() {
     if (refocus) store.focusGrid();
   };
 
-  // メニューの外を押したら閉じる
+  // メニューの外を押したら閉じる（サブメニューはメニューバーの外に描くので、一覧の中を押したときは閉じない）
   useEffect(() => {
     if (open === null) return;
     const onDown = (e: MouseEvent) => {
-      if (!(navRef.current?.contains(e.target as Node) ?? false)) setOpen(null);
+      const target = e.target as Node;
+      const inMenu = target instanceof Element && target.closest('.sc-menu') !== null;
+      if (!(navRef.current?.contains(target) ?? false) && !inMenu) setOpen(null);
     };
     window.addEventListener('mousedown', onDown, true);
     return () => window.removeEventListener('mousedown', onDown, true);

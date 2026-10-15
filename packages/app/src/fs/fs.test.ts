@@ -283,4 +283,28 @@ describe('ダウンロード保存方式', () => {
     expect(loaded.project.common.base_fields.items.length + (big?.fields.length ?? 0)).toBe(50);
     expect(loaded.project.brokenTables).toEqual([]);
   });
+
+  it('大きなテーブルを複数生成できる（NFR-11 の確認用。名前は big_001 から）', async () => {
+    const files = generateLargeProjectFiles({ rows: 5, columns: 20, format: 'yaml', bigTables: 3 });
+    expect(Object.keys(files).filter((p) => p.startsWith('tables/')).sort()).toEqual([
+      'tables/big_001.yaml',
+      'tables/big_002.yaml',
+      'tables/big_003.yaml',
+      'tables/skill.yaml',
+    ]);
+    const loaded = await loadProject(new FileListProjectFs(Object.entries(files).map(([p, t]) => [p, new Blob([t])])));
+    expect(loaded.status).toBe('ok');
+    if (loaded.status !== 'ok') return;
+    expect(loaded.project.tables.map((t) => [t.name, t.records.length, t.fields.length + 2])).toEqual([
+      ['big_001', 5, 20],
+      ['big_002', 5, 20],
+      ['big_003', 5, 20],
+      ['skill', 50, 4],
+    ]);
+    // 乱数の種はテーブルごとに変える
+    expect(files['tables/big_001.yaml'].slice(files['tables/big_001.yaml'].indexOf('records:'))).not.toBe(
+      files['tables/big_002.yaml'].slice(files['tables/big_002.yaml'].indexOf('records:')),
+    );
+    expect(loaded.project.brokenTables).toEqual([]);
+  });
 });
