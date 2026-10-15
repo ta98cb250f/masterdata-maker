@@ -1,6 +1,6 @@
 // 表示だけの並べ替えとフィルタ（FR-SRT-01、03、05、06）。条件から表示する行の並びを作る
 import type { Calculator, CellResult, FieldDef, FilterCell, SortKey, SortSpec, Table } from '@sheetcraft/core';
-import { DateTimeValue, FList, displayValue, sortRows, visibleRows } from '@sheetcraft/core';
+import { DateTimeValue, FList, VERSION_COLUMN, displayValue, sortRows, visibleRows } from '@sheetcraft/core';
 import type { FilterState, SortState, TableIssues } from '../store/types';
 import { cellDisplay } from './display';
 
@@ -75,7 +75,7 @@ export function computeOrder(
       {
         key: (row: number) => sortKeyOf(calc.getCell(table, records[row].uid, field.name), tz),
         direction: s.direction,
-        semver: field.name === 'version',
+        semver: field.name === VERSION_COLUMN,
       },
     ];
   });

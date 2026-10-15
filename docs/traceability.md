@@ -47,17 +47,17 @@
 
 | 状態 | 件数 | 初版（`677654c`）からの変化 |
 |---|---|---|
-| 実装済み | 186 | +6（D-4・NFR-11・NFR-31 は「H が作業中」から、NFR-40・D-10・NFR-06 は「一部」から） |
+| 実装済み | 187 | +7（FR-OUT-07 を追加。D-4・NFR-11・NFR-31 は「H が作業中」から、NFR-40・D-10・NFR-06 は「一部」から） |
 | 一部 | 7 | −3 |
 | 未実装 | 0 | — |
 | 対象外 | 4 | — |
-| 合計 | 197 | — |
+| 合計 | 198 | +1（FR-OUT-07） |
 
-「実装済み」186 件の確かめ方の深さ（記号は §2.6）は次のとおり。
+「実装済み」187 件の確かめ方の深さ（記号は §2.6）は次のとおり。
 
 | 確かめ方 | 件数 | 該当 |
 |---|---|---|
-| 確認=動作 | 125 | 初版の 120 件に、D-4・D-10・NFR-11・NFR-31・NFR-40 を加えた |
+| 確認=動作 | 126 | 初版の 120 件に、D-4・D-10・NFR-11・NFR-31・NFR-40・FR-OUT-07 を加えた |
 | 確認=テスト | 56 | — |
 | 確認=コード（選定の記録・構成を読んだ） | 4 | NFR-06、NFR-20、NFR-21、NFR-22 |
 | 確認=コード（浅い。要件を判定するテストが無い） | 1 | FR-ANN-04 |
@@ -75,16 +75,16 @@
 | リソースファイル（DR-*） | 34 | 34 | 0 | 0 | 0 |
 | 数式（FR-FML-*） | 16 | 16 | 0 | 0 | 0 |
 | 入力規則・検査（FR-VAL-*） | 11 | 10 | 0 | 0 | 1 |
-| 出力・CLI（FR-OUT-*、FR-CLI-*） | 12 | 12 | 0 | 0 | 0 |
+| 出力・CLI（FR-OUT-*、FR-CLI-*） | 13 | 13 | 0 | 0 | 0 |
 | 非機能（NFR-*） | 23 | 20 | 2 | 0 | 1 |
 
 「画面と操作」の「一部」1 件は FR-CLP-02（Googleスプレッドシート・Excel の実物との往復が未確認）である。受け入れ基準の「一部」2 件は 2 番（Googleスプレッドシート本体）と 9 番（Firefox 本体）で、画面テストはあるが実物では確かめていない。「前提」の「一部」1 件は D-11（Firefox・Safari）、「非機能」の「一部」2 件は NFR-01（Chromium 以外のブラウザ）と NFR-30（Googleスプレッドシートの計算結果との突き合わせ）である。
 
-### 1.3 優先度と状態（FR-*・DR-*・NFR-* の 175 件）
+### 1.3 優先度と状態（FR-*・DR-*・NFR-* の 176 件）
 
 | 優先度 | 件数 | 実装済み | 一部 | 未実装 | 対象外 |
 |---|---|---|---|---|---|
-| 必須 | 136 | 133 | 3 | 0 | 0 |
+| 必須 | 137 | 134 | 3 | 0 | 0 |
 | 推奨 | 35 | 35 | 0 | 0 | 0 |
 | 将来・— | 4 | 0 | 0 | 0 | 4 |
 
@@ -711,13 +711,14 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 | FR-OUT-04 | 未入力は `default` か `null` | 必須 | 実装済み | `packages/core/src/export/export.ts` の `outValue`（実効値の `raw`） | `packages/core/src/export/export.test.ts`「default と null（FR-OUT-04）」 | 確認=動作 |
 | FR-OUT-05 | 検査エラーがあれば出力しない（CLI は終了コード 1）。`--force` のときだけ出力 | 必須 | 実装済み | `packages/core/src/export/export.ts` の `planExport`、`packages/cli/src/run.ts` の `cmdExport` | `packages/core/src/export/export.test.ts`「検査エラーと --force（FR-OUT-05）」、`packages/cli/src/run.test.ts`「検査エラーがあれば書かずに終了コード 1。--force なら書く」、`packages/app/e2e/export.spec.ts`、`packages/core/src/export/export.test.ts` と `packages/cli/src/run.test.ts` の `--force` の型に合わない値の場合（K の `bf5140b`） | `--force` で出力するとき、型に合わない値は `null` で出す（P-51。判定は常に行う検査と同じ `packages/core/src/validate/values.ts` の `checkRawValue`、`default` は `checkDefaultValue`。式のエラーも `null`。検査ルールの違反・警告・`ref` の参照先が無い値は、型には合っているのでそのまま出す。B-2）。テーブルを選んだときの検査の範囲は P-52（B-3）。確認=動作 |
 | FR-OUT-06 | 画面から全テーブル（または選んだテーブル）を出力。直接保存方式は出力先フォルダ、ダウンロード保存方式はダウンロード | 推奨 | 実装済み | `packages/app/src/store/exportOutput.ts` の `runExport`、`packages/app/src/dialogs/export.tsx` の `exportDialog`、`packages/app/src/commands/export.ts` | `packages/app/src/store/exportOutput.test.ts`、`packages/app/e2e/export.spec.ts` | 保存していない変更も出力に含む。確認=動作 |
+| FR-OUT-07 | 出力する版を指定すると、`version` がその版以下のレコードだけを出す（空の `version` は常に出す）。指定が無ければすべて | 必須 | 実装済み | `packages/core/src/export/version.ts` の `selectByVersion`、`packages/core/src/export/export.ts` の `planExport`（`version`）、`packages/app/src/dialogs/export.tsx`（版の入力欄）、`packages/cli/src/run.ts`（`--until`） | `packages/core/src/export/export.test.ts`「版を指定した出力（FR-OUT-07、P-64）」、`packages/cli/src/run.test.ts`「--until を付けると…」、`packages/app/src/store/exportOutput.test.ts`「版を指定すると…」、`packages/app/e2e/export.spec.ts`「版を指定すると…」 | 比べ方・空の版・読めない版・参照切れの扱いは P-64。確認=動作 |
 
 ### §9.2 CLI
 
 | ID | 要件の要約 | 優先度 | 状態 | 実装 | テスト | 備考 |
 |---|---|---|---|---|---|---|
 | FR-CLI-01 | `validate`: エラーがあれば終了コード 1 | 必須 | 実装済み | `packages/cli/src/run.ts` の `cmdValidate` | `packages/cli/src/run.test.ts`「validate（FR-CLI-01）」 | 警告だけなら 0、使い方の誤りと読み込みの失敗は 2。確認=動作 |
-| FR-CLI-02 | `export`: 出力する | 必須 | 実装済み | `packages/cli/src/run.ts` の `cmdExport`（`--force`・`--tables`・`--out`・`--format`） | `packages/cli/src/run.test.ts`「export（FR-CLI-02）」 | 確認=動作 |
+| FR-CLI-02 | `export`: 出力する | 必須 | 実装済み | `packages/cli/src/run.ts` の `cmdExport`（`--force`・`--tables`・`--out`・`--format`・`--until`） | `packages/cli/src/run.test.ts`「export（FR-CLI-02）」 | 確認=動作 |
 | FR-CLI-03 | `new`: 共通列を含むテーブルの雛形 | 必須 | 実装済み | `packages/cli/src/run.ts` の `cmdNew` | `packages/cli/src/run.test.ts`「new（FR-CLI-03）」 | 雛形は `fields: []`（共通列は共通設定から付く。P-03）。確認=動作 |
 | FR-CLI-04 | `fmt`: 正規形で書き直す。`--check` で正規形でなければ終了コード 1 | 推奨 | 実装済み | `packages/cli/src/run.ts` の `cmdFmt` | `packages/cli/src/run.test.ts`「fmt（FR-CLI-04）」 | 読み込みエラーのファイルは書かない（P-40）。確認=動作 |
 | FR-CLI-05 | `convert`: YAML ⇔ JSON | 必須 | 実装済み | `packages/cli/src/run.ts` の `cmdConvert`、`packages/core/src/io/project.ts` の `planProjectWrite`（`format`） | `packages/cli/src/run.test.ts`「convert（FR-CLI-05）」 | 読み込みエラーのテーブルがあれば全体を取りやめる。確認=動作 |

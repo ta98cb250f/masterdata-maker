@@ -22,5 +22,9 @@
   "ui.export.formatName.yaml": "YAML",
   "ui.export.formatName.csv": "CSV",
   "ui.export.formatName.protobuf": "Protocol Buffers（.proto と .pb）",
-  "ui.export.protobufHint": "テーブルごとに、スキーマ（.proto）とデータ（.pb）を出します。"
+  "ui.export.protobufHint": "テーブルごとに、スキーマ（.proto）とデータ（.pb）を出します。",
+  "ui.export.version": "版",
+  "ui.export.versionPlaceholder": "すべて",
+  "ui.export.versionHint": "version 列がこの版（例: 1.2.3）以下のレコードだけを出します（version が空のレコードは常に出します）。空欄ならすべてのレコードを出します。",
+  "ui.export.versionInvalid": "セマンティック バージョニングの版（例: 1.2.3）を入力してください"
 }

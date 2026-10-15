@@ -1,6 +1,6 @@
-// 出力のダイアログ（FR-OUT-06、FR-OUT-05）: 出力するテーブルと形式を選び、出力する。検査エラーがあればエラーを示して出力しない
+// 出力のダイアログ（FR-OUT-06、FR-OUT-05、FR-OUT-07）: 出力するテーブルと形式（と版）を選び、出力する。検査エラーがあればエラーを示して出力しない
 import type { OutputFormat } from '@sheetcraft/core';
-import { DEFAULT_OUTPUT_FORMAT, isOutputFormat, OUTPUT_FORMATS, resolveProjectPaths } from '@sheetcraft/core';
+import { DEFAULT_OUTPUT_FORMAT, isOutputFormat, OUTPUT_FORMATS, parseSemver, resolveProjectPaths } from '@sheetcraft/core';
 import { useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import type { ExportOutcome } from '../store/exportOutput';
@@ -27,12 +27,16 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
   const [format, setFormat] = useState<OutputFormat>(() =>
     store.project === null ? DEFAULT_OUTPUT_FORMAT : resolveProjectPaths(store.project.config).outputFormat,
   );
+  // 出力する版。空欄ならすべてのレコード
+  const [version, setVersion] = useState('');
   const project = store.project;
   const source = store.getState().source;
   if (project === null || source === null) return null;
   const paths = resolveProjectPaths(project.config);
   const direct = source.capabilities.directSave;
   const allSelected = selected.size === tabs.length;
+  const versionText = version.trim();
+  const versionInvalid = versionText !== '' && parseSemver(versionText) === null;
 
   const toggle = (name: string) => {
     const next = new Set(selected);
@@ -73,7 +77,14 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
   const run = async (force: boolean) => {
     setPhase({ kind: 'running' });
     try {
-      finish(await runExport(store, { tables: tabs.filter((tab) => selected.has(tab.name)).map((tab) => tab.name), force, format }));
+      finish(
+        await runExport(store, {
+          tables: tabs.filter((tab) => selected.has(tab.name)).map((tab) => tab.name),
+          force,
+          format,
+          version: versionText === '' ? undefined : versionText,
+        }),
+      );
     } catch (e) {
       setPhase({ kind: 'failed', message: e instanceof ValidationFailure ? t(e.code, e.params) : t('ui.export.failed', { message: errorMessage(e) }) });
     }
@@ -98,7 +109,7 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
         <button type="button" className="sc-button" onClick={close}>
           {t('ui.dialog.cancel')}
         </button>
-        <button type="button" className="sc-button primary" disabled={running || selected.size === 0} onClick={() => void run(false)} data-testid="export-run">
+        <button type="button" className="sc-button primary" disabled={running || selected.size === 0 || versionInvalid} onClick={() => void run(false)} data-testid="export-run">
           {t(running ? 'ui.export.running' : 'ui.export.run')}
         </button>
       </>
@@ -145,6 +156,25 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
                 </option>
               ))}
             </select>
+          </Field>
+          <Field
+            label={t('ui.export.version')}
+            htmlFor="export-version"
+            hint={versionInvalid ? undefined : t('ui.export.versionHint')}
+            error={versionInvalid ? t('ui.export.versionInvalid') : undefined}
+            testId="export-version-field"
+          >
+            <input
+              id="export-version"
+              className="sc-text mono"
+              value={version}
+              placeholder={t('ui.export.versionPlaceholder')}
+              spellCheck={false}
+              disabled={running}
+              aria-invalid={versionInvalid}
+              onChange={(e) => setVersion(e.target.value)}
+              data-testid="export-version"
+            />
           </Field>
           {store.isProjectModified() && <p className="sc-fd-note">{t('ui.export.includesUnsaved')}</p>}
           <label className="sc-fd-check sc-fd-all">

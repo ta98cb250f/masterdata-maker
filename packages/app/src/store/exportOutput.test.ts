@@ -50,6 +50,14 @@ describe('画面からの出力（FR-OUT-06、FR-OUT-05）', () => {
     expect(JSON.parse(await d.got[0].blob.text())[0].hp).toBe(0);
   });
 
+  it('版を指定すると、version がその版以下のレコードだけを出す（FR-OUT-07）', async () => {
+    const { store } = await openTestStore();
+    const d = downloads();
+    const result = await runExport(store, { tables: ['stage'], force: false, version: '0.1.10' }, { download: d.download });
+    expect(result.status).toBe('downloaded');
+    expect((JSON.parse(await d.got[0].blob.text()) as { id: number }[]).map((r) => r.id)).toEqual([1]);
+  });
+
   it('protobuf の名前の問題は強制しても出力できない（P-63）', async () => {
     const { store } = await openTestStore();
     const d = downloads();

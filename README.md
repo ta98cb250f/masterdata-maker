@@ -70,7 +70,7 @@ node packages/cli/dist/cli.mjs <コマンド> [プロジェクトのフォルダ
 | コマンド | 内容 |
 |---|---|
 | `validate` | 全テーブルを検査する。エラーがあれば終了コード 1（警告だけなら 0） |
-| `export [--force] [--tables <テーブル,…>] [--out <フォルダ>] [--format json\|yaml\|csv\|protobuf]` | 出力ファイル（ゲームが読むファイル）を作る。出力先の既定はプロジェクト設定の `output.out_dir`、形式の既定は `output.format`。検査エラーがあれば、`--force` が無い限り出力しない（終了コード 1） |
+| `export [--force] [--tables <テーブル,…>] [--out <フォルダ>] [--format json\|yaml\|csv\|protobuf] [--until <版>]` | 出力ファイル（ゲームが読むファイル）を作る。出力先の既定はプロジェクト設定の `output.out_dir`、形式の既定は `output.format`。`--until` を付けると、`version` 列がその版（semver）以下のレコードだけを出す（`version` が空のレコードは常に出す。FR-OUT-07）。検査エラーがあれば、`--force` が無い限り出力しない（終了コード 1） |
 | `new <テーブル> [--display-name <表示名>]` | 共通列を含むテーブルの雛形を作る |
 | `fmt [--check]` | 全ファイルを正規形で書き直す。`--check` なら書き直さずに確かめ、正規形でないファイルがあれば終了コード 1 |
 | `convert --to yaml\|json` | リソースファイル（設定・共通設定・テーブル）の形式を変える |
@@ -89,6 +89,7 @@ node packages/cli/dist/cli.mjs <コマンド> [プロジェクトのフォルダ
 node packages/cli/dist/cli.mjs validate samples/basic-yaml
 node packages/cli/dist/cli.mjs export samples/basic-yaml --out /tmp/out
 node packages/cli/dist/cli.mjs export samples/basic-yaml --format protobuf --out /tmp/pb
+node packages/cli/dist/cli.mjs export samples/basic-yaml --until 0.1.10 --out /tmp/until-0.1.10
 node packages/cli/dist/cli.mjs new item --display-name アイテム path/to/project
 node packages/cli/dist/cli.mjs fmt --check path/to/project
 node packages/cli/dist/cli.mjs convert --to json path/to/project

@@ -22,5 +22,9 @@
   "ui.export.formatName.yaml": "YAML",
   "ui.export.formatName.csv": "CSV",
   "ui.export.formatName.protobuf": "Protocol Buffers (.proto and .pb)",
-  "ui.export.protobufHint": "Writes a schema (.proto) and the data (.pb) for each table."
+  "ui.export.protobufHint": "Writes a schema (.proto) and the data (.pb) for each table.",
+  "ui.export.version": "Version",
+  "ui.export.versionPlaceholder": "All",
+  "ui.export.versionHint": "Only records whose version column is at most this version (e.g. 1.2.3) are exported (records with an empty version are always exported). Leave it empty to export all records.",
+  "ui.export.versionInvalid": "Enter a semantic version such as 1.2.3"
 }

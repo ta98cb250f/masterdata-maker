@@ -17,6 +17,8 @@ export interface ExportRequest {
   force: boolean;
   /** 出力の形式（省略時はプロジェクト設定の output.format） */
   format?: OutputFormat;
+  /** 出力する版（semver。省略時はすべてのレコード。FR-OUT-07） */
+  version?: string;
 }
 
 export type ExportOutcome =
@@ -46,7 +48,12 @@ export interface ExportDeps {
 export async function runExport(store: AppStore, request: ExportRequest, deps: ExportDeps = {}): Promise<ExportOutcome> {
   const { project, calc, source } = store.getState();
   if (project === null || calc === null || source === null) return { status: 'empty' };
-  const plan = await backgroundJobs(project, calc).exportPlan({ tables: [...request.tables], force: request.force, format: request.format });
+  const plan = await backgroundJobs(project, calc).exportPlan({
+    tables: [...request.tables],
+    force: request.force,
+    format: request.format,
+    version: request.version,
+  });
   if (!plan.ok) return { status: 'errors', errors: plan.diagnostics.filter(isError), forceable: !plan.blocked };
   if (plan.files.length === 0) return { status: 'empty' };
   const outDir = resolveProjectPaths(project.config).outDir;

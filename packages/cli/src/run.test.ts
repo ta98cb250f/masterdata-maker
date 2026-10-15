@@ -221,6 +221,25 @@ describe('export（FR-CLI-02）', () => {
     expect(bad).toEqual({ code: 2, stdout: '', stderr: '--format には json・yaml・csv・protobuf のいずれかを指定してください（xml が指定されました）\n' });
   });
 
+  it('--until を付けると version がその版以下のレコードだけを出す。版の書式の誤りは終了コード 2（FR-OUT-07）', async () => {
+    const dir = await copySample('basic-yaml');
+    const result = await cli(['export', '--format', 'csv', '--tables', 'stage', '--until', '0.1.10'], dir);
+    expect(result).toEqual({ code: 0, stdout: '出力しました: build/stage.csv\n', stderr: '' });
+    expect(await readFile(join(dir, 'build/stage.csv'), 'utf8')).toBe('id,version,name,boss_id\n1,0.1.2,stage_01,3\n');
+    // version が空のレコード（character の 1 と 2）は常に出す
+    await cli(['export', '--tables', 'character', '--until', '0.1.1'], dir);
+    const ids = (JSON.parse(await readFile(join(dir, 'build/character.json'), 'utf8')) as { id: number }[]).map((r) => r.id);
+    expect(ids).toEqual([1, 2]);
+    const bad = await cli(['export', '--until', '0.1'], dir);
+    expect(bad).toEqual({
+      code: 2,
+      stdout: '',
+      stderr: '--until にはセマンティック バージョニングの版（例: 1.2.3）を指定してください（0.1 が指定されました）\n',
+    });
+    const en = await cli(['export', '--until', '0.1', '--lang', 'en'], dir);
+    expect(en).toEqual({ code: 2, stdout: '', stderr: '--until must be a semantic version such as 1.2.3 (0.1 was given)\n' });
+  });
+
   it('protobuf でメッセージ名が重なれば、--force でも書かずに 1（P-63）', async () => {
     const dir = await copySample('basic-yaml');
     await writeFile(join(dir, 'tables/stage_table.yaml'), 'table: stage_table\nfields: []\nrecords: []\n');
