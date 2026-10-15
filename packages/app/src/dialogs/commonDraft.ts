@@ -4,11 +4,13 @@ import type { CellTarget, ColorDef, EditFailure, EnumDef, FieldDef, FieldType, I
 import {
   EditCode,
   RichCell,
+  cellValue,
   cloneFieldDef,
   emptyResult,
   isValidIdentifier,
   renameBaseField,
   renameEnum,
+  renameEnumValues,
   setBaseFields,
   setCellColor,
   setColors,
@@ -24,8 +26,14 @@ export interface EnumDraft {
   original: string | null;
   name: string;
   display_name: string;
-  /** 値（1 行に 1 つ） */
-  values: string;
+  values: EnumValueDraft[];
+}
+
+export interface EnumValueDraft {
+  id: number;
+  /** もとの値。新しく足したものは null。文字を変えると、この値のセルも新しい値に書き換える */
+  original: string | null;
+  value: string;
 }
 
 export interface ColorDraft {
@@ -56,7 +64,11 @@ export function draftId(): number {
 }
 
 export function enumDraft(def: EnumDef): EnumDraft {
-  return { id: draftId(), original: def.name, name: def.name, display_name: def.display_name ?? '', values: def.values.join('\n') };
+  return { id: draftId(), original: def.name, name: def.name, display_name: def.display_name ?? '', values: def.values.map((v) => ({ id: draftId(), original: v, value: v })) };
+}
+
+export function newEnumValueDraft(value: string): EnumValueDraft {
+  return { id: draftId(), original: null, value };
 }
 
 export function colorDraft(def: ColorDef): ColorDraft {
@@ -82,12 +94,19 @@ export function commonDraftOf(project: Project, timeZone: string): CommonDraft {
   };
 }
 
-/** 値の欄の行（前後の空白を除き、空の行は無視する） */
-export function enumValues(text: string): string[] {
-  return text
-    .split('\n')
-    .map((v) => v.trim())
-    .filter((v) => v !== '');
+/** 値の一覧（前後の空白を除き、空の行は無視する） */
+export function enumValues(values: readonly EnumValueDraft[]): string[] {
+  return values.map((v) => v.value.trim()).filter((v) => v !== '');
+}
+
+/** 値の名前の変更（もとの値があり、文字を変えた行。空にした行は削除として扱う） */
+export function enumValueRenames(d: EnumDraft): { from: string; to: string }[] {
+  const out: { from: string; to: string }[] = [];
+  for (const v of d.values) {
+    const to = v.value.trim();
+    if (v.original !== null && to !== '' && to !== v.original) out.push({ from: v.original, to });
+  }
+  return out;
 }
 
 function toEnumDef(d: EnumDraft): EnumDef {
@@ -175,6 +194,28 @@ export function enumUsage(project: Project, name: string): string[] {
   return used;
 }
 
+/** 列挙型の値ごとの、その値を入れているセルの数（その列挙型を使う列のセル。list<enum> は要素ごとに数える） */
+export function enumValueCounts(project: Project, name: string): Map<string, number> {
+  const counts = new Map<string, number>();
+  const add = (v: unknown) => {
+    if (typeof v === 'string') counts.set(v, (counts.get(v) ?? 0) + 1);
+  };
+  const uses = (f: FieldDef) => (f.type === 'enum' || f.type === 'list<enum>') && f.enum_ref === name;
+  const base = project.common.base_fields.items.filter(uses);
+  for (const table of project.tables) {
+    const columns = [...base, ...table.fields.filter(uses)];
+    if (columns.length === 0) continue;
+    for (const record of table.records) {
+      for (const column of columns) {
+        const value = cellValue(record.cells.get(column.name));
+        if (Array.isArray(value)) new Set(value).forEach(add);
+        else add(value);
+      }
+    }
+  }
+  return counts;
+}
+
 /** セル色を使っているセル（テーブルの uid → セル） */
 export function colorUsage(project: Project, key: string): Map<number, CellTarget[]> {
   const used = new Map<number, CellTarget[]>();
@@ -235,7 +276,7 @@ export interface CommonChangePlan {
 
 /**
  * 下書きを編集の手順にする。変えていない部分は手順に入れない（共通設定のファイルを作らない）。
- * 列挙型: 名前の変更（renameEnum。列の enum_ref も書き換わる）→ 一覧の置き換え（setEnums）
+ * 列挙型: 名前の変更（renameEnum。列の enum_ref も書き換わる）→ 値の名前の変更（renameEnumValues。セルと default も書き換わる）→ 一覧の置き換え（setEnums）
  * 共通列: 名前の変更（renameBaseField。全テーブルのセルのキー・式・ref も書き換わる）→ 一覧の置き換え（setBaseFields）→ 列定義の検査
  * セル色: 一覧の置き換え（setColors）→ キーを変えた色のセルを新しいキーにする（setCellColor）
  */
@@ -247,12 +288,17 @@ export function planCommonChange(project: Project, draft: CommonDraft, ctx: Inpu
   // 列挙型
   const enums = draft.enums.map(toEnumDef);
   const enumRenames = draft.enums.filter((d) => d.original !== null && d.original !== d.name.trim()).map((d) => ({ from: d.original as string, to: d.name.trim() }));
-  if (enumRenames.length > 0 || !sameValue(enums, common.enums.items)) {
+  const valueRenamed = draft.enums.some((d) => d.original !== null && enumValueRenames(d).length > 0);
+  if (enumRenames.length > 0 || valueRenamed || !sameValue(enums, common.enums.items)) {
     parts.push('enums');
     // 消した列挙型の名前を、名前の変更の行き先に使えるように、先に消す
     const kept = new Set(draft.enums.map((d) => d.original).filter((n): n is string => n !== null));
     if (common.enums.items.some((e) => !kept.has(e.name))) steps.push((p) => setEnums(p, p.common.enums.items.filter((e) => kept.has(e.name))));
     steps.push(...renameSteps(enumRenames, common.enums.items.map((e) => e.name), (from, to) => (p) => renameEnum(p, { from, to })));
+    for (const d of draft.enums) {
+      const renames = enumValueRenames(d);
+      if (d.original !== null && renames.length > 0) steps.push((p) => renameEnumValues(p, { enum: d.name.trim(), renames }));
+    }
     steps.push((p) => setEnums(p, enums));
   }
 

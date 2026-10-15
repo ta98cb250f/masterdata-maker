@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RichCell, inputContext } from '@sheetcraft/core';
 import { openSampleStore, recordUid } from '../testing/sampleStore';
 import type { CommonDraft } from './commonDraft';
-import { colorDraft, colorUsage, commonDraftErrors, commonDraftOf, countCells, enumDraft, enumUsage, hasCommonErrors, newBaseFieldDraft, planCommonChange } from './commonDraft';
+import { colorDraft, colorUsage, commonDraftErrors, commonDraftOf, countCells, enumDraft, enumUsage, enumValueCounts, hasCommonErrors, newBaseFieldDraft, newEnumValueDraft, planCommonChange } from './commonDraft';
 
 const TZ = 'Asia/Tokyo';
 
@@ -27,7 +27,7 @@ describe('共通設定の編集（FR-TBL-03）', () => {
   it('列挙型の名前の変更は列の enum_ref も書き換え、値の編集と追加・削除と合わせて 1 回で戻せる', async () => {
     const { project, session, draft, apply } = await setup();
     const d = draft();
-    d.enums[0] = { ...d.enums[0], name: 'grade', values: 'N\nR\nSR\nSSR\nUR' };
+    d.enums[0] = { ...d.enums[0], name: 'grade', values: [...d.enums[0].values, newEnumValueDraft('UR')] };
     d.enums.splice(1, 1);
     d.enums.push({ ...enumDraft({ name: 'size', values: ['S', 'M'] }), original: null });
     expect(enumUsage(project, 'rarity')).toEqual(['character.rarity']);
@@ -53,6 +53,40 @@ describe('共通設定の編集（FR-TBL-03）', () => {
     const fields = project.tables.find((t) => t.name === 'character')?.fields;
     expect(fields?.find((f) => f.name === 'rarity')?.enum_ref).toBe('element');
     expect(fields?.find((f) => f.name === 'element')?.enum_ref).toBe('rarity');
+  });
+
+  it('列挙型の値の名前を変えると、その値のセル（list<enum> は要素ごと）も書き換え、列挙型の名前の変更と合わせて 1 回で戻せる', async () => {
+    const { project, session, draft, apply } = await setup();
+    const character = () => project.tables.find((t) => t.name === 'character');
+    expect(enumValueCounts(project, 'element').get('火')).toBe(2);
+    const d = draft();
+    d.enums[0] = { ...d.enums[0], name: 'grade' };
+    d.enums[0].values = d.enums[0].values.map((v) => (v.value === 'SR' ? { ...v, value: 'SuperRare' } : v));
+    d.enums[1].values = d.enums[1].values.map((v) => (v.value === '火' ? { ...v, value: '炎' } : v));
+    const { plan, result } = apply(d);
+    expect(plan.parts).toEqual(['enums']);
+    expect(result.ok).toBe(true);
+    expect(project.common.enums.items.map((e) => [e.name, e.values])).toEqual([
+      ['grade', ['N', 'R', 'SuperRare', 'SSR']],
+      ['element', ['炎', '水', '風', '光', '闇']],
+    ]);
+    expect(character()?.records[1].cells.get('rarity')).toBe('SuperRare');
+    expect(character()?.records[0].cells.get('element')).toEqual(['炎', '光']);
+    expect(project.tables.find((t) => t.name === 'skill')?.records[0].cells.get('element')).toBe('炎');
+    session.undo();
+    expect(project.common.enums.items[0].name).toBe('rarity');
+    expect(character()?.records[1].cells.get('rarity')).toBe('SR');
+    expect(character()?.records[0].cells.get('element')).toEqual(['火', '光']);
+  });
+
+  it('列挙型の値の入れ替えもできる。空にした行は削除として扱い、セルは書き換えない', async () => {
+    const { project, draft, apply } = await setup();
+    const rarity = (i: number) => project.tables.find((t) => t.name === 'character')?.records[i].cells.get('rarity');
+    const d = draft();
+    d.enums[0].values = d.enums[0].values.map((v) => (v.value === 'SR' ? { ...v, value: 'SSR' } : v.value === 'SSR' ? { ...v, value: 'SR' } : v.value === 'R' ? { ...v, value: '' } : v));
+    expect(apply(d).result.ok).toBe(true);
+    expect(project.common.enums.items[0].values).toEqual(['N', 'SSR', 'SR']);
+    expect([rarity(0), rarity(1), rarity(2)]).toEqual(['SR', 'SSR', 'R']);
   });
 
   it('セル色のキーを変えると、その色のセルも新しいキーになる', async () => {
