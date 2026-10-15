@@ -164,6 +164,14 @@ export function checkRawValue(raw: RawValue, field: FieldDef, enumValues: readon
   return inspectRawValue(raw, field, enumValues).issues;
 }
 
+/** default の値を列の型で検査する（"" は文字列と列挙型、[] はリストで使える。J-02、P-11） */
+export function checkDefaultValue(def: RawValue, field: FieldDef, enumValues: readonly string[] | undefined): readonly Issue[] {
+  const type = field.type;
+  const emptyAllowed =
+    (def === '' && (type === 'string' || type === 'enum')) || (Array.isArray(def) && def.length === 0 && isListType(type));
+  return emptyAllowed ? VALID.issues : checkRawValue(def, field, enumValues);
+}
+
 /** 値が列の型に合うか（列挙型の値は問わない。ルールを当てはめてよいかの判定に使う） */
 export function isRawTypeValid(raw: RawValue, field: FieldDef): boolean {
   const type = field.type;

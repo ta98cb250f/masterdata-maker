@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parse as parseYamlLib } from 'yaml';
 import { Calculator } from '../calc';
 import { loadSample, testProject } from '../calc/test-project';
+import type { Diagnostic } from '../model/diagnostic';
 import { ExportCode } from './codes';
 import { planExport } from './index';
 
@@ -51,6 +52,47 @@ const CHARACTER_JSON = `[
 ]
 `;
 
+const SKILL_JSON = `[
+  {
+    "id": 1,
+    "version": null,
+    "name": "ファイア",
+    "cost": 10,
+    "element": "火"
+  },
+  {
+    "id": 2,
+    "version": null,
+    "name": "ヒール",
+    "cost": 8,
+    "element": "光"
+  },
+  {
+    "id": 3,
+    "version": null,
+    "name": "ウィンド",
+    "cost": 12,
+    "element": "風"
+  }
+]
+`;
+
+const STAGE_JSON = `[
+  {
+    "id": 1,
+    "version": "0.1.2",
+    "name": "stage_01",
+    "boss_id": 3
+  },
+  {
+    "id": 2,
+    "version": "0.1.11",
+    "name": "stage_02",
+    "boss_id": 2
+  }
+]
+`;
+
 const STAGE_YAML = `- id: 1
   version: "0.1.2"
   name: stage_01
@@ -70,10 +112,13 @@ describe('サンプルの出力（FR-OUT-01〜04）', () => {
       expect(result.ok).toBe(true);
       expect(result.diagnostics).toEqual([]);
       expect(result.files.map((f) => f.path)).toEqual(['build/character.json', 'build/skill.json', 'build/stage.json']);
-      expect(result.files[0].text).toBe(CHARACTER_JSON);
+      expect(result.files.map((f) => f.text)).toEqual([CHARACTER_JSON, SKILL_JSON, STAGE_JSON]);
       expect(result.files[0].text).not.toContain('memo');
       // 同じ入力からは必ず同じ出力（FR-OUT-03）
       expect(planExport(project, new Calculator(project))).toEqual(result);
+      // エラーが無ければ、force を付けても出力は同じ（P-51 で値が null になるのは型に合わない値だけ）
+      expect(planExport(project, new Calculator(project), { force: true })).toEqual(result);
+      expect(planExport(project, calc, { format: 'yaml', force: true })).toEqual(planExport(project, calc, { format: 'yaml' }));
     });
   }
 
@@ -223,6 +268,129 @@ records:
     expect(unknown.ok).toBe(false);
     expect(unknown.diagnostics).toEqual([
       { severity: 'error', code: ExportCode.unknownTable, table: 'nothing', params: { name: 'nothing' } },
+    ]);
+  });
+});
+
+describe('--force で出力するときの、型に合わない値（P-51）', () => {
+  const baseFields = 'base_fields:\n  - { name: id, type: int, primary: true }\n';
+
+  /** 診断を「主キー 列 コード」の文字列にする */
+  const summary = (ds: readonly Diagnostic[]): string[] => ds.map((d) => `${d.recordKey ?? '-'} ${d.field ?? '-'} ${d.code}`);
+
+  it('型に合わない値は null（判定は常に行う検査と同じ。FR-VAL-03）。リストは一部の要素の誤りでも全体を null にする', async () => {
+    const project = await testProject({
+      baseFields,
+      enums: 'enums:\n  - name: kind\n    values: [a, b]\n',
+      tables: {
+        t: `fields:
+  - { name: n, type: int }
+  - { name: big, type: int64 }
+  - { name: f, type: float }
+  - { name: flag, type: bool }
+  - { name: kind, type: enum, enum_ref: kind }
+  - { name: when, type: datetime }
+  - { name: nums, type: list<int> }
+  - { name: kinds, type: list<enum>, enum_ref: kind }
+  - { name: d, type: int, default: abc }
+  - { name: e, type: enum, enum_ref: kind, default: "" }
+records:
+  - { id: 1, n: 1, big: 2, f: 1.5, flag: true, kind: a, when: "2026-10-13T12:00:00+09:00", nums: [1, 2], kinds: [a, b], d: 3, e: b }
+  - { id: 2, n: abc, big: 9223372036854775808, f: x, flag: 1, kind: zzz, when: "2026-10-13 12:00", nums: [1, x], kinds: [a, zzz] }
+  - { id: 3, n: 1.5, when: "2026-13-01T00:00:00+09:00", nums: [1, 2.5] }
+  - { id: 4, n: 9007199254740992, nums: 3 }
+`,
+      },
+    });
+    const calc = new Calculator(project);
+    expect(planExport(project, calc).ok).toBe(false);
+    const forced = planExport(project, calc, { force: true });
+    expect(forced.ok).toBe(true);
+    // null にした値は、どれも検査で型のエラーになっている
+    expect(summary(forced.diagnostics)).toEqual([
+      '- d validate.invalidDefault',
+      '2 n validate.typeMismatch',
+      '2 big validate.intOutOfRange',
+      '2 f validate.typeMismatch',
+      '2 flag validate.typeMismatch',
+      '2 kind validate.notInEnum',
+      '2 when validate.invalidDateTime',
+      '2 nums validate.listElementTypeMismatch',
+      '2 kinds validate.listElementNotInEnum',
+      '3 n validate.notInteger',
+      '3 when validate.invalidDateTime',
+      '3 nums validate.listElementNotInteger',
+      '4 n validate.intOutOfRange',
+      '4 nums validate.typeMismatch',
+    ]);
+    const empty = { n: null, big: null, f: null, flag: null, kind: null, when: null, nums: null, kinds: null, d: null, e: '' };
+    expect(JSON.parse(forced.files[0].text)).toEqual([
+      { id: 1, n: 1, big: 2, f: 1.5, flag: true, kind: 'a', when: '2026-10-13T12:00:00+09:00', nums: [1, 2], kinds: ['a', 'b'], d: 3, e: 'b' },
+      // 型に合わない default（d の abc）も null。default に書ける ""（e）はそのまま
+      { id: 2, ...empty },
+      { id: 3, ...empty },
+      { id: 4, ...empty },
+    ]);
+    const yaml = planExport(project, calc, { force: true, format: 'yaml' }).files[0].text;
+    expect(yaml.split('\n').slice(11, 22)).toEqual([
+      '- id: 2',
+      '  "n": null',
+      '  big: null',
+      '  f: null',
+      '  flag: null',
+      '  kind: null',
+      '  when: null',
+      '  nums: null',
+      '  kinds: null',
+      '  d: null',
+      '  e: ""',
+    ]);
+  });
+
+  it('検査ルールの違反・警告・ref の参照先が無い値は、型に合っているのでそのまま出す', async () => {
+    const project = await testProject({
+      baseFields,
+      tables: {
+        skill: 'fields: []\nrecords:\n  - { id: 1 }\n',
+        t: `fields:
+  - { name: name, type: string, validation: { required: true, max_length: 3, regex: "^[a-z]+$" } }
+  - { name: hp, type: int, validation: { min: 1, max: 100 }, anomaly: { warn_above: 50 } }
+  - { name: code, type: string, validation: { unique: true } }
+  - { name: tags, type: list<string>, validation: { max_items: 1 } }
+  - { name: when, type: datetime, validation: { min: "2026-01-01T00:00:00+09:00" } }
+  - { name: skill, type: int, ref: skill.id }
+  - { name: skills, type: list<int>, ref: skill.id }
+records:
+  - { id: 1, name: ABCD, hp: 0, code: x, tags: [a, b], when: "2025-12-31T00:00:00+09:00", skill: 9, skills: [1, 9] }
+  - { id: 2, hp: 101, code: x }
+  - { id: 3, name: ok, hp: 60, skills: [1] }
+`,
+      },
+    });
+    const calc = new Calculator(project);
+    expect(planExport(project, calc).ok).toBe(false);
+    const forced = planExport(project, calc, { force: true, tables: ['t'] });
+    expect(forced.ok).toBe(true);
+    expect(summary(forced.diagnostics)).toEqual([
+      '1 name validate.tooLong',
+      '1 name validate.regexMismatch',
+      '1 hp validate.belowMin',
+      '1 code validate.duplicateValue',
+      '1 tags validate.tooManyItems',
+      '1 when validate.belowMin',
+      '1 skill validate.refNotFound',
+      '1 skills validate.listElementRefNotFound',
+      '2 name validate.required',
+      '2 hp validate.aboveMax',
+      '2 hp validate.warnAbove',
+      '2 code validate.duplicateValue',
+      '3 hp validate.warnAbove',
+    ]);
+    expect(JSON.parse(forced.files[0].text)).toEqual([
+      { id: 1, name: 'ABCD', hp: 0, code: 'x', tags: ['a', 'b'], when: '2025-12-31T00:00:00+09:00', skill: 9, skills: [1, 9] },
+      // required の違反は未入力なので null（FR-OUT-04）
+      { id: 2, name: null, hp: 101, code: 'x', tags: null, when: null, skill: null, skills: null },
+      { id: 3, name: 'ok', hp: 60, code: null, tags: null, when: null, skill: null, skills: [1] },
     ]);
   });
 });

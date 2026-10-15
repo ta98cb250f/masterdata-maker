@@ -179,6 +179,29 @@ describe('export（FR-CLI-02）', () => {
     expect(forced.stdout).toContain('出力しました: build/skill.json\n');
     expect(await readFile(join(dir, 'build/skill.json'), 'utf8')).toContain('"cost": -1');
   });
+
+  it('--force で出力するとき、列の型に合わない値は null。検査ルールの違反の値はそのまま（P-51）', async () => {
+    const dir = await copySample('basic-yaml');
+    await editFile(join(dir, 'tables/skill.yaml'), (t) =>
+      t.replace('cost: 8', 'cost: abc').replace('element: 光', 'element: 氷').replace('cost: 12', 'cost: -1'),
+    );
+    const forced = await cli(['export', '--force', '--tables', 'skill'], dir);
+    expect(forced).toEqual({
+      code: 0,
+      stdout:
+        'エラー tables/skill.yaml skill 2 cost: int の列に string の値「abc」があります\n' +
+        'エラー tables/skill.yaml skill 2 element: 「氷」は列挙型 element の値にありません\n' +
+        'エラー tables/skill.yaml skill 3 cost: 値 -1 が最小値 0 より小さいです\n' +
+        'エラー 3 件、警告 0 件\n' +
+        '出力しました: build/skill.json\n',
+      stderr: '',
+    });
+    expect(JSON.parse(await readFile(join(dir, 'build/skill.json'), 'utf8'))).toEqual([
+      { id: 1, version: null, name: 'ファイア', cost: 10, element: '火' },
+      { id: 2, version: null, name: 'ヒール', cost: null, element: null },
+      { id: 3, version: null, name: 'ウィンド', cost: -1, element: '風' },
+    ]);
+  });
 });
 
 describe('new（FR-CLI-03）', () => {

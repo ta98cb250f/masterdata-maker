@@ -7,16 +7,17 @@ import { elementType, isFieldExported, isListType } from '../model/field';
 import type { OutputFormat, Project } from '../model/project';
 import { compareNames, joinPath, normalizeDir, resolveProjectPaths } from '../model/project';
 import type { BrokenTable, Table } from '../model/table';
-import type { Calculator } from '../calc';
+import type { Calculator, CellResult } from '../calc';
 import type { OutNode } from '../io/emit';
 import { emitJson, emitYaml, map, scalar, seq, SerializeError } from '../io/emit';
 import { validateCommon, validateTable } from '../validate';
+import { checkDefaultValue, checkRawValue } from '../validate/values';
 import { ExportCode } from './codes';
 
 export interface ExportOptions {
   /** 出力するテーブル（省略時はすべて） */
   tables?: readonly string[];
-  /** 検査エラーがあっても出力する（FR-OUT-05） */
+  /** 検査エラーがあっても出力する（FR-OUT-05）。列の型に合わない値は null で出す（P-51） */
   force?: boolean;
   /** 出力先のフォルダ（プロジェクトのルートからの相対パス）。省略時は output.out_dir */
   outDir?: string;
@@ -49,6 +50,19 @@ function uniqueColumns(columns: readonly FieldDef[]): FieldDef[] {
   });
 }
 
+/**
+ * 出力する型付きの値（P-51）。列の型に合わない値は undefined にして null で出す。判定は常に行う検査（FR-VAL-03）と
+ * 同じ関数を使う（値の型・整数の範囲・datetime の形式・列挙型の値・リストの要素。リストは要素が 1 つでも合わなければ全体）。
+ * 式の結果は計算のときに列の型で検査済みで（FR-FML-12）、エラーなら raw が undefined
+ */
+function typedRaw(res: CellResult, column: FieldDef, enumValues: readonly string[] | undefined): RawValue | undefined {
+  const raw = res.raw;
+  if (raw === undefined) return undefined;
+  if (res.source === 'value') return checkRawValue(raw, column, enumValues).length === 0 ? raw : undefined;
+  if (res.source === 'default') return checkDefaultValue(raw, column, enumValues).length === 0 ? raw : undefined;
+  return raw;
+}
+
 /** 出力する値。datetime の文字列は常に引用符で囲む（DR-41）。未入力は null（FR-OUT-04） */
 function outValue(raw: RawValue | undefined, type: FieldType): OutNode {
   if (raw === undefined) return scalar(null);
@@ -65,15 +79,17 @@ function outValue(raw: RawValue | undefined, type: FieldType): OutNode {
 
 /**
  * テーブルの出力ファイルのテキスト（FR-OUT-02〜04）。キーは列の順（共通列が先）で、export: false の列と
- * 列定義に無いキーは出さない。式は計算結果、未入力は default か null（実効値。P-10）
+ * 列定義に無いキーは出さない。式は計算結果、未入力は default か null（実効値。P-10）。
+ * 列の型に合わない値と式のエラーは null（P-51。各列は「その列の型の値か null」になる）
  */
 export function exportTableText(calc: Calculator, table: Table, format: OutputFormat): string {
   const columns = uniqueColumns(calc.columns(table)).filter(isFieldExported);
+  const enums = columns.map((column) => calc.enumValues(column));
   const rows = table.records.map((record) =>
     map(
-      columns.map((column): [string, OutNode] => [
+      columns.map((column, i): [string, OutNode] => [
         column.name,
-        outValue(calc.getCell(table, record.uid, column.name).raw, column.type),
+        outValue(typedRaw(calc.getCell(table, record.uid, column.name), column, enums[i]), column.type),
       ]),
       false,
     ),
@@ -121,7 +137,7 @@ export function planExport(project: Project, calc: Calculator, options: ExportOp
     try {
       files.push({ path: joinPath(outDir, `${table.name}.${ext}`), table: table.name, text: exportTableText(calc, table, format) });
     } catch (e) {
-      // DR-35: NaN・Infinity は書き出せない（式の結果は型の検査で除かれるので、通常は起きない）
+      // DR-35: NaN・Infinity は書き出せない（ファイルの値も式の結果も型の検査で除かれるので、通常は起きない）
       if (!(e instanceof SerializeError)) throw e;
       diagnostics.push({ severity: 'error', code: e.code, table: table.name, params: e.params });
       failed = true;
