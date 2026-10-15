@@ -2,6 +2,7 @@
 
 SheetCraft は、ゲームのマスターデータを Googleスプレッドシートと同じ画面と操作で編集する、ブラウザで動く Web アプリです。キー操作・マウス操作・数式・範囲のコピーと貼り付けは Googleスプレッドシートに合わせ、迷ったときは Googleスプレッドシートの挙動を正解とします（要件定義書 R-1）。シートの中身は 1 シート＝1 ファイルの YAML または JSON（プロジェクトごとに選ぶ）として保存し、1 セル変えたらファイルの差分もおおむね 1 行になる形で書き出します（R-2）。
 
+- 公開版（GitHub Pages）: https://ta98cb250f.github.io/masterdata-maker/
 - 要件定義書: [docs/requirements.md](docs/requirements.md)
 - 実装計画書（ライブラリの選定・設計の判断 P-xx・テスト計画・未検証事項）: [docs/plan.md](docs/plan.md)
 - 要件の対応表（要件ごとの実装・テスト・状態と、抜けと食い違いの一覧）: [docs/traceability.md](docs/traceability.md)
@@ -35,6 +36,14 @@ pnpm --filter @sheetcraft/app build     # 画面だけ（packages/app/dist に�
 ```
 
 `packages/app/dist` をそのまま静的ホスティングに置けば動きます（サーバー側の処理はありません。NFR-06、NFR-07）。相対パスで出力するので、サブディレクトリに置いてもかまいません。直接保存方式の `showDirectoryPicker()` は安全なコンテキストでしか使えないので、HTTPS で配ってください（`localhost` は安全なコンテキストとして扱われます）。ローカルで確かめるときは `pnpm --filter @sheetcraft/app preview` を使います。
+
+### GitHub Pages への公開
+
+[.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) が画面をビルドし、`packages/app/dist` を GitHub Pages に公開します。公開先は https://ta98cb250f.github.io/masterdata-maker/ で、リポジトリ名とオーナー名を変えない限り変わりません。
+
+- 自動: `main` に push したとき
+- 手動: GitHub の Actions タブで「Deploy to GitHub Pages」を選び、「Run workflow」で実行する（`github-pages` 環境の既定の保護で、公開できるのは `main` からだけ）
+- 初回だけ、リポジトリの Settings → Pages → Build and deployment → Source を「GitHub Actions」にしておく
 
 ### テスト
 
