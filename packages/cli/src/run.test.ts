@@ -236,6 +236,8 @@ describe('export（FR-CLI-02）', () => {
       stdout: '',
       stderr: '--until にはセマンティック バージョニングの版（例: 1.2.3）を指定してください（0.1 が指定されました）\n',
     });
+    const en = await cli(['export', '--until', '0.1', '--lang', 'en'], dir);
+    expect(en).toEqual({ code: 2, stdout: '', stderr: '--until must be a semantic version such as 1.2.3 (0.1 was given)\n' });
   });
 
   it('protobuf でメッセージ名が重なれば、--force でも書かずに 1（P-63）', async () => {

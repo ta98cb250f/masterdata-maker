@@ -171,6 +171,7 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
               placeholder={t('ui.export.versionPlaceholder')}
               spellCheck={false}
               disabled={running}
+              aria-invalid={versionInvalid}
               onChange={(e) => setVersion(e.target.value)}
               data-testid="export-version"
             />

@@ -7,6 +7,7 @@ import type { FieldDef, FieldType } from '../model/field';
 import { elementType, isFieldExported, isListType } from '../model/field';
 import type { OutputFormat, Project } from '../model/project';
 import { compareNames, joinPath, normalizeDir, resolveProjectPaths } from '../model/project';
+import { parseSemver } from '../sheet/compare';
 import type { BrokenTable, Table } from '../model/table';
 import type { Calculator, CellResult } from '../calc';
 import type { OutNode } from '../io/emit';
@@ -16,8 +17,7 @@ import { checkDefaultValue, checkRawValue } from '../validate/values';
 import { ExportCode } from './codes';
 import { emitCsv } from './csv';
 import { emitProtoSchema, encodeProtoTable, isProtoIdentifier, protoFieldConflicts, protoMessageNames } from './protobuf';
-import { parseSemver } from '../sheet/compare';
-import { selectByVersion } from './version';
+import { referencedTables, selectByVersion } from './version';
 
 export interface ExportOptions {
   /** 出力するテーブル（省略時はすべて） */
@@ -46,7 +46,7 @@ export interface ExportFile {
 export interface ExportResult {
   /** 出力してよいか（エラーが無い、または force） */
   ok: boolean;
-  /** force でも出力できないエラーがある（protobuf の名前の問題。P-63） */
+  /** force でも出力できないエラーがある（protobuf の名前の問題（P-63）と、出力する版が読めないとき（P-64）） */
   blocked: boolean;
   /** 出力するファイル。ok でなければ空（FR-OUT-05） */
   files: ExportFile[];
@@ -209,6 +209,13 @@ export function planExport(source: Project, sourceCalc: Calculator, options: Exp
     diagnostics.push(...table.diagnostics);
     diagnostics.push(...versionDiagnostics.filter((d) => d.table === table.name));
     if (table.kind === 'table') diagnostics.push(...validateTable(project, calc, table));
+  }
+  // 選ばなかったテーブルでも、選んだテーブルから参照していれば、版を比べられなかったレコードを示す
+  // （除いたレコードへの参照切れの原因。P-64）
+  if (versionDiagnostics.length > 0) {
+    const names = new Set(selected.map((t) => t.name));
+    const reachable = referencedTables(sourceCalc, names);
+    diagnostics.push(...versionDiagnostics.filter((d) => d.table !== undefined && !names.has(d.table) && reachable.has(d.table)));
   }
 
   const tables = selected.filter((t): t is Table => t.kind === 'table');

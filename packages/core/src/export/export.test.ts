@@ -4,6 +4,7 @@ import { Calculator } from '../calc';
 import { loadSample, testProject } from '../calc/test-project';
 import type { Diagnostic } from '../model/diagnostic';
 import { ExportCode } from './codes';
+import { formatDiagnostic } from '../validate/format';
 import { planExport } from './index';
 
 const CHARACTER_JSON = `[
@@ -489,5 +490,48 @@ records:
       files: [],
       diagnostics: [{ severity: 'error', code: ExportCode.invalidVersion, params: { value: 'v1' } }],
     });
+  });
+
+  it('比べるのは実効値（default があればその値）。ビルドメタデータは無視し、プレリリースの版は正式版より前', async () => {
+    const project = await testProject({
+      baseFields: 'base_fields:\n  - { name: id, type: int, primary: true }\n  - { name: version, type: string, default: "2.0.0" }\n',
+      tables: { t: 'fields: []\nrecords:\n  - { id: 1 }\n  - { id: 2, version: "1.0.0+b" }\n  - { id: 3, version: "1.0.0" }\n' },
+    });
+    const calc = new Calculator(project);
+    const at = (version: string) => ids(planExport(project, calc, { version }).files[0].content);
+    expect(at('1.0.0')).toEqual([2, 3]);
+    expect(at('1.0.0-rc.1')).toEqual([]);
+    expect(at('2.0.0')).toEqual([1, 2, 3]);
+  });
+
+  it('選ばなかったテーブルでも、選んだテーブルから参照していれば、版を比べられなかったレコードを示す', async () => {
+    const project = await testProject({
+      tables: {
+        skill: 'fields: []\nrecords:\n  - { id: 1, version: "1.0" }\n',
+        unit: 'fields:\n  - { name: skill_id, type: int, ref: skill.id }\nrecords:\n  - { id: 1, version: "1.0.0", skill_id: 1 }\n',
+        other: 'fields: []\nrecords:\n  - { id: 1, version: "x" }\n',
+      },
+    });
+    const result = planExport(project, new Calculator(project), { version: '1.0.0', tables: ['unit'] });
+    expect(result.diagnostics.map((d) => `${d.table} ${d.recordKey} ${d.field} ${d.code}`)).toEqual([
+      'unit 1 skill_id validate.refNotFound',
+      'skill 1 version export.invalidRecordVersion',
+    ]);
+    expect(formatDiagnostic(result.diagnostics[1], 'en')).toBe(
+      'The version value 1.0 is not in semantic versioning format (e.g. 1.2.3), so it cannot be compared when exporting a specific version (this record is not exported)',
+    );
+  });
+
+  it('version の式がエラーなら、検査と同じ式のエラーとして示し、そのレコードは出さない', async () => {
+    const project = await testProject({
+      tables: { t: 'fields: []\nrecords:\n  - { id: 1, version: { override: "1 / 0" } }\n  - { id: 2, version: "1.0.0" }\n' },
+    });
+    const calc = new Calculator(project);
+    const result = planExport(project, calc, { version: '1.0.0', force: true });
+    expect(result.diagnostics.map((d) => `${d.recordKey} ${d.field} ${d.code} ${d.params?.error}`)).toEqual(['1 version validate.formulaError #DIV/0!']);
+    expect(ids(result.files[0].content)).toEqual([2]);
+    expect(formatDiagnostic(planExport(project, calc, { version: 'v1' }).diagnostics[0], 'en')).toBe(
+      'The version to export, v1, is not in semantic versioning format (e.g. 1.2.3)',
+    );
   });
 });
