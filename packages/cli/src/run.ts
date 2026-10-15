@@ -224,7 +224,8 @@ async function cmdExport(cli: Cli, root: string, values: Values): Promise<number
   cli.printDiagnostics(result.diagnostics, 'out');
   if (result.diagnostics.length > 0) cli.out(cli.summary(result.diagnostics));
   if (!result.ok) {
-    cli.err(cli.msg('cli.export.blocked'));
+    // protobuf の名前の問題（P-63）は --force でも出力しない
+    cli.err(cli.msg(result.blocked ? 'cli.export.blockedForce' : 'cli.export.blocked'));
     return EXIT_FAILED;
   }
   const files = result.files.map((file) => {

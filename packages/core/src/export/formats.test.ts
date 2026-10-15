@@ -141,6 +141,7 @@ records:
     const calc = new Calculator(project);
     const result = planExport(project, calc, { format: 'protobuf', force: true });
     expect(result.ok).toBe(false);
+    expect(result.blocked).toBe(true);
     expect(result.files).toEqual([]);
     expect(result.diagnostics.map((d) => [d.code, d.table, d.params])).toEqual([
       [ExportCode.protoMessageConflict, 'foo', { message: 'FooTable', other: 'foo_table' }],
@@ -150,5 +151,36 @@ records:
     // 重ならないテーブルだけなら出力する。ほかの形式では重なりを問わない
     expect(planExport(project, calc, { format: 'protobuf', tables: ['bar'] }).ok).toBe(true);
     expect(planExport(project, calc, { format: 'csv' }).ok).toBe(true);
+  });
+
+  it('proto の識別子にならない名前（_1 のメッセージ名 1、書式に合わない列名）は force でも出力しない', async () => {
+    const project = await testProject({
+      baseFields: BASE_ID,
+      tables: {
+        _1: 'fields: []\nrecords: []\n',
+        t: 'fields:\n  - { name: bad-name, type: int }\nrecords: []\n',
+      },
+    });
+    const calc = new Calculator(project);
+    const result = planExport(project, calc, { format: 'protobuf', force: true });
+    expect(result.ok).toBe(false);
+    expect(result.blocked).toBe(true);
+    expect(result.diagnostics.filter((d) => d.code === ExportCode.protoInvalidName).map((d) => [d.table, d.params])).toEqual([
+      ['_1', { name: '_1', proto: '1' }],
+      ['t', { name: 'bad-name', proto: 'bad-name' }],
+    ]);
+    // 列名の書式エラーは、ほかの形式なら force で出力できる
+    const json = planExport(project, calc, { force: true });
+    expect([json.ok, json.blocked]).toEqual([true, false]);
+  });
+
+  it('表示名の改行と NUL はコメントに入れない（protoc は NUL を読めない）', async () => {
+    const project = await testProject({
+      baseFields: BASE_ID,
+      tables: { t: 'display_name: "a\\0b\\nc"\nfields:\n  - { name: v, type: int, display_name: "x\\r\\n  y" }\nrecords: []\n' },
+    });
+    const proto = planExport(project, new Calculator(project), { format: 'protobuf' }).files[0].content as string;
+    expect(proto).toContain('message T { // a b c\n');
+    expect(proto).toContain('  optional int64 v = 2; // x y\n');
   });
 });

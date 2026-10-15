@@ -220,6 +220,16 @@ describe('export（FR-CLI-02）', () => {
     const bad = await cli(['export', '--format', 'xml'], dir);
     expect(bad).toEqual({ code: 2, stdout: '', stderr: '--format には json・yaml・csv・protobuf のいずれかを指定してください（xml が指定されました）\n' });
   });
+
+  it('protobuf でメッセージ名が重なれば、--force でも書かずに 1（P-63）', async () => {
+    const dir = await copySample('basic-yaml');
+    await writeFile(join(dir, 'tables/stage_table.yaml'), 'table: stage_table\nfields: []\nrecords: []\n');
+    const result = await cli(['export', '--format', 'protobuf', '--force'], dir);
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain('StageTable');
+    expect(result.stderr).toBe('Protocol Buffers で出力できない名前があるため出力しませんでした（--force でも出力できません）\n');
+    expect(await readdir(dir)).not.toContain('build');
+  });
 });
 
 describe('new（FR-CLI-03）', () => {

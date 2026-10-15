@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
 import { clickCell, colIndex, openBasicSample } from './helpers';
-import { listOpfs, openOpfsProject, readOpfs } from './opfs';
+import { listOpfs, openOpfsProject, readOpfs, sampleFiles } from './opfs';
 
 async function openExport(page: Page): Promise<void> {
   await page.getByTestId('menubar-file').dispatchEvent('mousedown');
@@ -113,4 +113,21 @@ test('直接保存方式: Protocol Buffers の .pb はバイナリのまま書�
   expect(await listOpfs(page, 'build')).toEqual(['character.pb', 'character.proto', 'skill.pb', 'skill.proto', 'stage.pb', 'stage.proto']);
   const stage = (await readOpfs(page, 'build/stage.pb')) ?? '';
   expect([...stage.slice(0, 4)].map((c) => c.charCodeAt(0))).toEqual([0x0a, 21, 0x08, 1]);
+});
+
+test('Protocol Buffers で出力できない名前は、強制しても出力できないので「エラーがあっても出力する」を出さない', async ({ page }) => {
+  // stage の全体のメッセージ StageTable と、stage_table のレコードのメッセージ StageTable が重なる
+  await openOpfsProject(page, { ...(await sampleFiles()), 'tables/stage_table.yaml': 'table: stage_table\nfields: []\nrecords: []\n' });
+  await openExport(page);
+  await page.getByTestId('export-format').selectOption('protobuf');
+  await page.getByTestId('export-run').click();
+  await expect(page.getByTestId('export-errors')).toContainText('メッセージ名 StageTable');
+  await expect(page.getByTestId('export-cannot-force')).toBeVisible();
+  await expect(page.getByTestId('export-force')).toHaveCount(0);
+  expect(await listOpfs(page, 'build')).toBeNull();
+  // 戻って別の形式を選べば出力できる
+  await page.getByTestId('export-back').click();
+  await page.getByTestId('export-format').selectOption('csv');
+  await page.getByTestId('export-run').click();
+  await expect(page.getByTestId('status')).toHaveText('4 ファイルを build/ に出力しました');
 });

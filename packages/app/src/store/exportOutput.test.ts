@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Project } from '@sheetcraft/core';
-import { enterInput } from '@sheetcraft/core';
+import { enterInput, insertColumn } from '@sheetcraft/core';
 import { strFromU8, unzipSync } from 'fflate';
 import type { AppStore } from './AppStore';
 import { formatExportError, runExport } from './exportOutput';
@@ -41,13 +41,26 @@ describe('画面からの出力（FR-OUT-06、FR-OUT-05）', () => {
     setHp(store, '0');
     const d = downloads();
     const blocked = await runExport(store, { tables: ['character'], force: false }, { download: d.download });
-    expect(blocked.status).toBe('errors');
+    expect(blocked).toMatchObject({ status: 'errors', forceable: true });
     expect(d.got).toEqual([]);
     const lines = blocked.status === 'errors' ? blocked.errors.map((e) => formatExportError(store, e)) : [];
     expect(lines.some((l) => l.startsWith('character / 1 / hp: '))).toBe(true);
     const forced = await runExport(store, { tables: ['character'], force: true }, { download: d.download });
     expect(forced.status).toBe('downloaded');
     expect(JSON.parse(await d.got[0].blob.text())[0].hp).toBe(0);
+  });
+
+  it('protobuf の名前の問題は強制しても出力できない（P-63）', async () => {
+    const { store } = await openTestStore();
+    const d = downloads();
+    // stage の列 boss_id と JSON 名（bossId）が重なる列 boss__id を足す
+    const project = store.project as Project;
+    const stage = project.tables.find((x) => x.name === 'stage');
+    if (stage === undefined) throw new Error('no table');
+    expect(store.apply(insertColumn(project, { table: stage.uid, position: { index: 0 }, field: { name: 'boss__id', type: 'int' } })).ok).toBe(true);
+    const result = await runExport(store, { tables: ['stage'], force: true, format: 'protobuf' }, { download: d.download });
+    expect(result).toMatchObject({ status: 'errors', forceable: false });
+    expect(d.got).toEqual([]);
   });
 
   it('直接保存方式では、出力先のフォルダ（out_dir）に書き込む', async () => {

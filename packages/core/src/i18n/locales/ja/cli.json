@@ -23,6 +23,7 @@
   "cli.validate.ok": "問題はありません",
   "cli.validate.summary": "エラー {errors} 件、警告 {warnings} 件",
   "cli.export.blocked": "検査エラーがあるため出力しませんでした（--force を付けると出力します）",
+  "cli.export.blockedForce": "Protocol Buffers で出力できない名前があるため出力しませんでした（--force でも出力できません）",
   "cli.export.wrote": "出力しました: {path}",
   "cli.new.created": "作りました: {path}",
   "cli.fmt.notCanonical": "正規形ではありません: {path}",

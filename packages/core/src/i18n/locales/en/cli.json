@@ -23,6 +23,7 @@
   "cli.validate.ok": "No problems found",
   "cli.validate.summary": "{errors} errors, {warnings} warnings",
   "cli.export.blocked": "Nothing was written because there are validation errors (use --force to write anyway)",
+  "cli.export.blockedForce": "Nothing was written because some names cannot be exported as Protocol Buffers (even with --force)",
   "cli.export.wrote": "Wrote {path}",
   "cli.new.created": "Created {path}",
   "cli.fmt.notCanonical": "Not in the canonical form: {path}",

@@ -37,6 +37,11 @@ export function protoJsonName(field: string): string {
   return out;
 }
 
+/** proto の識別子にできるか（英字か _ で始まり、英数字と _ が続く）。型名・フィールド名に使う */
+export function isProtoIdentifier(name: string): boolean {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
+}
+
 /** JSON 名が重なる列の組（protoc がエラーにする。P-63） */
 export function protoFieldConflicts(columns: readonly FieldDef[]): [string, string][] {
   const seen = new Map<string, string>();
@@ -65,9 +70,9 @@ function scalarProtoType(type: FieldType): 'int64' | 'double' | 'bool' | 'string
   }
 }
 
-/** コメントに入れる表示名（改行は空白にする） */
+/** コメントに入れる表示名（改行と NUL は空白にする。protoc は NUL を含むファイルを読めない） */
 function comment(text: string | undefined): string {
-  return text === undefined || text === '' ? '' : ` // ${text.replace(/\s*[\r\n]+\s*/g, ' ')}`;
+  return text === undefined || text === '' ? '' : ` // ${text.replace(/\s*[\r\n]+\s*/g, ' ').replaceAll('\0', ' ')}`;
 }
 
 /** .proto のテキスト。フィールド番号は列の順に 1 から。未入力を区別できるよう、スカラーは optional にする */

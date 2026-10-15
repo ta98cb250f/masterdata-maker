@@ -9,6 +9,7 @@
   "ui.export.running": "出力しています…",
   "ui.export.hasErrors": "検査エラーが {count} 件あるため、出力しませんでした。エラーを直してから出力してください。",
   "ui.export.moreErrors": "ほか {count} 件",
+  "ui.export.cannotForce": "Protocol Buffers で出力できない名前は「エラーがあっても出力する」でも出力できません。名前を変えるか、別の形式を選んでください。",
   "ui.export.back": "戻る",
   "ui.export.force": "エラーがあっても出力する",
   "ui.export.empty": "出力するテーブルがありません（読み込みエラーのテーブルは出力できません）",

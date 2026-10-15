@@ -15,7 +15,7 @@ import { validateCommon, validateTable } from '../validate';
 import { checkDefaultValue, checkRawValue } from '../validate/values';
 import { ExportCode } from './codes';
 import { emitCsv } from './csv';
-import { emitProtoSchema, encodeProtoTable, protoFieldConflicts, protoMessageNames } from './protobuf';
+import { emitProtoSchema, encodeProtoTable, isProtoIdentifier, protoFieldConflicts, protoMessageNames } from './protobuf';
 
 export interface ExportOptions {
   /** 出力するテーブル（省略時はすべて） */
@@ -39,6 +39,8 @@ export interface ExportFile {
 export interface ExportResult {
   /** 出力してよいか（エラーが無い、または force） */
   ok: boolean;
+  /** force でも出力できないエラーがある（protobuf の名前の問題。P-63） */
+  blocked: boolean;
   /** 出力するファイル。ok でなければ空（FR-OUT-05） */
   files: ExportFile[];
   /** 読み込み時の診断と検査の結果（出力するテーブルと共通設定の分） */
@@ -123,7 +125,8 @@ function exportTableFiles(calc: Calculator, table: Table, format: OutputFormat):
 
 /**
  * protobuf で出せないテーブルの診断（P-63）: 同じパッケージの中でメッセージ名が重なるテーブル（foo の FooTable と
- * foo_table など）、JSON 名が重なる列（a_1 と a1 など。protoc がエラーにする）
+ * foo_table など）、JSON 名が重なる列（a_1 と a1 など。protoc がエラーにする）、proto の識別子にならない名前
+ * （_1 のメッセージ名 1、ファイルで書いた書式に合わないテーブル名・列名。--force では列名の書式エラーも出力に進むため）
  */
 function protobufDiagnostics(calc: Calculator, all: readonly (Table | BrokenTable)[], selected: readonly Table[]): Diagnostic[] {
   const owners = new Map<string, string[]>();
@@ -132,6 +135,10 @@ function protobufDiagnostics(calc: Calculator, all: readonly (Table | BrokenTabl
   }
   const ds: Diagnostic[] = [];
   for (const table of selected) {
+    const [record] = protoMessageNames(table.name);
+    if (!isProtoIdentifier(record)) {
+      ds.push({ severity: 'error', code: ExportCode.protoInvalidName, table: table.name, params: { name: table.name, proto: record } });
+    }
     for (const message of protoMessageNames(table.name)) {
       const others = (owners.get(message) ?? []).filter((name) => name !== table.name);
       if (others.length > 0) {
@@ -139,6 +146,11 @@ function protobufDiagnostics(calc: Calculator, all: readonly (Table | BrokenTabl
       }
     }
     const columns = uniqueColumns(calc.columns(table)).filter(isFieldExported);
+    for (const column of columns) {
+      if (!isProtoIdentifier(column.name)) {
+        ds.push({ severity: 'error', code: ExportCode.protoInvalidName, table: table.name, field: column.name, params: { name: column.name, proto: column.name } });
+      }
+    }
     for (const [a, b] of protoFieldConflicts(columns)) {
       ds.push({ severity: 'error', code: ExportCode.protoFieldConflict, table: table.name, field: b, params: { field: b, other: a } });
     }
@@ -180,7 +192,8 @@ export function planExport(project: Project, calc: Calculator, options: ExportOp
   diagnostics.push(...blocking);
 
   const force = options.force === true;
-  if (blocking.length > 0 || (hasErrors(diagnostics) && !force)) return { ok: false, files: [], diagnostics };
+  const blocked = blocking.length > 0;
+  if (blocked || (hasErrors(diagnostics) && !force)) return { ok: false, blocked, files: [], diagnostics };
 
   const files: ExportFile[] = [];
   let failed = false;
@@ -196,6 +209,6 @@ export function planExport(project: Project, calc: Calculator, options: ExportOp
       failed = true;
     }
   }
-  if (failed && !force) return { ok: false, files: [], diagnostics };
-  return { ok: true, files, diagnostics };
+  if (failed && !force) return { ok: false, blocked: false, files: [], diagnostics };
+  return { ok: true, blocked: false, files, diagnostics };
 }

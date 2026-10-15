@@ -21,7 +21,8 @@ export interface ExportRequest {
 
 export type ExportOutcome =
   /** 検査エラーがあって出力しなかった（errors はエラーだけ） */
-  | { status: 'errors'; errors: Diagnostic[] }
+  /** forceable: 強制すれば出力できるか（protobuf の名前の問題は強制しても出力しない。P-63） */
+  | { status: 'errors'; errors: Diagnostic[]; forceable: boolean }
   /** 出力先のフォルダへ書き込んだ（直接保存方式） */
   | { status: 'written'; outDir: string; files: string[]; failed: SaveFailure[] }
   | { status: 'downloaded'; name: string; files: string[] }
@@ -46,7 +47,7 @@ export async function runExport(store: AppStore, request: ExportRequest, deps: E
   const { project, calc, source } = store.getState();
   if (project === null || calc === null || source === null) return { status: 'empty' };
   const plan = await backgroundJobs(project, calc).exportPlan({ tables: [...request.tables], force: request.force, format: request.format });
-  if (!plan.ok) return { status: 'errors', errors: plan.diagnostics.filter(isError) };
+  if (!plan.ok) return { status: 'errors', errors: plan.diagnostics.filter(isError), forceable: !plan.blocked };
   if (plan.files.length === 0) return { status: 'empty' };
   const outDir = resolveProjectPaths(project.config).outDir;
   const writer = source.capabilities.directSave ? writableFs(source.fs) : null;

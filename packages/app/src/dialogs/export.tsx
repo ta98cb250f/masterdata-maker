@@ -16,7 +16,7 @@ import './fileDialogs.css';
 /** エラーの一覧に出す件数の上限（多すぎると描くのに時間がかかる） */
 const MAX_LISTED_ERRORS = 200;
 
-type Phase = { kind: 'select' } | { kind: 'running' } | { kind: 'errors'; lines: string[]; total: number } | { kind: 'failed'; message: string };
+type Phase = { kind: 'select' } | { kind: 'running' } | { kind: 'errors'; lines: string[]; total: number; forceable: boolean } | { kind: 'failed'; message: string };
 
 function ExportDialog({ store, close }: DialogProps<undefined>) {
   const t = useT();
@@ -45,7 +45,7 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
     switch (outcome.status) {
       case 'errors': {
         const lines = outcome.errors.slice(0, MAX_LISTED_ERRORS).map((d) => formatExportError(store, d));
-        setPhase({ kind: 'errors', lines, total: outcome.errors.length });
+        setPhase({ kind: 'errors', lines, total: outcome.errors.length, forceable: outcome.forceable });
         return;
       }
       case 'empty':
@@ -86,9 +86,12 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
         <button type="button" className="sc-button" onClick={() => setPhase({ kind: 'select' })} data-testid="export-back">
           {t('ui.export.back')}
         </button>
-        <button type="button" className="sc-button primary danger" onClick={() => void run(true)} data-testid="export-force">
-          {t('ui.export.force')}
-        </button>
+        {/* 強制しても出力できないエラー（protobuf の名前。P-63）だけなら、押しても同じエラーになるので出さない */}
+        {phase.forceable && (
+          <button type="button" className="sc-button primary danger" onClick={() => void run(true)} data-testid="export-force">
+            {t('ui.export.force')}
+          </button>
+        )}
       </>
     ) : (
       <>
@@ -112,6 +115,11 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
             ))}
           </ul>
           {phase.total > phase.lines.length && <p className="sc-fd-note">{t('ui.export.moreErrors', { count: phase.total - phase.lines.length })}</p>}
+          {!phase.forceable && (
+            <p className="sc-fd-note" data-testid="export-cannot-force">
+              {t('ui.export.cannotForce')}
+            </p>
+          )}
         </div>
       ) : (
         <>
