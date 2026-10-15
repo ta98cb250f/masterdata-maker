@@ -131,3 +131,19 @@ test('Protocol Buffers で出力できない名前は、強制しても出力で
   await page.getByTestId('export-run').click();
   await expect(page.getByTestId('status')).toHaveText('4 ファイルを build/ に出力しました');
 });
+
+test('版を指定すると、version がその版以下のレコードだけを出す。読めない版では出力できない（FR-OUT-07）', async ({ page }) => {
+  await openBasicSample(page);
+  await openExport(page);
+  await page.getByTestId('export-all').uncheck();
+  await page.getByTestId('export-table-stage').check();
+  await page.getByTestId('export-version').fill('0.1');
+  await expect(page.getByTestId('export-version-field-error')).toHaveText('セマンティック バージョニングの版（例: 1.2.3）を入力してください');
+  await expect(page.getByTestId('export-run')).toBeDisabled();
+  await page.getByTestId('export-version').fill('0.1.10');
+  await expect(page.getByTestId('export-version-field-error')).toHaveCount(0);
+  const download = page.waitForEvent('download');
+  await page.getByTestId('export-run').click();
+  const stage = JSON.parse(await readFile(await (await download).path(), 'utf8'));
+  expect(stage.map((s: { id: number; version: string }) => [s.id, s.version])).toEqual([[1, '0.1.2']]);
+});

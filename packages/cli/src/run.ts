@@ -10,6 +10,7 @@ import {
   formatMessage,
   isOutputFormat,
   isValidColumnName,
+  parseSemver,
   joinPath,
   loadProject,
   planExport,
@@ -40,7 +41,7 @@ export const EXIT_USAGE = 2;
 /** コマンドごとに使えるオプション（共通の --lang・--help の他に） */
 const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   validate: [],
-  export: ['force', 'tables', 'out', 'format'],
+  export: ['force', 'tables', 'out', 'format', 'version'],
   new: ['display-name'],
   fmt: ['check'],
   convert: ['to'],
@@ -54,6 +55,7 @@ const OPTIONS = {
   tables: { type: 'string' },
   out: { type: 'string' },
   format: { type: 'string' },
+  version: { type: 'string' },
   'display-name': { type: 'string' },
   check: { type: 'boolean' },
   to: { type: 'string' },
@@ -66,6 +68,7 @@ type Values = {
   tables?: string;
   out?: string;
   format?: string;
+  version?: string;
   'display-name'?: string;
   check?: boolean;
   to?: string;
@@ -198,6 +201,10 @@ async function cmdExport(cli: Cli, root: string, values: Values): Promise<number
     cli.err(cli.msg('cli.error.invalidOutputFormat', { value: values.format }));
     return EXIT_USAGE;
   }
+  if (values.version !== undefined && parseSemver(values.version) === null) {
+    cli.err(cli.msg('cli.error.invalidVersion', { value: values.version }));
+    return EXIT_USAGE;
+  }
   const loaded = await load(cli, root);
   if (loaded === null) return EXIT_USAGE;
   const { fs, project } = loaded;
@@ -220,7 +227,13 @@ async function cmdExport(cli: Cli, root: string, values: Values): Promise<number
   const outDir =
     values.out !== undefined ? resolve(cli.ctx.cwd, values.out) : fs.resolve(resolveProjectPaths(project.config).outDir);
   const format = values.format !== undefined && isOutputFormat(values.format) ? values.format : undefined;
-  const result = planExport(project, new Calculator(project), { tables, force: values.force === true, outDir: '', format });
+  const result = planExport(project, new Calculator(project), {
+    tables,
+    force: values.force === true,
+    outDir: '',
+    format,
+    version: values.version,
+  });
   cli.printDiagnostics(result.diagnostics, 'out');
   if (result.diagnostics.length > 0) cli.out(cli.summary(result.diagnostics));
   if (!result.ok) {

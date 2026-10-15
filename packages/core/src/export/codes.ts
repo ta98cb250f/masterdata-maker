@@ -4,6 +4,8 @@ export const ExportCode = {
   protoMessageConflict: 'export.protoMessageConflict',
   protoFieldConflict: 'export.protoFieldConflict',
   protoInvalidName: 'export.protoInvalidName',
+  invalidVersion: 'export.invalidVersion',
+  invalidRecordVersion: 'export.invalidRecordVersion',
 } as const;
 
 export type ExportCodeValue = (typeof ExportCode)[keyof typeof ExportCode];

@@ -16,6 +16,8 @@ import { checkDefaultValue, checkRawValue } from '../validate/values';
 import { ExportCode } from './codes';
 import { emitCsv } from './csv';
 import { emitProtoSchema, encodeProtoTable, isProtoIdentifier, protoFieldConflicts, protoMessageNames } from './protobuf';
+import { parseSemver } from '../sheet/compare';
+import { selectByVersion } from './version';
 
 export interface ExportOptions {
   /** 出力するテーブル（省略時はすべて） */
@@ -26,6 +28,11 @@ export interface ExportOptions {
   outDir?: string;
   /** 出力の形式。省略時は output.format（既定は json。FR-OUT-01） */
   format?: OutputFormat;
+  /**
+   * 出力する版（semver。FR-OUT-07）。`version` 列がこの版以下のレコードだけを出す（未入力のレコードは常に出す）。
+   * 省略時はすべてのレコード
+   */
+  version?: string;
 }
 
 export interface ExportFile {
@@ -160,12 +167,29 @@ function protobufDiagnostics(calc: Calculator, all: readonly (Table | BrokenTabl
 
 /**
  * 出力するファイルを返す（core は書き込まない）。検査でエラーがあれば、force でない限り files は空で ok は false。
- * 読み込みエラーのテーブル（P-40）は force でも出力しない
+ * 読み込みエラーのテーブル（P-40）は force でも出力しない。版を指定したときは、その版以下のレコードだけの写しで
+ * 計算と検査をやり直す（P-64）
  */
-export function planExport(project: Project, calc: Calculator, options: ExportOptions = {}): ExportResult {
-  const paths = resolveProjectPaths(project.config);
+export function planExport(source: Project, sourceCalc: Calculator, options: ExportOptions = {}): ExportResult {
+  const paths = resolveProjectPaths(source.config);
   const format = options.format ?? paths.outputFormat;
   const outDir = options.outDir === undefined ? paths.outDir : normalizeDir(options.outDir);
+
+  let project = source;
+  let calc = sourceCalc;
+  const versionDiagnostics: Diagnostic[] = [];
+  if (options.version !== undefined) {
+    const target = parseSemver(options.version);
+    if (target === null) {
+      // 比べられないので、force でも出力しない
+      const d: Diagnostic = { severity: 'error', code: ExportCode.invalidVersion, params: { value: options.version } };
+      return { ok: false, blocked: true, files: [], diagnostics: [...source.diagnostics, d] };
+    }
+    const selection = selectByVersion(source, sourceCalc, target);
+    project = selection.project;
+    calc = selection.calc;
+    versionDiagnostics.push(...selection.diagnostics);
+  }
   const diagnostics: Diagnostic[] = [...project.diagnostics, ...validateCommon(project, calc)];
 
   const all: (Table | BrokenTable)[] = [...project.tables, ...project.brokenTables].sort((a, b) =>
@@ -183,6 +207,7 @@ export function planExport(project: Project, calc: Calculator, options: ExportOp
   }
   for (const table of selected) {
     diagnostics.push(...table.diagnostics);
+    diagnostics.push(...versionDiagnostics.filter((d) => d.table === table.name));
     if (table.kind === 'table') diagnostics.push(...validateTable(project, calc, table));
   }
 

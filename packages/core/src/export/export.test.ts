@@ -394,3 +394,100 @@ records:
     ]);
   });
 });
+
+describe('版を指定した出力（FR-OUT-07、P-64）', () => {
+  const ids = (text: string | Uint8Array): unknown[] => (JSON.parse(text as string) as { id: unknown }[]).map((r) => r.id);
+
+  it('version が指定の版以下のレコードだけを出す。比較は semver（0.1.2 < 0.1.11）で、未入力は常に出す', async () => {
+    const project = await loadSample('basic-yaml');
+    const calc = new Calculator(project);
+    const at = (version: string) => {
+      const result = planExport(project, calc, { version, tables: ['character', 'stage'] });
+      expect(result.ok).toBe(true);
+      return Object.fromEntries(result.files.map((f) => [f.table, ids(f.content)]));
+    };
+    expect(at('0.1.11')).toEqual({ character: [1, 2, 3], stage: [1, 2] });
+    expect(at('0.1.10')).toEqual({ character: [1, 2, 3], stage: [1] });
+    expect(at('0.1.2')).toEqual({ character: [1, 2, 3], stage: [1] });
+    // プレリリースの版は、その版より前（0.1.2-rc.1 < 0.1.2）
+    expect(at('0.1.2-rc.1')).toEqual({ character: [1, 2], stage: [] });
+    // 版を指定しなければすべて
+    const all = planExport(project, calc, { tables: ['stage'] });
+    expect(ids(all.files[0].content)).toEqual([1, 2]);
+  });
+
+  const files = {
+    tables: {
+      skill: `fields:
+  - { name: cost, type: int }
+records:
+  - { id: 1, cost: 10 }
+  - { id: 2, version: "1.1.0", cost: 20 }
+`,
+      unit: `fields:
+  - { name: skill_id, type: int, ref: skill.id }
+  - { name: cost, type: int, formula: 'REF("skill", skill_id, "cost")' }
+records:
+  - { id: 1, version: "1.0.0", skill_id: 1 }
+  - { id: 2, version: "1.0.0", skill_id: 2 }
+  - { id: 3, version: "1.1.0", skill_id: 2 }
+`,
+    },
+  };
+
+  it('残したレコードが、版で除いたレコードを ref や REF で参照していればエラー（force なら出力する）', async () => {
+    const project = await testProject(files);
+    const calc = new Calculator(project);
+    expect(planExport(project, calc, { version: '1.1.0' }).ok).toBe(true);
+    const blocked = planExport(project, calc, { version: '1.0.0' });
+    expect(blocked.ok).toBe(false);
+    expect(blocked.diagnostics.map((d) => `${d.table} ${d.recordKey} ${d.field} ${d.code}`)).toEqual([
+      'unit 2 skill_id validate.refNotFound',
+      'unit 2 cost validate.formulaErrorPropagated',
+    ]);
+    const forced = planExport(project, calc, { version: '1.0.0', force: true });
+    expect(forced.ok).toBe(true);
+    expect(forced.files.map((f) => [f.table, ids(f.content)])).toEqual([
+      ['skill', [1]],
+      ['unit', [1, 2]],
+    ]);
+    // 元のプロジェクトはそのまま（版を指定しない出力は全レコード）
+    expect(planExport(project, calc).files.map((f) => ids(f.content))).toEqual([
+      [1, 2],
+      [1, 2, 3],
+    ]);
+  });
+
+  it('semver として読めない version はエラーにして出力から除く。指定の版が読めなければ force でも出力しない', async () => {
+    const project = await testProject({
+      tables: { t: 'fields: []\nrecords:\n  - { id: 1, version: "1.0" }\n  - { id: 2, version: "1.0.0" }\n' },
+    });
+    const calc = new Calculator(project);
+    const blocked = planExport(project, calc, { version: '2.0.0' });
+    expect(blocked.ok).toBe(false);
+    expect(blocked.diagnostics).toEqual([
+      {
+        severity: 'error',
+        code: ExportCode.invalidRecordVersion,
+        file: 'tables/t.yaml',
+        table: 't',
+        recordUid: project.tables[0].records[0].uid,
+        recordKey: '1',
+        field: 'version',
+        params: { value: '1.0' },
+      },
+    ]);
+    const forced = planExport(project, calc, { version: '2.0.0', force: true });
+    expect(ids(forced.files[0].content)).toEqual([2]);
+    // 版を指定しなければ version の書式は問わない
+    expect(planExport(project, calc).ok).toBe(true);
+
+    const invalid = planExport(project, calc, { version: 'v1', force: true });
+    expect(invalid).toEqual({
+      ok: false,
+      blocked: true,
+      files: [],
+      diagnostics: [{ severity: 'error', code: ExportCode.invalidVersion, params: { value: 'v1' } }],
+    });
+  });
+});
