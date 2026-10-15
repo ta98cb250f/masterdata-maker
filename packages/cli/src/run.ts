@@ -41,7 +41,7 @@ export const EXIT_USAGE = 2;
 /** コマンドごとに使えるオプション（共通の --lang・--help の他に） */
 const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   validate: [],
-  export: ['force', 'tables', 'out', 'format', 'version'],
+  export: ['force', 'tables', 'out', 'format', 'until'],
   new: ['display-name'],
   fmt: ['check'],
   convert: ['to'],
@@ -55,7 +55,7 @@ const OPTIONS = {
   tables: { type: 'string' },
   out: { type: 'string' },
   format: { type: 'string' },
-  version: { type: 'string' },
+  until: { type: 'string' },
   'display-name': { type: 'string' },
   check: { type: 'boolean' },
   to: { type: 'string' },
@@ -68,7 +68,7 @@ type Values = {
   tables?: string;
   out?: string;
   format?: string;
-  version?: string;
+  until?: string;
   'display-name'?: string;
   check?: boolean;
   to?: string;
@@ -201,8 +201,8 @@ async function cmdExport(cli: Cli, root: string, values: Values): Promise<number
     cli.err(cli.msg('cli.error.invalidOutputFormat', { value: values.format }));
     return EXIT_USAGE;
   }
-  if (values.version !== undefined && parseSemver(values.version) === null) {
-    cli.err(cli.msg('cli.error.invalidVersion', { value: values.version }));
+  if (values.until !== undefined && parseSemver(values.until) === null) {
+    cli.err(cli.msg('cli.error.invalidUntil', { value: values.until }));
     return EXIT_USAGE;
   }
   const loaded = await load(cli, root);
@@ -232,7 +232,7 @@ async function cmdExport(cli: Cli, root: string, values: Values): Promise<number
     force: values.force === true,
     outDir: '',
     format,
-    version: values.version,
+    version: values.until,
   });
   cli.printDiagnostics(result.diagnostics, 'out');
   if (result.diagnostics.length > 0) cli.out(cli.summary(result.diagnostics));
