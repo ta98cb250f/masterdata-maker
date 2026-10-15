@@ -33,6 +33,7 @@ import {
   renameBaseField,
   renameColumn,
   renameEnum,
+  renameEnumValues,
   renameTable,
   replaceCells,
   setBaseFields,
@@ -712,5 +713,26 @@ describe('テーブル（FR-TBL-01〜03）', () => {
     check((p) => renameEnum(p, { from: 'element', to: 'attribute' }));
     expect(tableNamed(project, 'character').fields.find((f) => f.name === 'element')?.enum_ref).toBe('attribute');
     expect(tableNamed(project, 'skill').fields.find((f) => f.name === 'element')?.enum_ref).toBe('attribute');
+  });
+
+  it('列挙型の値の名前の変更: 使っている列のセル（list<enum> は要素ごと）と default を書き換える。入れ替えもできる', () => {
+    const c = uid('character');
+    const r2 = rows('character')[1];
+    session.run(setCellColor(project, { table: c, cells: [{ record: r2, column: 'rarity' }], color: 'red' }));
+    session.run(insertColumn(project, { table: c, position: { index: 0 }, field: { name: 'rarity2', type: 'enum', enum_ref: 'rarity', default: 'SR' } }));
+    const tx = check((p) => renameEnumValues(p, { enum: 'rarity', renames: [{ from: 'SR', to: 'SSR' }, { from: 'SSR', to: 'SR' }] }));
+    expect(tx.label).toBe(EditCode.opRenameEnumValues);
+    expect(cellAt('character', 0, 'rarity')).toBe('SR');
+    expect(cellAt('character', 1, 'rarity')).toEqual(new RichCell({ value: 'SSR', color: 'red' }));
+    expect(cellAt('character', 2, 'rarity')).toBe('R');
+    expect(tableNamed(project, 'character').fields.find((f) => f.name === 'rarity2')?.default).toBe('SSR');
+    expect(project.common.enums.items.find((e) => e.name === 'rarity')?.values).toEqual(['N', 'R', 'SR', 'SSR']);
+
+    check((p) => renameEnumValues(p, { enum: 'element', renames: [{ from: '火', to: '炎' }] }));
+    expect(cellAt('character', 0, 'element')).toEqual(['炎', '光']);
+    expect(tableNamed(project, 'skill').records[0].cells.get('element')).toBe('炎');
+
+    expect(renameEnumValues(project, { enum: 'element', renames: [{ from: '水', to: '水' }] })).toMatchObject({ ok: true, tx: { patches: [] } });
+    expect(rejects((p) => renameEnumValues(p, { enum: 'size', renames: [{ from: 'S', to: 'M' }] }))[0].code).toBe(EditCode.enumNotFound);
   });
 });

@@ -109,6 +109,7 @@ export {
   findTableReferences,
   renameBaseField,
   renameEnum,
+  renameEnumValues,
   renameTable,
   setBaseFields,
   setColors,
@@ -117,4 +118,4 @@ export {
   suggestTableName,
   validateTableName,
 } from './commands/tables';
-export type { CreateTableArgs, DuplicateTableArgs, RenameTableArgs, TableDisplayNameArgs, TableReference } from './commands/tables';
+export type { CreateTableArgs, DuplicateTableArgs, EnumValueRename, RenameTableArgs, TableDisplayNameArgs, TableReference } from './commands/tables';

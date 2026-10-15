@@ -84,5 +84,6 @@
   "edit.op.editBaseFields": "Edit common columns",
   "edit.op.editColors": "Edit cell colors",
   "edit.op.renameBaseField": "Rename common column",
-  "edit.op.renameEnum": "Rename enum"
+  "edit.op.renameEnum": "Rename enum",
+  "edit.op.renameEnumValues": "Rename enum values"
 }

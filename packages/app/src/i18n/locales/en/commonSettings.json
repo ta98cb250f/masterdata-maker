@@ -16,7 +16,10 @@
   "ui.settings.enum.name": "Name",
   "ui.settings.enum.displayName": "Display name",
   "ui.settings.enum.values": "Values",
-  "ui.settings.enum.valuesHint": "One value per line",
+  "ui.settings.enum.valuesHint": "Editing a value also rewrites the cells with that value when you save. Press Enter to add a row below",
+  "ui.settings.enum.value": "Value {index}",
+  "ui.settings.enum.addValue": "Add value",
+  "ui.settings.enum.valueRenamed": "Was {from} ({count} cells will be rewritten)",
   "ui.settings.enum.renameHint": "Renaming also rewrites the enum_ref of the columns that use this enum",
   "ui.settings.enum.usedBy": "Used by: {columns}",
   "ui.settings.baseFieldsNote": "Common columns come first in every table. Renaming one also rewrites cells, formulas and references in all tables",
@@ -29,6 +32,7 @@
   "ui.settings.error.colorCode": "{input} is not a color code (#rrggbb)",
   "ui.settings.error.baseFieldUsed": "{name} is a column of the table {table} and cannot be a common column name",
   "ui.settings.warn.enumUsed": "The enum {name} to be removed is used by {columns}. Those columns will have errors",
+  "ui.settings.warn.enumValueUsed": "The value {value} (enum {name}) to be removed is used by {count} cells. Those cells will have errors",
   "ui.settings.warn.baseFieldValues": "The values of the common column {name} remain in {count} records (as keys without a column definition)",
   "ui.settings.warn.colorUsed": "The cell color {key} to be removed is used by {count} cells (they keep a color that is not a preset)"
 }

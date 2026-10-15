@@ -16,7 +16,10 @@
   "ui.settings.enum.name": "名前",
   "ui.settings.enum.displayName": "表示名",
   "ui.settings.enum.values": "値",
-  "ui.settings.enum.valuesHint": "1 行に 1 つ書きます",
+  "ui.settings.enum.valuesHint": "文字を書き換えると、保存のときにその値のセルもまとめて書き換えます。Enter で下に行を足します",
+  "ui.settings.enum.value": "{index} 番目の値",
+  "ui.settings.enum.addValue": "値を追加",
+  "ui.settings.enum.valueRenamed": "もとは {from}（{count} セルを書き換えます）",
   "ui.settings.enum.renameHint": "名前を変えると、この列挙型を使う列の指定（enum_ref）もまとめて書き換えます",
   "ui.settings.enum.usedBy": "使っている列: {columns}",
   "ui.settings.baseFieldsNote": "共通列はすべてのテーブルの先頭に付きます。名前を変えると、全テーブルのセル・式・参照もまとめて書き換えます",
@@ -29,6 +32,7 @@
   "ui.settings.error.colorCode": "{input} は色コード（#rrggbb）ではありません",
   "ui.settings.error.baseFieldUsed": "{name} はテーブル {table} の列にあるため、共通列の名前に使えません",
   "ui.settings.warn.enumUsed": "削除する列挙型 {name} は {columns} で使われています。これらの列は検査でエラーになります",
+  "ui.settings.warn.enumValueUsed": "削除する値 {value}（列挙型 {name}）は {count} セルで使われています。これらのセルは検査でエラーになります",
   "ui.settings.warn.baseFieldValues": "削除する共通列 {name} の値は {count} 件のレコードに残ります（列定義に無いキーとしてファイルに残ります）",
   "ui.settings.warn.colorUsed": "削除するセル色 {key} は {count} セルで使われています（プリセットに無い色として残ります）"
 }
