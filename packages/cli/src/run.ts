@@ -8,6 +8,7 @@ import {
   extensionOf,
   formatDiagnostic,
   formatMessage,
+  isOutputFormat,
   isValidColumnName,
   joinPath,
   loadProject,
@@ -39,7 +40,7 @@ export const EXIT_USAGE = 2;
 /** コマンドごとに使えるオプション（共通の --lang・--help の他に） */
 const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   validate: [],
-  export: ['force', 'tables', 'out'],
+  export: ['force', 'tables', 'out', 'format'],
   new: ['display-name'],
   fmt: ['check'],
   convert: ['to'],
@@ -52,6 +53,7 @@ const OPTIONS = {
   force: { type: 'boolean' },
   tables: { type: 'string' },
   out: { type: 'string' },
+  format: { type: 'string' },
   'display-name': { type: 'string' },
   check: { type: 'boolean' },
   to: { type: 'string' },
@@ -63,6 +65,7 @@ type Values = {
   force?: boolean;
   tables?: string;
   out?: string;
+  format?: string;
   'display-name'?: string;
   check?: boolean;
   to?: string;
@@ -163,7 +166,7 @@ async function load(cli: Cli, root: string): Promise<Loaded | null> {
 }
 
 /** ファイルを書く。失敗したら文言を出して false */
-async function writeFiles(cli: Cli, files: readonly { abs: string; text: string; message: string }[]): Promise<boolean> {
+async function writeFiles(cli: Cli, files: readonly { abs: string; text: string | Uint8Array; message: string }[]): Promise<boolean> {
   for (const file of files) {
     try {
       await writeFileAtomic(file.abs, file.text);
@@ -191,6 +194,10 @@ async function cmdValidate(cli: Cli, root: string): Promise<number> {
 
 /** FR-CLI-02: 出力する。エラーがあれば（--force でなければ）書かずに 1 */
 async function cmdExport(cli: Cli, root: string, values: Values): Promise<number> {
+  if (values.format !== undefined && !isOutputFormat(values.format)) {
+    cli.err(cli.msg('cli.error.invalidOutputFormat', { value: values.format }));
+    return EXIT_USAGE;
+  }
   const loaded = await load(cli, root);
   if (loaded === null) return EXIT_USAGE;
   const { fs, project } = loaded;
@@ -212,7 +219,8 @@ async function cmdExport(cli: Cli, root: string, values: Values): Promise<number
   // --out はカレントディレクトリから、output.out_dir はプロジェクトのルートからの相対パス
   const outDir =
     values.out !== undefined ? resolve(cli.ctx.cwd, values.out) : fs.resolve(resolveProjectPaths(project.config).outDir);
-  const result = planExport(project, new Calculator(project), { tables, force: values.force === true, outDir: '' });
+  const format = values.format !== undefined && isOutputFormat(values.format) ? values.format : undefined;
+  const result = planExport(project, new Calculator(project), { tables, force: values.force === true, outDir: '', format });
   cli.printDiagnostics(result.diagnostics, 'out');
   if (result.diagnostics.length > 0) cli.out(cli.summary(result.diagnostics));
   if (!result.ok) {
@@ -221,7 +229,7 @@ async function cmdExport(cli: Cli, root: string, values: Values): Promise<number
   }
   const files = result.files.map((file) => {
     const abs = join(outDir, ...file.path.split('/'));
-    return { abs, text: file.text, message: cli.msg('cli.export.wrote', { path: cli.displayPath(abs) }) };
+    return { abs, text: file.content, message: cli.msg('cli.export.wrote', { path: cli.displayPath(abs) }) };
   });
   return (await writeFiles(cli, files)) ? EXIT_OK : EXIT_USAGE;
 }

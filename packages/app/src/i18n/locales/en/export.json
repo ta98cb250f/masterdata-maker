@@ -1,8 +1,8 @@
 {
   "ui.command.export": "Export…",
   "ui.export.title": "Export",
-  "ui.export.toFolder": "Writes the selected tables as {format} to {dir} in the project folder (the folder is created if missing).",
-  "ui.export.toDownload": "Downloads the selected tables as {format} (a ZIP file if there are several).",
+  "ui.export.toFolder": "Writes the selected tables to {dir} in the project folder (the folder is created if missing).",
+  "ui.export.toDownload": "Downloads the selected tables (a ZIP file if there are several files).",
   "ui.export.includesUnsaved": "Unsaved changes are included in the output.",
   "ui.export.allTables": "All tables",
   "ui.export.run": "Export",
@@ -15,5 +15,11 @@
   "ui.export.failed": "Could not export: {message}",
   "ui.export.writeFailedTitle": "Some files could not be written",
   "ui.export.written": "Exported {count} files to {dir}",
-  "ui.export.downloaded": "Downloaded {name} ({count} files)"
+  "ui.export.downloaded": "Downloaded {name} ({count} files)",
+  "ui.export.format": "Format",
+  "ui.export.formatName.json": "JSON",
+  "ui.export.formatName.yaml": "YAML",
+  "ui.export.formatName.csv": "CSV",
+  "ui.export.formatName.protobuf": "Protocol Buffers (.proto and .pb)",
+  "ui.export.protobufHint": "Writes a schema (.proto) and the data (.pb) for each table."
 }

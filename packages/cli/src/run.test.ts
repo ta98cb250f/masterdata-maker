@@ -202,6 +202,24 @@ describe('export（FR-CLI-02）', () => {
       { id: 3, version: null, name: 'ウィンド', cost: -1, element: '風' },
     ]);
   });
+
+  it('--format で形式を選ぶ（既定は output.format）。protobuf は .proto と .pb。知らない形式は終了コード 2', async () => {
+    const dir = await copySample('basic-yaml');
+    const csv = await cli(['export', '--format', 'csv', '--tables', 'stage'], dir);
+    expect(csv).toEqual({ code: 0, stdout: '出力しました: build/stage.csv\n', stderr: '' });
+    expect(await readFile(join(dir, 'build/stage.csv'), 'utf8')).toBe('id,version,name,boss_id\n1,0.1.2,stage_01,3\n2,0.1.11,stage_02,2\n');
+    const pb = await cli(['export', '--format', 'protobuf', '--tables', 'stage'], dir);
+    expect(pb).toEqual({ code: 0, stdout: '出力しました: build/stage.proto\n出力しました: build/stage.pb\n', stderr: '' });
+    expect(await readFile(join(dir, 'build/stage.proto'), 'utf8')).toContain('message StageTable {\n  repeated Stage records = 1;\n}\n');
+    // 1 レコード目: id = 1、version = "0.1.2"、name = "stage_01"、boss_id = 3
+    expect([...(await readFile(join(dir, 'build/stage.pb'))).subarray(0, 23)]).toEqual([
+      0x0a, 21, 0x08, 1, 0x12, 5, ...Buffer.from('0.1.2'), 0x1a, 8, ...Buffer.from('stage_01'), 0x20, 3,
+    ]);
+    await editFile(join(dir, 'sheetcraft.yaml'), (t) => t.replace('format: json', 'format: csv'));
+    expect((await cli(['export', '--tables', 'skill'], dir)).stdout).toBe('出力しました: build/skill.csv\n');
+    const bad = await cli(['export', '--format', 'xml'], dir);
+    expect(bad).toEqual({ code: 2, stdout: '', stderr: '--format には json・yaml・csv・protobuf のいずれかを指定してください（xml が指定されました）\n' });
+  });
 });
 
 describe('new（FR-CLI-03）', () => {

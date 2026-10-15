@@ -7,7 +7,7 @@ import { DIRECT_CAPABILITIES } from './types';
 
 // 使う API だけの型（lib.dom の版に左右されないように。テストの偽物もこの形で作る）
 export interface WritableLike {
-  write(data: string): Promise<void>;
+  write(data: string | Uint8Array): Promise<void>;
   close(): Promise<void>;
   abort?(reason?: unknown): Promise<void>;
 }
@@ -101,14 +101,14 @@ export class DirectoryProjectFs implements ProjectFs {
    * 書き込む。createWritable は一時ファイルに書き、close の完了で元のファイルを置き換えるので、
    * 必ず close を待つ（NFR-15）。途中で失敗したら abort して元のファイルを残す
    */
-  async write(path: string, text: string): Promise<void> {
+  async write(path: string, data: string | Uint8Array): Promise<void> {
     const { dirs, name } = splitPath(path);
     const dir = await this.dir(dirs, true);
     if (dir === null) throw new Error(`cannot open ${path}`);
     const handle = await dir.getFileHandle(name, { create: true });
     const writable = await handle.createWritable();
     try {
-      await writable.write(text);
+      await writable.write(data);
     } catch (e) {
       await writable.abort?.(e).catch(() => undefined);
       throw e;

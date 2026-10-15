@@ -52,11 +52,11 @@ export class NodeProjectFs implements ProjectFs {
 /**
  * ファイルを書く。同じフォルダの一時ファイルに書いてから名前を変えるので、途中で失敗しても元のファイルは壊れない（NFR-15）
  */
-export async function writeFileAtomic(file: string, text: string): Promise<void> {
+export async function writeFileAtomic(file: string, data: string | Uint8Array): Promise<void> {
   await mkdir(dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
   try {
-    await writeFile(tmp, text, 'utf8');
+    await (typeof data === 'string' ? writeFile(tmp, data, 'utf8') : writeFile(tmp, data));
     await rename(tmp, file);
   } catch (e) {
     await rm(tmp, { force: true });

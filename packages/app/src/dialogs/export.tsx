@@ -1,5 +1,6 @@
-// 出力のダイアログ（FR-OUT-06、FR-OUT-05）: 出力するテーブルを選び、出力する。検査エラーがあればエラーを示して出力しない
-import { resolveProjectPaths } from '@sheetcraft/core';
+// 出力のダイアログ（FR-OUT-06、FR-OUT-05）: 出力するテーブルと形式を選び、出力する。検査エラーがあればエラーを示して出力しない
+import type { OutputFormat } from '@sheetcraft/core';
+import { DEFAULT_OUTPUT_FORMAT, isOutputFormat, OUTPUT_FORMATS, resolveProjectPaths } from '@sheetcraft/core';
 import { useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import type { ExportOutcome } from '../store/exportOutput';
@@ -7,6 +8,7 @@ import { formatExportError, runExport } from '../store/exportOutput';
 import { errorMessage } from '../fs/text';
 import { useT } from '../store/hooks';
 import { ValidationFailure } from '../store/validation';
+import { Field } from './formParts';
 import type { DialogProps } from './registry';
 import { defineDialog } from './registry';
 import './fileDialogs.css';
@@ -21,6 +23,10 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
   const tabs = store.tabs();
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(tabs.map((tab) => tab.name)));
   const [phase, setPhase] = useState<Phase>({ kind: 'select' });
+  // 既定はプロジェクト設定の output.format。選んだ形式はこの出力だけに使う（設定は変えない）
+  const [format, setFormat] = useState<OutputFormat>(() =>
+    store.project === null ? DEFAULT_OUTPUT_FORMAT : resolveProjectPaths(store.project.config).outputFormat,
+  );
   const project = store.project;
   const source = store.getState().source;
   if (project === null || source === null) return null;
@@ -67,7 +73,7 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
   const run = async (force: boolean) => {
     setPhase({ kind: 'running' });
     try {
-      finish(await runExport(store, { tables: tabs.filter((tab) => selected.has(tab.name)).map((tab) => tab.name), force }));
+      finish(await runExport(store, { tables: tabs.filter((tab) => selected.has(tab.name)).map((tab) => tab.name), force, format }));
     } catch (e) {
       setPhase({ kind: 'failed', message: e instanceof ValidationFailure ? t(e.code, e.params) : t('ui.export.failed', { message: errorMessage(e) }) });
     }
@@ -111,9 +117,27 @@ function ExportDialog({ store, close }: DialogProps<undefined>) {
         <>
           <p className="sc-dialog-message">
             {direct
-              ? t('ui.export.toFolder', { dir: paths.outDir === '' ? '.' : `${paths.outDir}/`, format: paths.outputFormat.toUpperCase() })
-              : t('ui.export.toDownload', { format: paths.outputFormat.toUpperCase() })}
+              ? t('ui.export.toFolder', { dir: paths.outDir === '' ? '.' : `${paths.outDir}/` })
+              : t('ui.export.toDownload')}
           </p>
+          <Field label={t('ui.export.format')} htmlFor="export-format" hint={format === 'protobuf' ? t('ui.export.protobufHint') : undefined}>
+            <select
+              id="export-format"
+              className="sc-select"
+              value={format}
+              disabled={running}
+              onChange={(e) => {
+                if (isOutputFormat(e.target.value)) setFormat(e.target.value);
+              }}
+              data-testid="export-format"
+            >
+              {OUTPUT_FORMATS.map((f) => (
+                <option key={f} value={f}>
+                  {t(`ui.export.formatName.${f}`)}
+                </option>
+              ))}
+            </select>
+          </Field>
           {store.isProjectModified() && <p className="sc-fd-note">{t('ui.export.includesUnsaved')}</p>}
           <label className="sc-fd-check sc-fd-all">
             <input

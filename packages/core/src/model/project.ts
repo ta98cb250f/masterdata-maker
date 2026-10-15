@@ -4,7 +4,13 @@ import type { SourceFile, StorageFormat } from './source';
 import type { BrokenTable, Table } from './table';
 import type { UidAllocator } from './uid';
 
-export type OutputFormat = 'json' | 'yaml';
+/** 出力ファイルの形式（FR-OUT-01）。protobuf はテーブルごとにスキーマ（.proto）とバイナリ（.pb）を出す */
+export const OUTPUT_FORMATS = ['json', 'yaml', 'csv', 'protobuf'] as const;
+export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
+
+export function isOutputFormat(value: string): value is OutputFormat {
+  return (OUTPUT_FORMATS as readonly string[]).includes(value);
+}
 
 export const CURRENT_FORMAT_VERSION = 1;
 export const DEFAULT_TABLES_DIR = 'tables/';

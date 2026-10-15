@@ -1,5 +1,5 @@
 {
-  "cli.usage": "Usage: sheetcraft <command> [project-dir] [options]\n\nCommands:\n  validate                    Validate all tables. Exits with 1 if there are errors\n  export [--force] [--tables <table,...>] [--out <dir>]\n                              Write the output files. Nothing is written if there are errors, unless --force is given\n  new <table> [--display-name <name>]\n                              Create a table template with the common columns\n  fmt [--check]               Rewrite all files in the canonical form. With --check, only check them\n  convert --to yaml|json      Change the format of the resource files\n\nCommon options:\n  --lang ja|en                Language of the messages (default: ja)\n  -h, --help                  Show this usage\n\nIf project-dir is omitted, the current directory is used.\nExit codes: 0 success, 1 validation errors or --check mismatch, 2 usage errors or load failures",
+  "cli.usage": "Usage: sheetcraft <command> [project-dir] [options]\n\nCommands:\n  validate                    Validate all tables. Exits with 1 if there are errors\n  export [--force] [--tables <table,...>] [--out <dir>] [--format json|yaml|csv|protobuf]\n                              Write the output files. Nothing is written if there are errors, unless --force is given\n                              Without --format, output.format in the project settings is used\n  new <table> [--display-name <name>]\n                              Create a table template with the common columns\n  fmt [--check]               Rewrite all files in the canonical form. With --check, only check them\n  convert --to yaml|json      Change the format of the resource files\n\nCommon options:\n  --lang ja|en                Language of the messages (default: ja)\n  -h, --help                  Show this usage\n\nIf project-dir is omitted, the current directory is used.\nExit codes: 0 success, 1 validation errors or --check mismatch, 2 usage errors or load failures",
   "cli.severity.error": "error",
   "cli.severity.warning": "warning",
   "cli.error.missingCommand": "Specify a command",
@@ -18,6 +18,7 @@
   "cli.error.unknownTable": "The table {name} does not exist",
   "cli.error.missingTo": "Specify yaml or json with --to",
   "cli.error.invalidFormat": "--to must be yaml or json (got {value})",
+  "cli.error.invalidOutputFormat": "--format must be json, yaml, csv, or protobuf ({value} was given)",
   "cli.error.brokenTables": "Cannot convert because some tables have load errors: {paths}",
   "cli.validate.ok": "No problems found",
   "cli.validate.summary": "{errors} errors, {warnings} warnings",

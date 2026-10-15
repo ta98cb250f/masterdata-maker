@@ -1,8 +1,8 @@
 {
   "ui.command.export": "出力…",
   "ui.export.title": "出力",
-  "ui.export.toFolder": "選んだテーブルを {format} で、プロジェクトのフォルダの {dir} に書き込みます（フォルダが無ければ作ります）。",
-  "ui.export.toDownload": "選んだテーブルを {format} でダウンロードします（複数なら ZIP）。",
+  "ui.export.toFolder": "選んだテーブルを、プロジェクトのフォルダの {dir} に書き込みます（フォルダが無ければ作ります）。",
+  "ui.export.toDownload": "選んだテーブルをダウンロードします（複数のファイルなら ZIP）。",
   "ui.export.includesUnsaved": "保存していない変更も出力に含みます。",
   "ui.export.allTables": "すべてのテーブル",
   "ui.export.run": "出力",
@@ -15,5 +15,11 @@
   "ui.export.failed": "出力できませんでした: {message}",
   "ui.export.writeFailedTitle": "書き込めなかったファイルがあります",
   "ui.export.written": "{count} ファイルを {dir} に出力しました",
-  "ui.export.downloaded": "{name} をダウンロードしました（{count} ファイル）"
+  "ui.export.downloaded": "{name} をダウンロードしました（{count} ファイル）",
+  "ui.export.format": "形式",
+  "ui.export.formatName.json": "JSON",
+  "ui.export.formatName.yaml": "YAML",
+  "ui.export.formatName.csv": "CSV",
+  "ui.export.formatName.protobuf": "Protocol Buffers（.proto と .pb）",
+  "ui.export.protobufHint": "テーブルごとに、スキーマ（.proto）とデータ（.pb）を出します。"
 }

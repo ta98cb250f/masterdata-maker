@@ -1,3 +1,5 @@
 {
-  "export.unknownTable": "テーブル {name} はありません"
+  "export.unknownTable": "テーブル {name} はありません",
+  "export.protoMessageConflict": "Protocol Buffers のメッセージ名 {message} がテーブル {other} と重なるため出力できません（テーブル名を変えてください）",
+  "export.protoFieldConflict": "列 {field} と列 {other} は Protocol Buffers の JSON 名が重なるため出力できません（どちらかの列名を変えてください）"
 }
