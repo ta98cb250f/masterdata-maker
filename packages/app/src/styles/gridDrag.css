@@ -1,0 +1,31 @@
+/* フィルハンドル・範囲の枠のドラッグ・行と列のドラッグ（grid/extensions/fillHandle.tsx・reorder.tsx）。
+   本体のペインの要素は固定列のペイン（z-index 2）の下に隠れるよう、z-index を 1 にする */
+.sc-range-grip {
+  position: absolute;
+  z-index: 1;
+  cursor: grab;
+}
+.sc-fill-handle {
+  position: absolute;
+  z-index: 1;
+  background: var(--sc-accent);
+  border: 1px solid #fff;
+  border-radius: 1px;
+  cursor: crosshair;
+}
+.sc-drag-range {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border: 2px dashed #5f6368;
+}
+.sc-drag-range.move {
+  border-color: var(--sc-accent);
+  background: rgba(26, 115, 232, 0.06);
+}
+.sc-drop-line {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  background: #5f6368;
+}

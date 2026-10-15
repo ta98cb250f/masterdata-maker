@@ -1,0 +1,77 @@
+/* 出力・外部での変更・未保存の変更の復元のダイアログ */
+.sc-fd-scroll {
+  max-height: 260px;
+  overflow: auto;
+}
+.sc-fd-tables {
+  margin: 4px 0 8px;
+  padding: 4px 0 4px 20px;
+  border-top: 1px solid var(--sc-gridline);
+  border-bottom: 1px solid var(--sc-gridline);
+}
+.sc-fd-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+.sc-fd-check input {
+  margin: 0;
+}
+.sc-fd-all {
+  font-weight: 500;
+}
+.sc-fd-note {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--sc-muted);
+}
+.sc-fd-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--sc-error);
+}
+.sc-fd-badge {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #fce8e6;
+  color: #a50e0e;
+  font-size: 12px;
+}
+.sc-fd-files {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sc-fd-file {
+  padding: 8px 0;
+  border-top: 1px solid var(--sc-gridline);
+}
+.sc-fd-file:last-child {
+  border-bottom: 1px solid var(--sc-gridline);
+}
+.sc-fd-file-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+.sc-fd-path {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+.sc-fd-state {
+  font-size: 12px;
+  color: var(--sc-muted);
+}
+.sc-fd-state.unsaved {
+  color: #a50e0e;
+}
+.sc-fd-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 4px;
+}

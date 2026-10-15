@@ -1,0 +1,29 @@
+{
+  "table": "skill",
+  "display_name": "スキル",
+  "fields": [
+    { "name": "name", "type": "string", "display_name": "名前" },
+    { "name": "cost", "type": "int", "display_name": "コスト", "validation": { "required": true, "min": 0 } },
+    { "name": "element", "type": "enum", "display_name": "属性", "enum_ref": "element" }
+  ],
+  "records": [
+    {
+      "id": 1,
+      "name": "ファイア",
+      "cost": 10,
+      "element": "火"
+    },
+    {
+      "id": 2,
+      "name": "ヒール",
+      "cost": 8,
+      "element": "光"
+    },
+    {
+      "id": 3,
+      "name": "ウィンド",
+      "cost": 12,
+      "element": "風"
+    }
+  ]
+}

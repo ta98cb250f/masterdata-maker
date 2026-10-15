@@ -1,0 +1,995 @@
+/* 見た目は Googleスプレッドシートに寄せる */
+:root {
+  --sc-chrome-bg: #f9fbfd;
+  --sc-toolbar-bg: #edf2fa;
+  --sc-border: #c4c7c5;
+  --sc-gridline: #e1e1e1;
+  --sc-header-bg: #f8f9fa;
+  --sc-header-text: #444746;
+  --sc-header-hl: #d3e3fd;
+  --sc-header-selected: #0b57d0;
+  --sc-accent: #1a73e8;
+  --sc-sel-fill: rgba(26, 115, 232, 0.1);
+  --sc-text: #1f1f1f;
+  --sc-muted: #5f6368;
+  --sc-error: #d93025;
+  --sc-warning: #f9ab00;
+  --sc-row-height: 21px;
+  --sc-cell-font: 13px Arial, Helvetica, sans-serif;
+  --sc-ui-font: 14px 'Google Sans', Roboto, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', Meiryo, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--sc-chrome-bg);
+  color: var(--sc-text);
+  font: var(--sc-ui-font);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.sc-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---- タイトル ---- */
+.sc-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  flex: none;
+}
+.sc-logo {
+  width: 24px;
+  height: 28px;
+  border-radius: 3px;
+  background: #0f9d58;
+  position: relative;
+}
+.sc-logo span {
+  position: absolute;
+  inset: 8px 5px 6px;
+  border: 2px solid #fff;
+  border-radius: 1px;
+}
+.sc-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  min-width: 0;
+}
+.sc-title-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-title-modified {
+  font-size: 12px;
+  color: var(--sc-muted);
+  border: 1px solid var(--sc-border);
+  border-radius: 10px;
+  padding: 0 8px;
+}
+.sc-title-checking {
+  font-size: 12px;
+  color: var(--sc-muted);
+}
+.sc-mode-badge {
+  margin-left: auto;
+  font-size: 12px;
+  border: 1px solid #f9ab00;
+  background: #fef7e0;
+  border-radius: 12px;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+/* ---- メニューバー ---- */
+.sc-menubar {
+  display: flex;
+  height: 28px;
+  padding: 0 6px;
+  flex: none;
+}
+.sc-menubar-item {
+  border: none;
+  background: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: default;
+}
+.sc-menubar-item:hover,
+.sc-menubar-item.open,
+.sc-menubar-item:focus-visible {
+  background: #e1e5ea;
+  outline: none;
+}
+
+.sc-menu-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+.sc-menu {
+  position: fixed;
+  z-index: 1001;
+  min-width: 220px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 6px 0;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px 2px rgba(60, 64, 67, 0.15), 0 1px 2px rgba(60, 64, 67, 0.3);
+  outline: none;
+  font-size: 14px;
+}
+.sc-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 16px 0 8px;
+  cursor: default;
+  white-space: nowrap;
+}
+.sc-menu-item.active {
+  background: #e8eaed;
+}
+.sc-menu-item.disabled {
+  color: #9aa0a6;
+}
+.sc-menu-check {
+  width: 24px;
+  display: inline-flex;
+  justify-content: center;
+}
+.sc-menu-label {
+  flex: 1;
+}
+.sc-menu-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+}
+.sc-menu-swatch-none {
+  display: inline-flex;
+  color: var(--sc-muted);
+}
+.sc-menu-shortcut {
+  margin-left: 32px;
+  color: var(--sc-muted);
+  font-size: 12px;
+}
+.sc-menu-sep {
+  height: 1px;
+  margin: 6px 0;
+  background: #e0e0e0;
+}
+
+/* ---- ツールバー ---- */
+.sc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  margin: 2px 8px 4px;
+  padding: 0 8px;
+  background: var(--sc-toolbar-bg);
+  border-radius: 18px;
+  flex: none;
+}
+.sc-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+}
+.sc-toolbar-group + .sc-toolbar-group {
+  border-left: 1px solid var(--sc-border);
+}
+.sc-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #444746;
+  cursor: pointer;
+}
+.sc-icon-button:hover:not(:disabled) {
+  background: rgba(68, 71, 70, 0.08);
+}
+.sc-icon-button.checked {
+  background: #d3e3fd;
+}
+.sc-icon-button:disabled {
+  color: #b9bcbf;
+  cursor: default;
+}
+
+/* ---- 数式バー ---- */
+.sc-formulabar {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 28px;
+  border-top: 1px solid var(--sc-border);
+  background: #fff;
+  flex: none;
+}
+.sc-namebox {
+  width: 260px;
+  flex: none;
+  padding: 4px 8px;
+  border-right: 1px solid var(--sc-border);
+  font: var(--sc-cell-font);
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-fx-label {
+  flex: none;
+  padding: 4px 10px;
+  color: #9aa0a6;
+  font-style: italic;
+  font-family: Georgia, serif;
+  border-right: 1px solid var(--sc-border);
+}
+.sc-badge {
+  flex: none;
+  align-self: center;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 16px;
+}
+.sc-badge.columnFormula {
+  background: #e6f4ea;
+  color: #137333;
+}
+.sc-badge.default {
+  background: #f1f3f4;
+  color: var(--sc-muted);
+}
+.sc-formula-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 4px 8px;
+  font: var(--sc-cell-font);
+  line-height: 20px;
+  height: 20px;
+  background: transparent;
+}
+.sc-formula-input.column-formula::placeholder {
+  color: #137333;
+  opacity: 0.7;
+  font-style: italic;
+}
+.sc-formula-input::placeholder {
+  color: #9aa0a6;
+}
+
+/* ---- 本体 ---- */
+.sc-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  border-top: 1px solid var(--sc-border);
+}
+.sc-main-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sc-grid-area {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  background: #fff;
+}
+.sc-panel {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  flex: none;
+}
+.sc-panel-right {
+  border-left: 1px solid var(--sc-border);
+}
+.sc-panel-bottom {
+  border-top: 1px solid var(--sc-border);
+}
+.sc-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 4px 12px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--sc-gridline);
+}
+.sc-panel-body {
+  flex: 1;
+  overflow: auto;
+}
+/* F6 などでキーから入ったときに、フォーカスの位置が分かるようにする（NFR-40） */
+.sc-panel-body:focus-visible,
+.sc-tab:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: -2px;
+}
+
+/* ---- グリッド ---- */
+.sc-grid {
+  position: absolute;
+  inset: 0;
+}
+.sc-grid-scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  user-select: none;
+  outline: none;
+}
+.sc-grid-canvas {
+  position: relative;
+}
+.sc-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--sc-header-bg);
+}
+.sc-head-frozen {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--sc-header-bg);
+  box-shadow: 1px 0 0 #bdc1c6;
+}
+.sc-corner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-right: 1px solid var(--sc-border);
+  border-bottom: 1px solid var(--sc-border);
+  background: var(--sc-header-bg);
+}
+.sc-body {
+  position: relative;
+}
+.sc-pane-frozen {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 1px 0 0 #bdc1c6;
+}
+.sc-colhead {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  padding: 3px 6px 0;
+  border-right: 1px solid var(--sc-gridline);
+  border-bottom: 1px solid var(--sc-border);
+  color: var(--sc-header-text);
+  font-size: 12px;
+  line-height: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: default;
+}
+.sc-colhead.hl {
+  background: var(--sc-header-hl);
+}
+.sc-colhead.selected {
+  background: var(--sc-header-selected);
+  color: #fff;
+}
+.sc-colhead-title {
+  font-weight: 500;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-colhead-sub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #80868b;
+  overflow: hidden;
+}
+.sc-colhead.selected .sc-colhead-sub {
+  color: #d2e3fc;
+}
+.sc-colhead-icon {
+  display: inline-flex;
+}
+.sc-colhead-type {
+  color: #9aa0a6;
+}
+.sc-colhead.sc-noexport .sc-colhead-title {
+  text-decoration: line-through dotted;
+}
+.sc-fx {
+  font-style: italic;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  color: #137333;
+}
+.sc-hidden-mark {
+  position: absolute;
+  top: 12px;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+.sc-hidden-mark::before,
+.sc-hidden-mark::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  border: 4px solid transparent;
+}
+.sc-hidden-mark.left {
+  left: -7px;
+}
+.sc-hidden-mark.right {
+  right: -7px;
+}
+.sc-hidden-mark::before {
+  left: -2px;
+  border-right-color: #5f6368;
+}
+.sc-hidden-mark::after {
+  right: -2px;
+  border-left-color: #5f6368;
+}
+.sc-rowhead {
+  position: absolute;
+  left: 0;
+  contain: strict;
+  border-right: 1px solid var(--sc-border);
+  border-bottom: 1px solid var(--sc-gridline);
+  background: var(--sc-header-bg);
+  color: var(--sc-header-text);
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+}
+.sc-rowhead.hl {
+  background: var(--sc-header-hl);
+}
+.sc-rowhead.selected {
+  background: var(--sc-header-selected);
+  color: #fff;
+}
+.sc-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* 行の中の変化が外の配置に影響しないようにする（スクロール中の配置の計算を軽くする） */
+  contain: strict;
+}
+.sc-cell {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  contain: strict;
+  padding: 0 3px;
+  border-right: 1px solid var(--sc-gridline);
+  border-bottom: 1px solid var(--sc-gridline);
+  background: #fff;
+  font: var(--sc-cell-font);
+  line-height: 20px;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.sc-cell.align-right {
+  text-align: right;
+}
+.sc-cell.align-center {
+  text-align: center;
+}
+/* 状態の見た目（FR-ANN-04） */
+.sc-error-value {
+  color: var(--sc-error);
+}
+.sc-cell.sc-issue-error {
+  box-shadow: inset 0 0 0 1px var(--sc-error);
+}
+.sc-cell.sc-issue-warning {
+  box-shadow: inset 0 0 0 1px var(--sc-warning);
+}
+.sc-cell.sc-src-formula {
+  color: #137333;
+}
+.sc-cell.sc-src-formula.sc-error-value {
+  color: var(--sc-error);
+}
+.sc-cell.sc-src-default {
+  color: #9aa0a6;
+}
+.sc-cell.sc-readonly {
+  background-color: #f8f9fa;
+  color: var(--sc-muted);
+}
+.sc-cell.sc-noexport {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(0, 0, 0, 0.035) 6px 7px);
+}
+.sc-mark-note {
+  position: absolute;
+  right: 0;
+  top: 0;
+  border-style: solid;
+  border-width: 0 6px 6px 0;
+  border-color: transparent #1f1f1f transparent transparent;
+}
+.sc-mark-override {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-style: solid;
+  border-width: 6px 6px 0 0;
+  border-color: #1a73e8 transparent transparent transparent;
+}
+.sc-checkbox {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  vertical-align: top;
+  border: 2px solid #5f6368;
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+}
+.sc-checkbox.checked {
+  background: #1a73e8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center / 10px no-repeat;
+  border-color: #1a73e8;
+}
+.sc-checkbox.small {
+  width: 12px;
+  height: 12px;
+  margin: 0 6px 0 0;
+}
+.sc-dropdown {
+  position: absolute;
+  right: 2px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.sc-dropdown::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 4px;
+  border: 4px solid transparent;
+  border-top-color: #444746;
+}
+/* 選択範囲（FR-ANN-03: 半透明の塗りでセル色が見分けられる） */
+.sc-sel-range,
+.sc-sel-active,
+.sc-clip-mark {
+  position: absolute;
+  pointer-events: none;
+}
+.sc-sel-range {
+  z-index: 1;
+  background: var(--sc-sel-fill);
+  border: 1px solid var(--sc-accent);
+}
+.sc-sel-range.open-right {
+  border-right: none;
+}
+.sc-sel-range.open-left {
+  border-left: none;
+}
+.sc-sel-active {
+  z-index: 1;
+  border: 2px solid var(--sc-accent);
+  margin: -1px 0 0 -1px;
+  padding: 0;
+  box-sizing: content-box;
+  width: auto;
+}
+.sc-clip-mark {
+  z-index: 1;
+  border: 2px dashed var(--sc-accent);
+}
+.sc-resize-guide {
+  position: absolute;
+  z-index: 6;
+  width: 2px;
+  background: var(--sc-accent);
+  pointer-events: none;
+}
+.sc-grid-empty {
+  position: absolute;
+  left: 60px;
+  top: 60px;
+  color: var(--sc-muted);
+  pointer-events: none;
+}
+
+/* ---- 入力欄 ---- */
+.sc-input-wrap {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+}
+.sc-input-wrap.editing {
+  pointer-events: auto;
+}
+.sc-input {
+  display: block;
+  margin: 0;
+  resize: none;
+  overflow: hidden;
+  font: var(--sc-cell-font);
+  line-height: 20px;
+  padding: 0 3px;
+}
+.sc-input.idle {
+  position: relative;
+  opacity: 0;
+  border: none;
+  outline: none;
+  color: transparent;
+  caret-color: transparent;
+  background: transparent;
+  pointer-events: none;
+}
+.sc-input.editing {
+  position: relative;
+  border: 2px solid var(--sc-accent);
+  margin: -1px 0 0 -1px;
+  outline: none;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(60, 64, 67, 0.3);
+  white-space: pre-wrap;
+}
+.sc-input.editing.invalid {
+  border-color: var(--sc-error);
+}
+.sc-edit-error {
+  margin-top: 2px;
+  padding: 6px 10px;
+  max-width: 420px;
+  background: #fce8e6;
+  border: 1px solid var(--sc-error);
+  border-radius: 4px;
+  color: #a50e0e;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 2px 6px rgba(60, 64, 67, 0.2);
+  white-space: normal;
+}
+.sc-edit-error.formula {
+  position: absolute;
+  z-index: 20;
+  left: 300px;
+  top: 100%;
+}
+.sc-edit-error-hint {
+  color: #5f2120;
+}
+.sc-assist {
+  margin-top: 2px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px 2px rgba(60, 64, 67, 0.15), 0 1px 2px rgba(60, 64, 67, 0.3);
+  font: var(--sc-cell-font);
+}
+.sc-assist-choice {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.sc-assist-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sc-assist-option.active {
+  background: #e8eaed;
+}
+.sc-assist-detail {
+  color: var(--sc-muted);
+  font-size: 12px;
+}
+.sc-assist-empty,
+.sc-assist-hint {
+  padding: 4px 10px;
+  color: var(--sc-muted);
+  font-size: 12px;
+}
+.sc-assist-datetime {
+  padding: 6px;
+}
+.sc-assist-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  max-width: 420px;
+}
+.sc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px 0 8px;
+  border-radius: 10px;
+  background: #e8eaed;
+  font-size: 12px;
+}
+.sc-tag-remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* ---- シートタブ ---- */
+.sc-sheetbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  padding: 0 8px;
+  border-top: 1px solid var(--sc-border);
+  background: var(--sc-chrome-bg);
+  flex: none;
+}
+.sc-tabs {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  margin-left: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+.sc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #444746;
+}
+.sc-tab:hover {
+  background: #e9eef6;
+}
+.sc-tab.active {
+  background: #e1e9f7;
+  color: #0b57d0;
+  font-weight: 500;
+  box-shadow: inset 0 -3px 0 #0b57d0;
+}
+.sc-tab.broken {
+  color: var(--sc-error);
+}
+.sc-tab-broken {
+  display: inline-flex;
+}
+.sc-tab-modified {
+  font-size: 10px;
+  color: #e37400;
+}
+.sc-tab-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  color: #fff;
+}
+.sc-tab-count.error {
+  background: var(--sc-error);
+}
+.sc-tab-count.warning {
+  background: var(--sc-warning);
+  color: #1f1f1f;
+}
+.sc-status {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 13px;
+  color: var(--sc-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 50%;
+}
+.sc-status.error {
+  color: var(--sc-error);
+}
+
+/* ---- ダイアログ ---- */
+.sc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(32, 33, 36, 0.4);
+}
+.sc-dialog {
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px 3px rgba(60, 64, 67, 0.15), 0 1px 3px rgba(60, 64, 67, 0.3);
+  outline: none;
+}
+.sc-dialog-title {
+  padding: 20px 24px 8px;
+  font-size: 20px;
+}
+.sc-dialog-body {
+  padding: 8px 24px;
+  overflow: auto;
+}
+.sc-dialog-message {
+  margin: 0 0 8px;
+  line-height: 1.6;
+}
+.sc-dialog-list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.7;
+  font-size: 13px;
+}
+.sc-dialog-list.error {
+  color: #a50e0e;
+}
+.sc-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px 20px;
+}
+.sc-button {
+  height: 36px;
+  padding: 0 20px;
+  border: 1px solid #747775;
+  border-radius: 18px;
+  background: #fff;
+  color: #0b57d0;
+  font-weight: 500;
+  cursor: pointer;
+}
+.sc-button:hover:not(:disabled) {
+  background: #f3f6fc;
+}
+.sc-button.primary {
+  border-color: #0b57d0;
+  background: #0b57d0;
+  color: #fff;
+}
+.sc-button.primary:hover:not(:disabled) {
+  background: #0842a0;
+}
+.sc-button.danger {
+  border-color: #b3261e;
+  background: #b3261e;
+}
+.sc-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---- 開始画面・読み込みエラーのテーブル ---- */
+.sc-start {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8vh;
+  overflow: auto;
+  background: #fff;
+  border-top: 1px solid var(--sc-border);
+}
+.sc-start-card {
+  width: min(640px, calc(100% - 32px));
+}
+.sc-start-card h1 {
+  font-size: 28px;
+  font-weight: 400;
+  margin: 0 0 8px;
+}
+.sc-start-lead {
+  color: var(--sc-muted);
+  margin: 0 0 24px;
+}
+.sc-start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.sc-start-loading {
+  color: var(--sc-muted);
+}
+.sc-start-errors {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fce8e6;
+  color: #a50e0e;
+  font-size: 13px;
+}
+.sc-start-mode {
+  margin-top: 32px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #f1f3f4;
+  color: #444746;
+  font-size: 13px;
+}
+.sc-broken {
+  position: absolute;
+  inset: 0;
+  padding: 24px 32px;
+  overflow: auto;
+  outline: none;
+}
+.sc-broken h2 {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--sc-error);
+}
+.sc-broken h3 {
+  font-size: 15px;
+  font-weight: 500;
+}
+.sc-broken-list {
+  font: 13px/1.7 ui-monospace, Menlo, Consolas, monospace;
+}
+.sc-broken-list.error {
+  color: #a50e0e;
+}

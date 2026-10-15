@@ -1,0 +1,81 @@
+/* セル情報パネル（FR-UI-07） */
+.sc-cellinfo {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.sc-cellinfo-empty {
+  padding: 12px;
+  color: var(--sc-muted);
+  font-size: 13px;
+}
+.sc-cellinfo-row {
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+.sc-cellinfo-label {
+  margin-bottom: 2px;
+  color: var(--sc-muted);
+  font-size: 11px;
+}
+.sc-cellinfo-value {
+  word-break: break-word;
+}
+.sc-cellinfo-type {
+  margin-left: 4px;
+  color: var(--sc-muted);
+  font-size: 11px;
+}
+.sc-cellinfo-source {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #f1f3f4;
+  font-size: 12px;
+  line-height: 18px;
+}
+.sc-cellinfo-source.formula {
+  background: #e6f4ea;
+  color: #137333;
+}
+.sc-cellinfo-source.override {
+  background: #e8f0fe;
+  color: #1967d2;
+}
+.sc-cellinfo-formula {
+  display: block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #f8f9fa;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.sc-cellinfo-note {
+  margin-top: 4px;
+  color: var(--sc-muted);
+  font-size: 12px;
+}
+.sc-cellinfo-error {
+  color: var(--sc-error);
+}
+.sc-cellinfo-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #c4c7c5;
+  border-radius: 3px;
+}
+.sc-cellinfo-comment {
+  white-space: pre-wrap;
+}
+.sc-cellinfo-issues {
+  margin: 0;
+  padding-left: 18px;
+}
+.sc-cellinfo-issues .error {
+  color: #a50e0e;
+}
+.sc-cellinfo-issues .warning {
+  color: #7a5400;
+}

@@ -1,0 +1,19 @@
+{
+  "ui.command.export": "出力…",
+  "ui.export.title": "出力",
+  "ui.export.toFolder": "選んだテーブルを {format} で、プロジェクトのフォルダの {dir} に書き込みます（フォルダが無ければ作ります）。",
+  "ui.export.toDownload": "選んだテーブルを {format} でダウンロードします（複数なら ZIP）。",
+  "ui.export.includesUnsaved": "保存していない変更も出力に含みます。",
+  "ui.export.allTables": "すべてのテーブル",
+  "ui.export.run": "出力",
+  "ui.export.running": "出力しています…",
+  "ui.export.hasErrors": "検査エラーが {count} 件あるため、出力しませんでした。エラーを直してから出力してください。",
+  "ui.export.moreErrors": "ほか {count} 件",
+  "ui.export.back": "戻る",
+  "ui.export.force": "エラーがあっても出力する",
+  "ui.export.empty": "出力するテーブルがありません（読み込みエラーのテーブルは出力できません）",
+  "ui.export.failed": "出力できませんでした: {message}",
+  "ui.export.writeFailedTitle": "書き込めなかったファイルがあります",
+  "ui.export.written": "{count} ファイルを {dir} に出力しました",
+  "ui.export.downloaded": "{name} をダウンロードしました（{count} ファイル）"
+}

@@ -1,0 +1,11 @@
+{
+  "ui.colResize.command": "列のサイズを変更",
+  "ui.colResize.titleOne": "列「{column}」のサイズを変更",
+  "ui.colResize.titleMany": "{count} 列のサイズを変更",
+  "ui.colResize.columns": "選んだ列（{names}）に同じ幅を当てます",
+  "ui.colResize.columnsMore": "選んだ列（{names} ほか {count} 列）に同じ幅を当てます",
+  "ui.colResize.pixels": "ピクセル数を入力",
+  "ui.colResize.unit": "ピクセル",
+  "ui.colResize.default": "既定の幅に戻す（{width} ピクセル）",
+  "ui.colResize.invalid": "{min}〜{max} の整数を入力してください"
+}

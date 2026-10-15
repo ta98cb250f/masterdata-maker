@@ -1,0 +1,142 @@
+/* 列ヘッダーの並べ替え・フィルタの印（grid/extensions/sortFilterHeader.tsx）とフィルタの小さな画面（dialogs/filter.tsx） */
+.sc-filter-button {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 16px;
+  border-radius: 3px;
+  background: inherit;
+  color: var(--sc-muted);
+  cursor: pointer;
+  visibility: hidden;
+}
+.sc-colhead:hover .sc-filter-button,
+.sc-filter-button.active {
+  visibility: visible;
+}
+.sc-filter-button:hover {
+  background: #e1e5ea;
+}
+.sc-filter-button.active {
+  background: #ceead6;
+  color: #137333;
+}
+.sc-colhead.selected .sc-filter-button:not(.active) {
+  color: #d2e3fc;
+}
+.sc-sort-mark {
+  position: absolute;
+  right: 23px;
+  bottom: 3px;
+  color: #137333;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 16px;
+}
+.sc-colhead.selected .sc-sort-mark {
+  color: #ceead6;
+}
+.sc-filter-title {
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.sc-filter-sort {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.sc-filter-link {
+  padding: 3px 4px;
+  border: none;
+  background: none;
+  color: var(--sc-accent);
+  cursor: pointer;
+}
+.sc-filter-link:hover,
+.sc-filter-link:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+.sc-filter-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.sc-filter-tab {
+  flex: 1;
+  padding: 4px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+.sc-filter-tab.active {
+  border-color: var(--sc-accent);
+  background: #e8f0fe;
+  color: #174ea6;
+}
+.sc-filter-values-actions {
+  display: flex;
+  gap: 8px;
+}
+.sc-filter-input {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 4px 0;
+  padding: 4px 6px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font: inherit;
+}
+.sc-filter-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 2px 0;
+}
+.sc-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sc-filter-option span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-filter-blank {
+  color: var(--sc-muted);
+}
+.sc-filter-more {
+  padding: 4px 8px;
+  color: var(--sc-muted);
+  font-size: 12px;
+}
+.sc-filter-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sc-filter-error {
+  color: var(--sc-error);
+  font-size: 12px;
+}
+.sc-filter-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.sc-filter-spacer {
+  flex: 1;
+}

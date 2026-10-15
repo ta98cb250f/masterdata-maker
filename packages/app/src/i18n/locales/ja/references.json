@@ -1,0 +1,5 @@
+{
+  "ui.ref.goto": "参照先へ移動",
+  "ui.ref.hint": "参照先: {table}（Ctrl+クリックで移動）",
+  "ui.ref.notFound": "参照先が見つかりません: {table} の {key}"
+}

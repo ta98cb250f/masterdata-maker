@@ -1,0 +1,26 @@
+{
+  "table": "stage",
+  "display_name": "ステージ",
+  "fields": [
+    { "name": "name", "type": "string", "display_name": "名前" },
+    { "name": "boss_id", "type": "int", "display_name": "ボス", "ref": "character.id" }
+  ],
+  "records": [
+    {
+      "id": 1,
+      "version": "0.1.2",
+      "name": "stage_01",
+      "boss_id": 3
+    },
+    {
+      "id": 2,
+      "version": "0.1.11",
+      "name": "stage_02",
+      "boss_id": 2
+    }
+  ],
+  "view": {
+    "frozen_columns": 1,
+    "hidden_columns": ["version"]
+  }
+}

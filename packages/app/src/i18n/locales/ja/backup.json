@@ -1,0 +1,18 @@
+{
+  "ui.backup.title": "保存していない変更が残っています",
+  "ui.backup.message": "前回（{time}）、保存しないまま終わった変更がブラウザに残っています。復元すると、保存していない変更として読み込みます。",
+  "ui.backup.itemTable": "{name}（{path}）",
+  "ui.backup.itemNewTable": "{name}（新しいテーブル）",
+  "ui.backup.itemRemoved": "{name}（{path}）の削除",
+  "ui.backup.itemCommon": "共通設定 {path}",
+  "ui.backup.changedSince": "退避した後に、ファイルが書き換えられています",
+  "ui.backup.willSkip": "次のファイルは復元できません: {files}",
+  "ui.backup.note": "復元は「元に戻す」で取り消せます。「復元しない」を選ぶと、残っている変更は消えます。",
+  "ui.backup.restore": "復元する",
+  "ui.backup.discard": "復元しない",
+  "ui.backup.restoreOp": "保存していない変更の復元",
+  "ui.backup.restored": "保存していない変更を復元しました（{count} 件）",
+  "ui.backup.failedTitle": "復元できませんでした",
+  "ui.backup.failedMessage": "残っていた変更を、今のファイルに当てられませんでした。",
+  "ui.backup.skippedTitle": "一部を復元できませんでした"
+}

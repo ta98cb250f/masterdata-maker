@@ -1,0 +1,10 @@
+base_fields:
+  - name: id
+    type: int
+    display_name: ID
+    editable: false
+    primary: true
+    auto: increment
+  - name: version
+    type: string
+    display_name: バージョン

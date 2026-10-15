@@ -1,0 +1,300 @@
+/* ダイアログの入力欄（列の設定・共通設定・テーブル・連番入力・検索と置換・ショートカット一覧） */
+.sc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.sc-form-section {
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--sc-gridline);
+}
+.sc-form-section:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.sc-form-section-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sc-header-text);
+}
+.sc-field {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  margin: 4px 0;
+}
+.sc-field-label {
+  padding-top: 6px;
+  color: var(--sc-header-text);
+}
+.sc-field-control {
+  min-width: 0;
+}
+.sc-field-hint {
+  margin-top: 2px;
+  color: var(--sc-muted);
+  font-size: 12px;
+}
+.sc-field-warning {
+  margin-top: 2px;
+  color: #b06000;
+  font-size: 12px;
+}
+.sc-field-error {
+  margin-top: 2px;
+  color: var(--sc-error);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.sc-text,
+.sc-select,
+.sc-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid #c4c7c5;
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+}
+.sc-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.sc-text:focus,
+.sc-select:focus,
+.sc-textarea:focus {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+.sc-text.invalid,
+.sc-textarea.invalid {
+  border-color: var(--sc-error);
+}
+.sc-text.mono,
+.sc-textarea.mono {
+  font-family: Consolas, Menlo, monospace;
+}
+.sc-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sc-inline > .sc-text,
+.sc-inline > .sc-select {
+  flex: 1;
+}
+.sc-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 16px 4px 0;
+  cursor: pointer;
+}
+.sc-checks {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+.sc-form-failures {
+  margin: 0 0 8px;
+  padding: 8px 12px 8px 28px;
+  background: #fce8e6;
+  border-radius: 4px;
+  color: #a50e0e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.sc-form-note {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  background: #fef7e0;
+  border-radius: 4px;
+  color: #5f4300;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.sc-form-info {
+  margin: 0 0 8px;
+  color: var(--sc-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.sc-form-list {
+  max-height: 200px;
+  overflow: auto;
+  margin: 4px 0 8px;
+  padding: 6px 12px 6px 28px;
+  border: 1px solid var(--sc-gridline);
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.sc-form-status {
+  min-height: 20px;
+  margin: 4px 0;
+  color: var(--sc-muted);
+  font-size: 13px;
+}
+.sc-formula-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sc-formula-field .sc-fx-prefix {
+  color: #9aa0a6;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+.sc-formula-ok {
+  margin-top: 2px;
+  color: #137333;
+  font-size: 12px;
+}
+.sc-button.small {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.sc-button.link {
+  border-color: transparent;
+}
+
+/* タブ（共通設定） */
+.sc-tabbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--sc-gridline);
+}
+.sc-tabbar-item {
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--sc-header-text);
+  font: inherit;
+  cursor: pointer;
+}
+.sc-tabbar-item.active {
+  border-bottom-color: var(--sc-accent);
+  color: var(--sc-accent);
+  font-weight: 500;
+}
+.sc-master-detail {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 360px;
+}
+.sc-master {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sc-master-list {
+  flex: 1;
+  min-height: 200px;
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--sc-gridline);
+  border-radius: 4px;
+}
+.sc-master-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-master-item.active {
+  background: #e8f0fe;
+}
+.sc-master-item.invalid {
+  color: var(--sc-error);
+}
+.sc-master-item-sub {
+  color: var(--sc-muted);
+  font-size: 11px;
+}
+.sc-master-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sc-color-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.sc-color-table th {
+  padding: 4px 6px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--sc-header-text);
+  border-bottom: 1px solid var(--sc-gridline);
+}
+.sc-color-table td {
+  padding: 4px 6px;
+  vertical-align: top;
+}
+.sc-color-swatch {
+  width: 36px;
+  height: 30px;
+  padding: 0 2px;
+  border: 1px solid #c4c7c5;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* キーボード ショートカットの一覧 */
+.sc-shortcuts {
+  columns: 2 360px;
+  column-gap: 32px;
+}
+.sc-shortcut-group {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+.sc-shortcut-group h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.sc-shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f3f4;
+  font-size: 13px;
+}
+.sc-shortcut-keys {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.sc-kbd {
+  padding: 1px 6px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: #f8f9fa;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}

@@ -1,0 +1,5 @@
+{
+  "ui.ref.goto": "Go to reference",
+  "ui.ref.hint": "References {table} (Ctrl+click to go)",
+  "ui.ref.notFound": "Reference not found: {key} in {table}"
+}
