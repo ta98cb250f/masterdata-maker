@@ -23,68 +23,18 @@ import { indexedDbBackupStorage } from '../fs/backupStore';
 import { DirectoryProjectFs } from '../fs/direct';
 import type { ProjectSource } from '../fs/types';
 import type { AppStore } from './AppStore';
+import type { BackupCommon, BackupRecord, BackupTarget, ProjectIdentity } from './backupRecord';
+import { BACKUP_VERSION, backupTables, hashText, hashTextSliced } from './backupRecord';
 import { openDecisionDialog } from './dialogDecision';
 import { backgroundJobs } from './workerValidator';
 
+export type { BackupCommon, BackupRecord, BackupTable, ProjectIdentity } from './backupRecord';
+export { BACKUP_VERSION, hashText } from './backupRecord';
+
 export const BACKUP_PREFIX = 'sheetcraft.backup:';
-export const BACKUP_VERSION = 1;
 export const BACKUP_DIALOG = 'backupRestore';
 /** 変更の後、退避するまでの待ち時間（ミリ秒） */
 export const DEFAULT_BACKUP_DELAY = 800;
-
-/** プロジェクトの同一性の判定に使う情報 */
-export interface ProjectIdentity {
-  /** フォルダの名前 */
-  name: string;
-  configPath: string;
-  configText: string;
-}
-
-export interface BackupTable {
-  /** 読み込み元のファイル（新しく作ったテーブルなら null） */
-  basePath: string | null;
-  /** 退避したときの読み込み元のファイルの中身のハッシュ（退避の後にファイルが書き換えられたかを見る） */
-  baseHash: string | null;
-  name: string;
-  format: StorageFormat;
-  /** 今の内容の正規形のテキスト */
-  text: string;
-}
-
-export interface BackupCommon {
-  part: CommonPartName;
-  path: string;
-  format: StorageFormat;
-  /** 既定値に戻したなら null */
-  text: string | null;
-}
-
-export interface BackupRecord {
-  version: number;
-  /** 退避した日時（ミリ秒） */
-  savedAt: number;
-  project: ProjectIdentity;
-  /** 直接保存方式のフォルダのハンドル（同じフォルダかを確かめる） */
-  handle?: unknown;
-  tables: BackupTable[];
-  common: BackupCommon[];
-  /** 削除したテーブルの読み込み元のファイル */
-  removed: string[];
-}
-
-/** 文字列のハッシュ（cyrb53。同一性の判定のキーと、ファイルが書き換えられたかの判定に使う。暗号用ではない） */
-export function hashText(text: string): string {
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
-}
 
 export function projectIdentity(project: Project, source: ProjectSource): ProjectIdentity | null {
   const config = project.config.source;
@@ -147,35 +97,43 @@ function cachedHash(path: string, text: string): string {
   return hash;
 }
 
+/** cachedHash と同じ。長いテキストは区切って求める（メインスレッドを止めない） */
+async function cachedHashSliced(path: string, text: string): Promise<string> {
+  const cached = hashCache.get(path);
+  if (cached !== undefined && cached.text === text) return cached.hash;
+  const hash = await hashTextSliced(text);
+  hashCache.set(path, { text, hash });
+  return hash;
+}
+
+/** 退避の計画: キー・テーブルのテキスト以外の内容・テキストを作るテーブル */
+export interface BackupPlan {
+  key: string;
+  record: BackupRecord;
+  targets: BackupTarget[];
+}
+
 /**
- * 退避する内容を作る。未保存の変更が無ければ null。テーブルの正規形のテキストは Worker で作る（メインスレッドを止めない）
+ * 退避する内容を決める。未保存の変更が無ければ null。テーブルの正規形のテキストは、書き込むときに（Worker で）作る
  */
-export async function buildBackup(store: AppStore, now: number = Date.now()): Promise<BackupRecord | null> {
-  const { project, session, source, calc } = store.getState();
-  if (project === null || session === null || source === null || calc === null) return null;
+export async function planBackup(store: AppStore, now: number = Date.now()): Promise<BackupPlan | null> {
+  const { project, session, source } = store.getState();
+  if (project === null || session === null || source === null) return null;
   const identity = projectIdentity(project, source);
   if (identity === null || !store.isProjectModified()) return null;
-  const modified = project.tables.filter((t) => session.isTableModified(t.uid));
-  const texts =
-    modified.length === 0
-      ? []
-      : await backgroundJobs(project, calc).serializeTables(modified.map((t) => ({ uid: t.uid, format: formatOf(project, t) })));
-  // 作る間にプロジェクトを閉じた・開き直したら捨てる
-  if (store.project !== project) return null;
-  const tables: BackupTable[] = [];
-  for (const { uid, text } of texts) {
-    const table = project.tables.find((t) => t.uid === uid);
-    if (table === undefined || text === null) continue;
-    // 手で元の値に戻したなどで、ファイルと同じなら退避しない（名前を変えたなら table: の行が違う）
-    if (table.source !== null && table.source.text === text) continue;
-    tables.push({
-      basePath: table.source?.path ?? null,
-      baseHash: table.source === null ? null : cachedHash(table.source.path, table.source.text),
-      name: table.name,
+  const targets: BackupTarget[] = [];
+  for (const table of project.tables) {
+    if (!session.isTableModified(table.uid)) continue;
+    const base = table.source;
+    targets.push({
+      uid: table.uid,
       format: formatOf(project, table),
-      text,
+      basePath: base?.path ?? null,
+      baseHash: base === null ? null : await cachedHashSliced(base.path, base.text),
     });
   }
+  // ハッシュを求める間にプロジェクトを閉じた・開き直したら捨てる
+  if (store.project !== project) return null;
   const common: BackupCommon[] = [];
   for (const part of COMMON_PART_NAMES) {
     if (!session.isCommonDirty(part)) continue;
@@ -187,12 +145,20 @@ export async function buildBackup(store: AppStore, now: number = Date.now()): Pr
       text: project.common[part].isDefault ? null : serializeCommonPart(project.common, part, format),
     });
   }
-  const removed = session.removedTableFiles();
-  if (tables.length === 0 && common.length === 0 && removed.length === 0) return null;
-  const record: BackupRecord = { version: BACKUP_VERSION, savedAt: now, project: identity, tables, common, removed };
+  const record: BackupRecord = { version: BACKUP_VERSION, savedAt: now, project: identity, tables: [], common, removed: session.removedTableFiles() };
   const handle = directHandle(source);
   if (handle !== null) record.handle = handle;
-  return record;
+  return { key: backupKey(identity), record, targets };
+}
+
+/** 退避する内容（テーブルのテキストを含む）を作る。未保存の変更が無ければ null（テスト・確認用。メインスレッドで作る） */
+export async function buildBackup(store: AppStore, now: number = Date.now()): Promise<BackupRecord | null> {
+  const plan = await planBackup(store, now);
+  const project = store.project;
+  if (plan === null || project === null) return null;
+  const tables = backupTables(project, plan.targets);
+  if (tables.length === 0 && plan.record.common.length === 0 && plan.record.removed.length === 0) return null;
+  return { ...plan.record, tables };
 }
 
 /** 復元の内容の 1 項目（ダイアログに出す） */
@@ -406,14 +372,17 @@ export class BackupManager {
     const key = this.key;
     if (project === null || key === null || this.proposing) return this.chain;
     return this.enqueue(async () => {
-      if (this.store.project !== project) return;
-      const record = await buildBackup(this.store, this.now());
+      const { calc } = this.store.getState();
+      if (this.store.project !== project || calc === null) return;
+      const plan = await planBackup(this.store, this.now());
       if (this.store.project !== project || this.proposing) return;
-      if (record === null) await this.remove(key);
-      else {
-        await this.storage.set(key, record);
-        this.lastWrite = { at: this.now(), kind: 'set' };
+      if (plan === null) {
+        await this.remove(key);
+        return;
       }
+      // テーブルのテキストを作って書き込むのは Worker（メインスレッドを止めない）
+      const written = await backgroundJobs(project, calc).saveBackup(this.storage, plan.key, plan.record, plan.targets);
+      this.lastWrite = { at: this.now(), kind: written ? 'set' : 'del' };
     });
   }
 

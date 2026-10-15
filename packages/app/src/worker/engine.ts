@@ -10,12 +10,20 @@ import {
   restoreProject,
   serializeTable,
 } from '@sheetcraft/core';
+import type { BackupStorage } from '../fs/backupStore';
+import { persistBackup } from '../store/backupRecord';
 import { runValidation } from '../store/validation';
 import type { FromWorker, Job, JobResult, SerializedTable, SyncInfo, ToWorker } from './protocol';
 
-/** 仕事を 1 つ行う（Worker の中と、Worker が使えないときのメインスレッドで共用する） */
-export function runJob(project: Project, calc: Calculator, job: Job): JobResult {
+/**
+ * 仕事を 1 つ行う（Worker の中と、Worker が使えないときのメインスレッドで共用する）。
+ * 退避（backup）だけは IndexedDB への書き込みを待つので Promise を返す
+ */
+export function runJob(project: Project, calc: Calculator, job: Job, backupStorage?: BackupStorage): JobResult | Promise<JobResult> {
   switch (job.kind) {
+    case 'backup':
+      if (backupStorage === undefined) throw new Error('no backup storage');
+      return persistBackup(project, backupStorage, job.key, job.record, job.targets);
     case 'validate':
       return runValidation(project, calc, job.request);
     case 'export':
@@ -63,7 +71,10 @@ export class ValidationEngine {
   /** パッチを当てられなかった理由（複製を送り直されるまで仕事を断る） */
   private desync: string | null = null;
 
-  constructor(private readonly post: (message: FromWorker) => void) {}
+  constructor(
+    private readonly post: (message: FromWorker) => void,
+    private readonly backupStorage?: BackupStorage,
+  ) {}
 
   /** 複製（テストで中身を確かめる） */
   get replica(): Project | null {
@@ -106,7 +117,15 @@ export class ValidationEngine {
     }
     try {
       applySync(project, sync);
-      this.post({ type: 'done', id, result: runJob(project, calc, job) });
+      const result = runJob(project, calc, job, this.backupStorage);
+      if (result instanceof Promise) {
+        result.then(
+          (value) => this.post({ type: 'done', id, result: value }),
+          (e: unknown) => this.post({ type: 'failed', id, message: messageOf(e), desync: false }),
+        );
+      } else {
+        this.post({ type: 'done', id, result });
+      }
     } catch (e) {
       this.post({ type: 'failed', id, message: messageOf(e), desync: false });
     }

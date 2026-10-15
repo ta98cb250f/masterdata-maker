@@ -10,6 +10,7 @@ import type {
   ProjectSnapshot,
   StorageFormat,
 } from '@sheetcraft/core';
+import type { BackupRecord, BackupTarget } from '../store/backupRecord';
 import type { ValidationOutput, ValidationRequest } from '../store/validation';
 
 /**
@@ -38,12 +39,16 @@ export interface SerializedTable {
 export type Job =
   | { kind: 'validate'; request: ValidationRequest }
   | { kind: 'export'; options: ExportOptions }
-  | { kind: 'serialize'; tables: SerializeTarget[] };
+  | { kind: 'serialize'; tables: SerializeTarget[] }
+  /** 未保存の変更を IndexedDB に退避する（record.tables は targets から Worker で作る。FR-FIO-06） */
+  | { kind: 'backup'; key: string; record: BackupRecord; targets: BackupTarget[] };
 
 export interface JobResults {
   validate: ValidationOutput;
   export: ExportResult;
   serialize: SerializedTable[];
+  /** 書き込んだか（false なら退避するものが無いので消した） */
+  backup: boolean;
 }
 
 export type JobResult = JobResults[keyof JobResults];

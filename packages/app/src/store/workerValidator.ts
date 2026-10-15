@@ -4,6 +4,9 @@
 // 時間制限（FR-VAL-10）を過ぎたら Worker を止めて作り直す（複製は送り直す）。Worker が使えなければメインスレッドで行う
 import type { BrokenTable, Calculator, ExportOptions, ExportResult, Project } from '@sheetcraft/core';
 import { COMMON_PART_NAMES, snapshotProject } from '@sheetcraft/core';
+import type { BackupStorage } from '../fs/backupStore';
+import { indexedDbBackupStorage } from '../fs/backupStore';
+import type { BackupRecord, BackupTarget } from './backupRecord';
 import { runJob } from '../worker/engine';
 import type { FromWorker, Job, JobResult, JobResults, SerializeTarget, SerializedTable, SyncInfo, ToWorker } from '../worker/protocol';
 import type { ValidationOutput, ValidationRequest, Validator, ValidatorFactory } from './validation';
@@ -54,6 +57,11 @@ export interface WorkerStats {
 export interface BackgroundJobs {
   exportPlan(options: ExportOptions): Promise<ExportResult>;
   serializeTables(targets: SerializeTarget[]): Promise<SerializedTable[]>;
+  /**
+   * 未保存の変更を退避する（record.tables は targets から作る）。退避先が IndexedDB なら Worker が書き込む。
+   * 書き込んだら true、退避するものが無くて消したら false
+   */
+  saveBackup(storage: BackupStorage, key: string, record: BackupRecord, targets: BackupTarget[]): Promise<boolean>;
 }
 
 interface Pending {
@@ -143,6 +151,12 @@ export class WorkerValidator implements Validator, BackgroundJobs {
     return this.send({ kind: 'serialize', tables: targets }) as Promise<SerializedTable[]>;
   }
 
+  saveBackup(storage: BackupStorage, key: string, record: BackupRecord, targets: BackupTarget[]): Promise<boolean> {
+    // Worker が書き込めるのは IndexedDB だけ（テストなどで別の退避先を渡したら、メインスレッドで行う）
+    if (storage !== indexedDbBackupStorage) return Promise.resolve(runJob(this.project, this.calc, { kind: 'backup', key, record, targets }, storage)) as Promise<boolean>;
+    return this.send({ kind: 'backup', key, record, targets }) as Promise<boolean>;
+  }
+
   // ---- 内部 ----
 
   private limitOf(job: Job): number {
@@ -160,7 +174,7 @@ export class WorkerValidator implements Validator, BackgroundJobs {
   }
 
   private runLocally(job: Job): Promise<JobResult> {
-    return Promise.resolve().then(() => runJob(this.project, this.calc, job));
+    return Promise.resolve().then(() => runJob(this.project, this.calc, job, indexedDbBackupStorage));
   }
 
   private dispatch(p: Pending): void {
@@ -313,6 +327,7 @@ export function backgroundJobs(project: Project, calc: Calculator): BackgroundJo
   return {
     exportPlan: async (options) => runJob(project, calc, { kind: 'export', options }) as JobResults['export'],
     serializeTables: async (tables) => runJob(project, calc, { kind: 'serialize', tables }) as JobResults['serialize'],
+    saveBackup: async (storage, key, record, targets) => (await runJob(project, calc, { kind: 'backup', key, record, targets }, storage)) as boolean,
   };
 }
 
