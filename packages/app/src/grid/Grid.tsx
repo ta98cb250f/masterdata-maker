@@ -517,7 +517,7 @@ interface SelectionLayerProps {
   mark: ClipboardMark | null;
 }
 
-/** 選択範囲（青い枠と半透明の塗り。FR-ANN-03）・現在のセル・コピーした範囲の点線の枠 */
+/** 選択範囲（アクセント色の枠と半透明の塗り。FR-ANN-03）・現在のセル・コピーした範囲の点線の枠 */
 function SelectionLayer({ pane, geometry, selection, mark }: SelectionLayerProps) {
   const range = selection.ranges[0];
   const rects = geometry.rangeRects(range);

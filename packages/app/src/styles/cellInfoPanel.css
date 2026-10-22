@@ -38,8 +38,8 @@
   color: var(--sc-theme-text);
 }
 .sc-cellinfo-source.override {
-  background: var(--sc-accent-soft);
-  color: var(--sc-accent-text);
+  background: var(--sc-override-soft);
+  color: var(--sc-override-text);
 }
 .sc-cellinfo-formula {
   display: block;

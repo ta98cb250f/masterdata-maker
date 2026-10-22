@@ -32,8 +32,8 @@
   text-align: center;
 }
 .sc-fx-assist-kind.function {
-  background: var(--sc-accent-soft);
-  color: var(--sc-accent-text);
+  background: var(--sc-override-soft);
+  color: var(--sc-override-text);
   font-style: italic;
   font-family: Georgia, serif;
 }

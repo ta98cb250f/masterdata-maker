@@ -114,6 +114,13 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
     expect(both).toMatchObject({ status: 'error', diagnostics: [{ code: IoCode.multipleProjectConfigs }] });
   });
 
+  it('旧名（SheetCraft）の設定ファイルだけがあるフォルダはプロジェクトではない（P-65。互換の読み込みはしない）', async () => {
+    for (const config of ['sheetcraft.yaml', 'sheetcraft.json']) {
+      const result = await loadProject(new MemoryProjectFs({ [config]: CONFIG_YAML, 'tables/a.yaml': 'table: a\n' }));
+      expect(result, config).toEqual({ status: 'not-project' });
+    }
+  });
+
   it('設定ファイルの知らないキー・新しすぎる版・形式の指定漏れはエラー', async () => {
     const cases: [string, string][] = [
       [`${CONFIG_YAML}foo: 1\n`, IoCode.unknownConfigKey],

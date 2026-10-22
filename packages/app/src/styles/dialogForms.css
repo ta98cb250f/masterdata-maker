@@ -154,7 +154,7 @@
 }
 .sc-formula-ok {
   margin-top: 2px;
-  color: #137333;
+  color: var(--sc-success);
   font-size: 12px;
 }
 .sc-button.small {

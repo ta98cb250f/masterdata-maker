@@ -6,12 +6,12 @@
   --sc-gridline: #e1e1e1;
   --sc-header-bg: #f8f9fa;
   --sc-header-text: #444746;
-  /* アクセント色（淡い青紫・ペリウィンクル寄り）。選択枠・選択中の列見出し・シートタブ・ボタン・フォーカスリングに使う。
-     式の印のテーマ色（--sc-theme*）より青に寄せ、式のセルを選んでも枠と文字の色が混ざらないようにする */
+  /* アクセント色（淡い青紫・ペリウィンクル寄り）。選択枠と選択範囲の塗り・選択中の行と列の見出し・シートタブ・ボタン・
+     フォーカスリング・一覧の選択行・フィルタのタブとリンク・チェックボックス・ツールバーの地に使う。
+     テーマ色（--sc-theme*）より青に寄せ、列レベル式のセルを選んでも枠と文字の色が混ざらないようにする */
   --sc-accent: #6366e0;
   --sc-accent-strong: #4a4dc4;
   --sc-accent-strong-hover: #3b3ea6;
-  --sc-accent-text: #4547b8;
   --sc-accent-text-strong: #3d3fa8;
   --sc-accent-on-strong: #dcdcf8;
   --sc-accent-soft: #ececfc;
@@ -26,12 +26,19 @@
   --sc-muted: #5f6368;
   --sc-error: #d93025;
   --sc-warning: #f9ab00;
-  /* テーマ色（淡い青紫・ラベンダー寄り）。ロゴ、式（列の式・セルの式・fx の印）、並べ替え・フィルタの印に使う。
+  --sc-success: #137333;
+  /* テーマ色（淡い青紫・ラベンダー寄り）。ロゴ、列レベル式（列の式のバッジ・式のセルの文字・列見出しの fx・
+     セル情報の「列レベル式」）、式の補完の列、並べ替え・フィルタの印に使う。
      濃淡は 4 段: ロゴの地 / 文字（白地で 6.3:1）/ 淡い地 / やや濃い地 */
   --sc-theme: #9374dc;
   --sc-theme-text: #6c48c0;
   --sc-theme-soft: #f0ecfb;
   --sc-theme-soft-strong: #e2d9f7;
+  /* セル単位式の色（青寄りのティール）。セル左上の三角・セル情報の「セル単位式」・式の補完の関数（fx）に使う。
+     列レベル式（--sc-theme*）や成功の緑（--sc-success）と色相で見分けられるようにする */
+  --sc-override: #0f8794;
+  --sc-override-text: #0b6570;
+  --sc-override-soft: #e0f3f5;
   --sc-row-height: 21px;
   --sc-cell-font: 13px Arial, Helvetica, sans-serif;
   --sc-ui-font: 14px 'Google Sans', Roboto, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', Meiryo, sans-serif;
@@ -579,7 +586,7 @@ button {
   top: 0;
   border-style: solid;
   border-width: 6px 6px 0 0;
-  border-color: var(--sc-accent) transparent transparent transparent;
+  border-color: var(--sc-override) transparent transparent transparent;
 }
 .sc-checkbox {
   display: inline-block;
