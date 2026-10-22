@@ -44,6 +44,7 @@ pnpm --filter @masterdata-maker/app build     # 画面だけ（packages/app/dist
 - 自動: `main` に push したとき
 - 手動: GitHub の Actions タブで「Deploy to GitHub Pages」を選び、「Run workflow」で実行する（`github-pages` 環境の既定の保護で、公開できるのは `main` からだけ）
 - 初回だけ、リポジトリの Settings → Pages → Build and deployment → Source を「GitHub Actions」にしておく
+- 公開の前に [.github/workflows/ci.yml](.github/workflows/ci.yml) の型検査・単体テスト・画面テストを動かし、どれかが通らなければ公開しない（性能の計測は待たない）
 
 ### テスト
 
@@ -57,6 +58,8 @@ pnpm e2e          # 画面テスト（Playwright、Chromium）
 - 複数の画面テストを同時に動かすときは、ポートとビルドの出力先を環境変数で変えます: `cd packages/app && E2E_PORT=4174 E2E_OUTDIR=dist-e2e-x pnpm exec playwright test --output test-results-x`
 - 要件定義書 §5.17 の受け入れ基準 1〜9 は [packages/app/e2e/acceptance.spec.ts](packages/app/e2e/acceptance.spec.ts) に、番号順に並べてあります。手で確かめる必要があるもの（Googleスプレッドシート本体・Firefox・Safari）は、各テストの注記と下の「既知の制限と未検証の事項」に書きました
 - 性能の確認（NFR-10〜12）は [packages/app/e2e/perf.spec.ts](packages/app/e2e/perf.spec.ts) と [packages/app/e2e/worker.spec.ts](packages/app/e2e/worker.spec.ts) で、測った値を `[perf]` で始まる行で標準出力に出します
+- `pnpm e2e` は全件を動かします。perf.spec.ts だけを分けるときは `cd packages/app && pnpm exec playwright test --project=perf`（それ以外は `--project=chromium`）
+- プルリクエストでは [.github/workflows/ci.yml](.github/workflows/ci.yml) が型検査・単体テスト・画面テスト（`chromium`）を動かします。perf.spec.ts は実行環境で揺れるので別のジョブで測るだけにし、落ちても CI を失敗にしません（必須のチェックにはしない）。プルリクエストにしていないブランチは、Actions タブで「CI」を選んで「Run workflow」で動かせます
 
 ### CLI
 
