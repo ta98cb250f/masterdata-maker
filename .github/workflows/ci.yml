@@ -1,0 +1,99 @@
+name: CI
+
+# main への push は deploy-pages.yml がこのワークフローを呼んで検査する（二重に走らせない）
+on:
+  pull_request:
+  workflow_call:
+    inputs:
+      # 公開の前の検査では、止めない計測（perf）を待たずに済むよう飛ばす
+      skip_perf:
+        type: boolean
+        default: false
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同じ PR に新しい push があったら、古い実行は取り消す
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: 型検査と単体テスト
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # バージョンは package.json の packageManager から読む
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
+  e2e:
+    name: 画面テスト
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # パッケージ名に頼らないよう、packages/app で動かす（--filter は名前が当たらなくても成功で終わる）
+    defaults:
+      run:
+        working-directory: packages/app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm exec playwright test --project=chromium
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: packages/app/test-results/
+          retention-days: 7
+
+  # 性能の確認（NFR-10〜12）は実行環境で揺れるので、測った値をログに残すだけにする。落ちても CI は止めず、公開の前の検査では動かさない
+  perf:
+    name: 性能の計測（失敗しても止めない）
+    if: ${{ !inputs.skip_perf }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: packages/app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm exec playwright test --project=perf

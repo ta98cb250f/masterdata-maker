@@ -733,14 +733,14 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 | NFR-03 | ダウンロード保存方式（`webkitdirectory` で読み込み、1 ファイルならそのファイル、複数なら ZIP） | 推奨 | 実装済み | `packages/app/src/fs/download.ts` の `FileListProjectFs`・`filesToProject`・`downloadPlan`・`pickFolderWithInput` | `packages/app/src/fs/fs.test.ts`「ダウンロード保存方式」、`packages/app/e2e/export.spec.ts`（ZIP） | Safari の不具合の場合の扱いは未確認（§3.5）。確認=動作 |
 | NFR-04 | 方式はブラウザの名前でなく API の有無で自動的に決める | 必須 | 実装済み | `packages/app/src/fs/direct.ts` の `supportsDirectAccess` | `packages/app/src/fs/fs.test.ts`「API の有無で方式を決める（NFR-04）」、`packages/app/e2e/fileaccess.spec.ts` | 確認=動作 |
 | NFR-05 | ダウンロード保存方式では使えない機能を画面に示す | 必須 | 実装済み | `packages/app/src/components/TitleBar.tsx`（`mode-badge`）、`packages/app/src/components/StartScreen.tsx` | `packages/app/e2e/fileaccess.spec.ts`「API が無ければダウンロード保存方式になり、使えない機能を示す」 | 確認=動作 |
-| NFR-06 | HTTPS の静的ホスティングで配る | 必須 | 実装済み | `packages/app/vite.config.ts`（`base: './'` の静的ファイル）、`README.md`「ビルド（静的ホスティング用）」（HTTPS の静的ホスティングに置く手順と、安全なコンテキストの注意） | 画面テストのたびにビルドと配信が成功 | 配布の手順は H の `33a73b8` の README にある（G-3 を解消）。実際の HTTPS のホスティングに置いて動かしたことは無い（画面テストは `localhost`）。配布の CI は無い。確認=コード |
+| NFR-06 | HTTPS の静的ホスティングで配る | 必須 | 実装済み | `packages/app/vite.config.ts`（`base: './'` の静的ファイル）、`README.md`「ビルド（静的ホスティング用）」（HTTPS の静的ホスティングに置く手順と、安全なコンテキストの注意） | 画面テストのたびにビルドと配信が成功 | 配布の手順は H の `33a73b8` の README にある（G-3 を解消）。実際の HTTPS のホスティングに置いて動かしたことは無い（画面テストは `localhost`）。配布の CI は無い。（2026-10-22 追記）`.github/workflows/deploy-pages.yml` が main への push で GitHub Pages に公開し、`.github/workflows/ci.yml` の型検査・単体テスト・画面テストが通らなければ公開しない。確認=コード |
 | NFR-07 | サーバーを持たない。データを外部に送らない | 必須 | 実装済み | `packages/app/`（通信の処理が無い。サンプルは `import.meta.glob` でビルドに含める） | — | 監査で `fetch(`・`XMLHttpRequest`・`WebSocket`・`sendBeacon`・外部の URL を検索し、無いことを確かめた。確認=動作 |
 
 ### §10.2 性能
 
 | ID | 要件の要約 | 優先度 | 状態 | 実装 | テスト | 備考 |
 |---|---|---|---|---|---|---|
-| NFR-10 | 1 万行 × 50 列で移動や入力への反応が 100 ms 以内。スクロールが途切れない | 必須 | 実装済み | `packages/app/src/grid/useVirtual.ts`（`@tanstack/virtual-core`）、`packages/app/src/grid/GridCells.tsx`（行ごとの memo）、Web Worker での検査 | `packages/app/e2e/perf.spec.ts`「1 万行 × 50 列: 矢印キーの移動・入力の確定・スクロール」、`packages/app/e2e/worker.spec.ts`、`packages/app/e2e/backup.spec.ts` | 測定値は §2.4・§2.7。スクロールは J が判定を足した（T-2 を解消）: 100 px/フレームでフレームの間隔の中央値 20 ms 以下、描画の抜け 0 件（100 px・300 px）、250 ms 以上止まるフレームが無い。CPU の混み具合で揺れるので、100 px は 3 回まで測り直して一番良い回で判定する（根拠はテストの注記）。確認=動作 |
+| NFR-10 | 1 万行 × 50 列で移動や入力への反応が 100 ms 以内。スクロールが途切れない | 必須 | 実装済み | `packages/app/src/grid/useVirtual.ts`（`@tanstack/virtual-core`）、`packages/app/src/grid/GridCells.tsx`（行ごとの memo）、Web Worker での検査 | `packages/app/e2e/perf.spec.ts`「1 万行 × 50 列: 矢印キーの移動・入力の確定・スクロール」、`packages/app/e2e/worker.spec.ts`、`packages/app/e2e/backup.spec.ts` | 測定値は §2.4・§2.7。スクロールは J が判定を足した（T-2 を解消）: 100 px/フレームでフレームの間隔の中央値 20 ms 以下、描画の抜け 0 件（100 px・300 px）、250 ms 以上止まるフレームが無い。CPU の混み具合で揺れるので、100 px は 3 回まで測り直して一番良い回で判定する（根拠はテストの注記）。CI では perf.spec.ts を別のジョブ（`perf` のプロジェクト）で測るだけで、落ちても止めない（2026-10-22）。確認=動作 |
 | NFR-11 | 100 テーブルのプロジェクトを 5 秒以内に開ける | 推奨 | 実装済み | `packages/core/src/io/yaml-fast.ts`（正規形の YAML の高速の読み込み。C-4）、`packages/app/src/fs/largeSample.ts`（100 テーブルの生成） | `packages/app/e2e/perf.spec.ts`「100 テーブル（1,000 行 × 20 列 × 99 と skill）のプロジェクトを直接保存方式で開く（yaml）」「…（json）」（5 秒未満で判定）。1 テーブルの読み込みの測定は `packages/core/scripts/bench-load.ts` | H の `33a73b8`。グリッドが出るまで YAML 1,601〜1,838 ms・JSON 1,576〜1,992 ms、全テーブルの最初の検査の結果がシートタブに出るまで 3,624〜4,396 ms（2026-10-15、Chromium。§2.7）。テーブルの大きさの決め方は D-4 を参照。Firefox・Safari では測っていない。確認=動作 |
 | NFR-12 | 1 万行で 1 セル編集後の再計算と再検査が 300 ms 以内 | 推奨 | 実装済み | `packages/core/src/calc/calculator.ts` の `invalidateCell`、`packages/core/src/validate/deps.ts` の `affectedTables` | `packages/core/src/validate/validate.test.ts`「性能（NFR-12、D-4 の 1 万行 × 50 列）」、`packages/app/e2e/worker.spec.ts`、`packages/app/e2e/perf.spec.ts`（再検査の往復の中央値を 300 ms 未満で判定） | 測定値 215〜263 ms（Node.js）・146〜175 ms（画面。Worker との往復の中央値）で満たす。画面は H の `33a73b8` で 300 ms で判定するようになった。core の単体テストと `worker.spec.ts` の判定は 1000 ms のまま（T-1）。確認=動作 |
 
@@ -767,7 +767,7 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 | ID | 要件の要約 | 優先度 | 状態 | 実装 | テスト | 備考 |
 |---|---|---|---|---|---|---|
 | NFR-30 | データ処理の単体テスト（数式は Googleスプレッドシートの計算結果との一致を含む）、検査、読み書き（往復）、出力 | 必須 | 一部 | — | `packages/core/src/**/*.test.ts`（37 ファイル・776 件） | 数式・検査・読み書き・出力の単体テストはある。期待値が Googleスプレッドシートの実物の計算結果ではない（G-4） |
-| NFR-31 | Playwright で §5.17 の受け入れ基準を自動化 | 必須 | 実装済み | `packages/app/playwright.config.ts`、`packages/app/e2e/acceptance.spec.ts` | `packages/app/e2e/acceptance.spec.ts`（受け入れ基準 1〜9 を番号順に 9 件） | H の `33a73b8` で 9 件そろった（G-5 を解消）。Googleスプレッドシート本体・Firefox・Safari が要る部分は、各テストの注記のとおり手で確かめる（G-2、G-4）。確認=動作 |
+| NFR-31 | Playwright で §5.17 の受け入れ基準を自動化 | 必須 | 実装済み | `packages/app/playwright.config.ts`、`packages/app/e2e/acceptance.spec.ts` | `packages/app/e2e/acceptance.spec.ts`（受け入れ基準 1〜9 を番号順に 9 件） | H の `33a73b8` で 9 件そろった（G-5 を解消）。Googleスプレッドシート本体・Firefox・Safari が要る部分は、各テストの注記のとおり手で確かめる（G-2、G-4）。（2026-10-22 追記）`.github/workflows/ci.yml` の画面テストのジョブが、プルリクエストと公開の前に `chromium` のプロジェクト（perf.spec.ts 以外）を動かす。確認=動作 |
 
 ### §10.6 その他
 

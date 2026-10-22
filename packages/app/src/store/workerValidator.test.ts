@@ -105,7 +105,8 @@ describe('検査の Web Worker 化（FR-VAL-09〜11）', () => {
     expect(w.made[0].received.some((m) => m.type === 'patches')).toBe(true);
   });
 
-  it('1 万行 × 50 列でも、複製とパッチで同期した結果はメインスレッドと一致する', async () => {
+  // 単独でも 4〜5 秒かかり、他のテストと並列に動かすと既定の 5 秒を超えることがある
+  it('1 万行 × 50 列でも、複製とパッチで同期した結果はメインスレッドと一致する', { timeout: 60_000 }, async () => {
     const { store } = await openTestStore({ validator: mainThreadValidator }, generateLargeProjectFiles({ format: 'json' }));
     const project = store.project as Project;
     const calc = store.calc as Calculator;

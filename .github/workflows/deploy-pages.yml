@@ -10,13 +10,20 @@ permissions:
   pages: write
   id-token: write
 
-# 実行中のデプロイは打ち切らず、待機中の古い実行だけを取り消す
+# 実行中の検査とデプロイは打ち切らず、待機中の古い実行だけを取り消す
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
+  # 型検査・単体テスト・画面テストが通らなければ公開しない
+  check:
+    uses: ./.github/workflows/ci.yml
+    with:
+      skip_perf: true
+
   build:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
