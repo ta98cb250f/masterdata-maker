@@ -296,6 +296,8 @@ export class BackupManager {
   private chain: Promise<void> = Promise.resolve();
   /** 提案のダイアログの答えを待っているとき、答えずに終わらせる */
   private pendingDecision: (() => void) | null = null;
+  /** 退避に失敗したことを知らせた後、まだ書き込めていない（成功から失敗に変わったときだけ知らせる。P-66） */
+  private failing = false;
   /** 最後に書き込んだ・消した日時（テスト用） */
   lastWrite: { at: number; kind: 'set' | 'del' } | null = null;
 
@@ -333,6 +335,7 @@ export class BackupManager {
     this.revision = this.store.getState().revision;
     this.proposing = false;
     this.missed = false;
+    this.failing = false;
     const identity = project === null || source === null ? null : projectIdentity(project, source);
     this.key = identity === null ? null : backupKey(identity);
     if (project !== null && source !== null && identity !== null && this.key !== null) {
@@ -381,7 +384,18 @@ export class BackupManager {
         return;
       }
       // テーブルのテキストを作って書き込むのは Worker（メインスレッドを止めない）
-      const written = await backgroundJobs(project, calc).saveBackup(this.storage, plan.key, plan.record, plan.targets);
+      let written: boolean;
+      try {
+        written = await backgroundJobs(project, calc).saveBackup(this.storage, plan.key, plan.record, plan.targets);
+      } catch {
+        // 退避できなかった（書き込めない・Worker で作れない・時間切れなど、理由は問わない）。続けて失敗しても、知らせるのは最初の 1 回だけ。
+        // ページが隠れている間（タブを切り替えた・閉じる）は、利用者が見ないうちに表示が消えるので、知らせたことにしない（次に見える状態で失敗したら知らせる）
+        if (this.store.project !== project || this.failing || isPageHidden()) return;
+        this.failing = true;
+        this.store.showStatus(this.store.t('ui.backup.saveFailed'), 'error');
+        return;
+      }
+      if (written) this.failing = false;
       this.lastWrite = { at: this.now(), kind: written ? 'set' : 'del' };
     });
   }
@@ -445,6 +459,10 @@ export class BackupManager {
       this.store.showStatus(this.store.t('ui.backup.restored', { count: plan.items.length }));
     }
   }
+}
+
+function isPageHidden(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
 
 export interface BackupHandle {

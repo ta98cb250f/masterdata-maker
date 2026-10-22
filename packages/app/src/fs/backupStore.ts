@@ -1,10 +1,15 @@
-// 未保存の変更の退避先（FR-FIO-06）。ブラウザの IndexedDB（idb-keyval）に置く。使えない環境（プライベートブラウズなど）では何もしない
+// 未保存の変更の退避先（FR-FIO-06）。ブラウザの IndexedDB（idb-keyval）に置く。
+// 使えない環境（プライベートブラウズなど）では、読み出し・削除は何もしない。書き込みの失敗は呼び出し元に伝える（画面で知らせる）
 import { del as idbDel, get as idbGet, keys as idbKeys, set as idbSet } from 'idb-keyval';
 
 export interface BackupStorage {
+  /** 読み出せなければ undefined（投げない） */
   get(key: string): Promise<unknown>;
+  /** 書き込めなければ投げる（BackupManager が利用者に知らせる） */
   set(key: string, value: unknown): Promise<void>;
+  /** 消せなくても投げない */
   del(key: string): Promise<void>;
+  /** 読み出せなければ空（投げない） */
   keys(): Promise<string[]>;
 }
 
@@ -17,11 +22,8 @@ export const indexedDbBackupStorage: BackupStorage = {
     }
   },
   async set(key, value) {
-    try {
-      await idbSet(key, value);
-    } catch {
-      // 退避できなくても編集は続けられる（異常終了したときに復元できないだけ）
-    }
+    // 失敗は投げる（退避できなくても編集は続けられるが、異常終了したときに復元できないことを利用者に知らせる）
+    await idbSet(key, value);
   },
   async del(key) {
     try {

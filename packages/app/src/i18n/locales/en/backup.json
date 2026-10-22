@@ -14,5 +14,6 @@
   "ui.backup.restored": "Restored the unsaved changes ({count} items)",
   "ui.backup.failedTitle": "Could not restore",
   "ui.backup.failedMessage": "The kept changes could not be applied to the current files.",
-  "ui.backup.skippedTitle": "Some changes could not be restored"
+  "ui.backup.skippedTitle": "Some changes could not be restored",
+  "ui.backup.saveFailed": "Could not keep the latest changes in the browser. They cannot be restored after a crash, so save often"
 }
