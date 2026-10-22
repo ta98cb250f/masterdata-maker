@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |---|---|
 | 作成日 | 2026-10-15（初版の監査。コミット `677654c` が対象） |
-| 更新日 | 2026-10-15（J が再判定。§2.7） |
+| 更新日 | 2026-10-15（J が再判定。§2.7）、2026-10-22（GitHub 方式 FR-GH-01〜05 を追加し、NFR-07 の文言を変えた） |
 | 対象の要件定義書 | [requirements.md](./requirements.md)（版 0.5） |
 | 対象の実装計画書 | [plan.md](./plan.md)（版 1.0。§5.5 の P-50〜61 を含む） |
 | 対象のコード | 作業ブランチ `claude/sheetcraft-v1` のコミット `bf5140b`（H の受け入れ基準の画面テストと README の `33a73b8`、K の P-51 の `bf5140b` を含む）に、J の変更（NFR-40・B-9・NFR-10 の修正。§3.4 に一覧）を加えたもの |
@@ -47,19 +47,19 @@
 
 | 状態 | 件数 | 初版（`677654c`）からの変化 |
 |---|---|---|
-| 実装済み | 187 | +7（FR-OUT-07 を追加。D-4・NFR-11・NFR-31 は「H が作業中」から、NFR-40・D-10・NFR-06 は「一部」から） |
+| 実装済み | 192 | +12（FR-OUT-07・FR-GH-01〜05 を追加。D-4・NFR-11・NFR-31 は「H が作業中」から、NFR-40・D-10・NFR-06 は「一部」から） |
 | 一部 | 7 | −3 |
 | 未実装 | 0 | — |
 | 対象外 | 4 | — |
-| 合計 | 198 | +1（FR-OUT-07） |
+| 合計 | 203 | +6（FR-OUT-07、FR-GH-01〜05） |
 
-「実装済み」187 件の確かめ方の深さ（記号は §2.6）は次のとおり。
+「実装済み」192 件の確かめ方の深さ（記号は §2.6）は次のとおり。
 
 | 確かめ方 | 件数 | 該当 |
 |---|---|---|
-| 確認=動作 | 126 | 初版の 120 件に、D-4・D-10・NFR-11・NFR-31・NFR-40・FR-OUT-07 を加えた |
+| 確認=動作 | 130 | 初版の 120 件に、D-4・D-10・NFR-11・NFR-31・NFR-40・FR-OUT-07・FR-GH-01〜05 を加え、NFR-07 を「確認=コード」に移した |
 | 確認=テスト | 56 | — |
-| 確認=コード（選定の記録・構成を読んだ） | 4 | NFR-06、NFR-20、NFR-21、NFR-22 |
+| 確認=コード（選定の記録・構成を読んだ） | 5 | NFR-06、NFR-07、NFR-20、NFR-21、NFR-22 |
 | 確認=コード（浅い。要件を判定するテストが無い） | 1 | FR-ANN-04 |
 
 ほかに、要件の一部だけが浅いもの（FR-UI-04 の fx の印など）を §3.5 にまとめた。
@@ -70,7 +70,7 @@
 |---|---|---|---|---|---|
 | 最重要要件（R-1、R-2） | 2 | 1 | 1 | 0 | 0 |
 | 決定済みの前提（D-1〜D-11） | 11 | 10 | 1 | 0 | 0 |
-| 画面と操作（FR-UI〜FR-ETC、§5.1〜5.16） | 79 | 76 | 1 | 0 | 2 |
+| 画面と操作（FR-UI〜FR-ETC・FR-GH、§5.1〜5.16） | 84 | 81 | 1 | 0 | 2 |
 | 受け入れ基準（§5.17 の 1〜9） | 9 | 7 | 2 | 0 | 0 |
 | リソースファイル（DR-*） | 34 | 34 | 0 | 0 | 0 |
 | 数式（FR-FML-*） | 16 | 16 | 0 | 0 | 0 |
@@ -80,11 +80,11 @@
 
 「画面と操作」の「一部」1 件は FR-CLP-02（Googleスプレッドシート・Excel の実物との往復が未確認）である。受け入れ基準の「一部」2 件は 2 番（Googleスプレッドシート本体）と 9 番（Firefox 本体）で、画面テストはあるが実物では確かめていない。「前提」の「一部」1 件は D-11（Firefox・Safari）、「非機能」の「一部」2 件は NFR-01（Chromium 以外のブラウザ）と NFR-30（Googleスプレッドシートの計算結果との突き合わせ）である。
 
-### 1.3 優先度と状態（FR-*・DR-*・NFR-* の 176 件）
+### 1.3 優先度と状態（FR-*・DR-*・NFR-* の 181 件）
 
 | 優先度 | 件数 | 実装済み | 一部 | 未実装 | 対象外 |
 |---|---|---|---|---|---|
-| 必須 | 137 | 134 | 3 | 0 | 0 |
+| 必須 | 142 | 139 | 3 | 0 | 0 |
 | 推奨 | 35 | 35 | 0 | 0 | 0 |
 | 将来・— | 4 | 0 | 0 | 0 | 4 |
 
@@ -565,6 +565,11 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 | FR-FIO-06 | 未保存の変更を IndexedDB に随時退避し、異常終了後に復元を提案 | 推奨 | 実装済み | `packages/app/src/store/backup.ts` の `BackupManager`・`installBackup`、`packages/app/src/fs/backupStore.ts`、`packages/app/src/dialogs/backup.tsx` | `packages/app/src/store/backup.test.ts`（退避の書き込みに失敗したときの知らせ方を含む）、`packages/app/e2e/backup.spec.ts` | 退避は Web Worker で行い、1 万行でもメインスレッドを止めない。退避に失敗したら、成功から失敗に変わったときに 1 回だけステータスに出す（P-66）。確認=動作 |
 | FR-FIO-07 | 直接保存方式では、ウィンドウに戻ったときと保存の直前に更新日時を確認し、読み込み直すか上書きするかを選ばせる | 必須 | 実装済み | `packages/app/src/store/externalChanges.ts` の `ExternalChangeWatcher`、`packages/app/src/dialogs/externalChanges.tsx`、`packages/core/src/edit/session.ts` の `reloadFiles` | `packages/app/src/store/externalChanges.test.ts`、`packages/core/src/edit/reload.test.ts`、`packages/app/e2e/external.spec.ts` | 更新日時が変わっても中身が同じなら変更とみなさない。確認=動作 |
 | FR-FIO-08 | 検査エラーがあっても保存は止めない | 必須 | 実装済み | `packages/app/src/store/AppStore.ts` の `save`（検査を見ない） | `packages/app/e2e/fileaccess.spec.ts`（hp を 0 にしてエラー 1 件のまま保存） | 確認=動作 |
+| FR-GH-01 | GitHub のリポジトリの中のフォルダを開く（トークン・リポジトリ・ブランチ・フォルダ。フォルダは一覧から選べる） | 必須 | 実装済み | `packages/app/src/fs/github.ts` の `GitHubClient`・`openWorkspace`・`GitHubProjectFs`、`packages/app/src/dialogs/github.tsx` の `GitHubOpenDialog`、`packages/app/src/commands/github.ts` | `packages/app/src/fs/github.test.ts`「GitHub 方式の読み込み」、`packages/app/e2e/github.spec.ts`「リポジトリのフォルダを開き…」「トークンが正しくなければ…」 | GitHub の API は偽物（`packages/app/src/fs/githubFake.ts`。画面テストでは `page.route`）で試した。本物の GitHub では動かしていない（この開発環境から api.github.com に届かない）。確認=動作 |
+| FR-GH-02 | 開いたまま別のブランチで開き直す。今のブランチを示す | 必須 | 実装済み | `packages/app/src/commands/github.ts` の `switchBranch`、`packages/app/src/dialogs/github.tsx` の `GitHubBranchDialog`、`packages/app/src/components/TitleBar.tsx`（`branch-badge`） | `packages/app/e2e/github.spec.ts`「ブランチを切り替えると…」 | 未保存の変更は `confirmDiscard` で確かめる。確認=動作 |
+| FR-GH-03 | 保存は 1 つのコミット。新しいブランチか今のブランチ。他で進んでいたら上書きしない | 必須 | 実装済み | `packages/app/src/fs/github.ts` の `GitHubWorkspace.commit`・`githubSource`、`packages/app/src/dialogs/github.tsx` の `GitHubCommitDialog`、`packages/app/src/store/AppStore.ts` の `save`（`cancelled`） | `packages/app/src/fs/github.test.ts`「GitHub 方式の保存（コミット）」、`packages/app/e2e/github.spec.ts`「…新しいブランチにコミットして…」「コミットのダイアログを閉じたら保存しない」「他でブランチが進んでいたら…」 | 確認=動作（偽の GitHub） |
+| FR-GH-04 | コミットと同時にプルリクエストを作る。開いていれば示す | 必須 | 実装済み | `packages/app/src/fs/github.ts` の `GitHubClient.createPull`・`openPull`、`PullRequestError` | `packages/app/src/fs/github.test.ts`「新しいブランチにコミットしてプルリクエストを作る…」「同じブランチのプルリクエストがすでに開いていれば…」「プルリクエストだけ失敗したら…」、`packages/app/e2e/github.spec.ts` | 確認=動作（偽の GitHub） |
+| FR-GH-05 | トークンは既定でタブを閉じると忘れる。記憶を選べ、消せる。前回の場所を覚える | 必須 | 実装済み | `packages/app/src/fs/githubSettings.ts` | `packages/app/src/fs/github.test.ts`「入力の記憶」、`packages/app/e2e/github.spec.ts`「…前回の場所とトークンを覚える」 | 確認=動作 |
 
 ### §5.14 参照
 
@@ -734,7 +739,7 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 | NFR-04 | 方式はブラウザの名前でなく API の有無で自動的に決める | 必須 | 実装済み | `packages/app/src/fs/direct.ts` の `supportsDirectAccess` | `packages/app/src/fs/fs.test.ts`「API の有無で方式を決める（NFR-04）」、`packages/app/e2e/fileaccess.spec.ts` | 確認=動作 |
 | NFR-05 | ダウンロード保存方式では使えない機能を画面に示す | 必須 | 実装済み | `packages/app/src/components/TitleBar.tsx`（`mode-badge`）、`packages/app/src/components/StartScreen.tsx` | `packages/app/e2e/fileaccess.spec.ts`「API が無ければダウンロード保存方式になり、使えない機能を示す」 | 確認=動作 |
 | NFR-06 | HTTPS の静的ホスティングで配る | 必須 | 実装済み | `packages/app/vite.config.ts`（`base: './'` の静的ファイル）、`README.md`「ビルド（静的ホスティング用）」（HTTPS の静的ホスティングに置く手順と、安全なコンテキストの注意） | 画面テストのたびにビルドと配信が成功 | 配布の手順は H の `33a73b8` の README にある（G-3 を解消）。実際の HTTPS のホスティングに置いて動かしたことは無い（画面テストは `localhost`）。配布の CI は無い。（2026-10-22 追記）`.github/workflows/deploy-pages.yml` が main への push で GitHub Pages に公開し、`.github/workflows/ci.yml` の型検査・単体テスト・画面テストが通らなければ公開しない。確認=コード |
-| NFR-07 | サーバーを持たない。データを外部に送らない | 必須 | 実装済み | `packages/app/`（通信の処理が無い。サンプルは `import.meta.glob` でビルドに含める） | — | 監査で `fetch(`・`XMLHttpRequest`・`WebSocket`・`sendBeacon`・外部の URL を検索し、無いことを確かめた。確認=動作 |
+| NFR-07 | サーバーを持たない。データを外部に送らない（GitHub 方式を選んだときだけ、指定した GitHub のリポジトリへ送る） | 必須 | 実装済み | `packages/app/`（サーバーの処理が無い。サンプルは `import.meta.glob` でビルドに含める）。通信は `packages/app/src/fs/github.ts` の `GitHubClient`（api.github.com だけ）に限る | `packages/app/src/fs/github.test.ts` | 監査で `fetch(`・`XMLHttpRequest`・`WebSocket`・`sendBeacon`・外部の URL を検索し、無いことを確かめた。2026-10-22 の GitHub 方式（FR-GH-01）で、利用者が GitHub 方式を選んだときだけ `GitHubClient` が api.github.com を呼ぶようになった（他の方式では通信しない）。確認=コード |
 
 ### §10.2 性能
 

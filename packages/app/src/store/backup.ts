@@ -39,7 +39,7 @@ export const DEFAULT_BACKUP_DELAY = 800;
 export function projectIdentity(project: Project, source: ProjectSource): ProjectIdentity | null {
   const config = project.config.source;
   if (config === null) return null;
-  return { name: source.name, configPath: config.path, configText: config.text };
+  return { name: source.backupName ?? source.name, configPath: config.path, configText: config.text };
 }
 
 /** 退避先のキー（同じプロジェクトなら同じキー） */

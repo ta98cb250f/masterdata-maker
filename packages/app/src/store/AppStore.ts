@@ -880,6 +880,7 @@ export class AppStore {
     this.setState({});
     try {
       const outcome = await source.save(plan);
+      if (outcome.cancelled === true) return;
       session.markSaved(outcome.written, outcome.removed);
       session.markUnchangedSaved();
       if (outcome.failed.length > 0) {
@@ -898,9 +899,11 @@ export class AppStore {
       const count = outcome.written.length;
       if (outcome.failed.length === 0) {
         this.showStatus(
-          outcome.downloaded === undefined
-            ? this.t('ui.save.done', { count })
-            : this.t('ui.save.downloaded', { count, name: outcome.downloaded }),
+          outcome.committedTo !== undefined
+            ? this.t('ui.github.committed', { count: count + outcome.removed.length, branch: outcome.committedTo })
+            : outcome.downloaded === undefined
+              ? this.t('ui.save.done', { count })
+              : this.t('ui.save.downloaded', { count, name: outcome.downloaded }),
         );
       }
     } catch (e) {
