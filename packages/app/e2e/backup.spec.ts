@@ -9,7 +9,7 @@ async function waitBackup(page: Page, kind: 'set' | 'del'): Promise<void> {
   await expect
     .poll(() =>
       page.evaluate(async () => {
-        const manager = (globalThis as unknown as { sheetcraftBackup?: { idle(): Promise<void>; lastWrite: { kind: string } | null } }).sheetcraftBackup;
+        const manager = (globalThis as unknown as { masterdataMakerBackup?: { idle(): Promise<void>; lastWrite: { kind: string } | null } }).masterdataMakerBackup;
         if (manager === undefined) return null;
         await manager.idle();
         return manager.lastWrite?.kind ?? null;
@@ -101,7 +101,7 @@ test('1 万行 × 50 列: 退避してもメインスレッドは 100 ミリ秒�
   await page.goto('/?sample=large');
   await expect(page.locator('[data-testid=grid][data-table=big]')).toBeVisible({ timeout: 60_000 });
   await page.waitForFunction(() => {
-    const s = (globalThis as unknown as { sheetcraft: { getState(): { validation: { version: number; running: boolean } } } }).sheetcraft.getState();
+    const s = (globalThis as unknown as { masterdataMaker: { getState(): { validation: { version: number; running: boolean } } } }).masterdataMaker.getState();
     return s.validation.version > 0 && !s.validation.running;
   });
   await clickCell(page, 0, await colIndex(page, 'hp'));
@@ -111,7 +111,7 @@ test('1 万行 × 50 列: 退避してもメインスレッドは 100 ミリ秒�
       for (const entry of list.getEntries()) longTasks.push(entry.duration);
     });
     observer.observe({ type: 'longtask', buffered: false });
-    const manager = (globalThis as unknown as { sheetcraftBackup: { idle(): Promise<void>; lastWrite: { at: number; kind: string } | null } }).sheetcraftBackup;
+    const manager = (globalThis as unknown as { masterdataMakerBackup: { idle(): Promise<void>; lastWrite: { at: number; kind: string } | null } }).masterdataMakerBackup;
     const input = document.querySelector<HTMLTextAreaElement>('[data-testid=cell-input]') as HTMLTextAreaElement;
     input.focus();
     const started = Date.now();

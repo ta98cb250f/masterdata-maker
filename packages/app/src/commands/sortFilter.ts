@@ -1,7 +1,7 @@
 // 並べ替えとフィルタ（FR-SRT-01〜06）: 表示だけの並べ替え（ファイルには保存しない）・並べ替えの適用（元に戻せる）・
 // 列ごとのフィルタ・エラーと警告のある行だけの表示。条件から並びを作る処理は sheet/sortFilter.ts（version 列は semver で比べる）
-import type { FilterCondition, SortDirection } from '@sheetcraft/core';
-import { applySortOrder } from '@sheetcraft/core';
+import type { FilterCondition, SortDirection } from '@masterdata-maker/core';
+import { applySortOrder } from '@masterdata-maker/core';
 import { FilterIcon } from '../components/gridIcons';
 import { columnHeaderRect, gridAnchorRect } from '../grid/domAnchors';
 import type { AppStore } from '../store/AppStore';

@@ -22,8 +22,8 @@
   background: #e1e5ea;
 }
 .sc-filter-button.active {
-  background: #ceead6;
-  color: #137333;
+  background: var(--sc-theme-soft-strong);
+  color: var(--sc-theme-text);
 }
 .sc-colhead.selected .sc-filter-button:not(.active) {
   color: #d2e3fc;
@@ -32,13 +32,13 @@
   position: absolute;
   right: 23px;
   bottom: 3px;
-  color: #137333;
+  color: var(--sc-theme-text);
   font-weight: bold;
   font-size: 12px;
   line-height: 16px;
 }
 .sc-colhead.selected .sc-sort-mark {
-  color: #ceead6;
+  color: var(--sc-theme-soft-strong);
 }
 .sc-filter-title {
   margin-bottom: 4px;

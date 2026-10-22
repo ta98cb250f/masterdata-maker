@@ -80,7 +80,7 @@ function finish<T>(value: T | null, reporter: Reporter): ParsedFile<T> {
   return { ok: true, value, diagnostics: reporter.items };
 }
 
-/** プロジェクト設定ファイル（sheetcraft.yaml / sheetcraft.json）を読む */
+/** プロジェクト設定ファイル（masterdata-maker.yaml / masterdata-maker.json）を読む */
 export function parseProjectConfigFile(path: string, text: string): ParsedFile<ProjectConfig> {
   const reporter = new Reporter([], { file: path });
   const format = formatFromPath(path) ?? 'yaml';

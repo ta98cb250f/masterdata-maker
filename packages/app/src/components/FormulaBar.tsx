@@ -2,8 +2,8 @@
 // 値のセルは編集用のテキスト、セル単位式のセルは `=hp*2` のような式、列レベル式に従うセルは列の式を「列の式」と区別して出す
 import type { KeyboardEvent } from 'react';
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import type { AdvanceKey } from '@sheetcraft/core';
-import { cellEditText, cellValue, formatValueText, isEmptyValue, resolveShortcut } from '@sheetcraft/core';
+import type { AdvanceKey } from '@masterdata-maker/core';
+import { cellEditText, cellValue, formatValueText, isEmptyValue, resolveShortcut } from '@masterdata-maker/core';
 import { completionColumnsOf } from '../sheet/complete';
 import { useAppState, useStore, useT } from '../store/hooks';
 import type { FormulaAssistHandle } from './FormulaAssist';

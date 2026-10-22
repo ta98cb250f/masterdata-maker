@@ -1,6 +1,6 @@
 // フィルタの小さな画面で使う計算（FR-SRT-03）: 値の一覧、範囲の条件の値の読み書き。DOM に依存しない
-import type { Calculator, FieldDef, SortKey, Table } from '@sheetcraft/core';
-import { compareCodePoints, compareSortKeys, formatDisplay, parseUserDateTime } from '@sheetcraft/core';
+import type { Calculator, FieldDef, SortKey, Table } from '@masterdata-maker/core';
+import { compareCodePoints, compareSortKeys, formatDisplay, parseUserDateTime } from '@masterdata-maker/core';
 import { filterCellOf, sortKeyOf } from './sortFilter';
 
 export interface FilterValueList {

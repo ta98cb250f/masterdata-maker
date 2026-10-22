@@ -21,7 +21,7 @@ function selection(page: Page): Promise<SelectionInfo> {
   return page.evaluate(() => {
     type Sel = { kind: string; ranges: SelectionInfo['range'][] };
     type Store = { sheet(): { table: { uid: number } }; view(uid: number): { selection: Sel } };
-    const store = (globalThis as unknown as { sheetcraft: Store }).sheetcraft;
+    const store = (globalThis as unknown as { masterdataMaker: Store }).masterdataMaker;
     const sel = store.view(store.sheet().table.uid).selection;
     return { kind: sel.kind, range: sel.ranges[0] };
   });
@@ -33,7 +33,7 @@ function values(page: Page, rows: number[], columns: string[]): Promise<unknown[
     ({ rows, columns }) => {
       type Sheet = { table: unknown; recordAt(row: number): { uid: number } | undefined };
       type Store = { sheet(): Sheet; calc: { getCell(table: unknown, record: number, column: string): { raw: unknown } } };
-      const store = (globalThis as unknown as { sheetcraft: Store }).sheetcraft;
+      const store = (globalThis as unknown as { masterdataMaker: Store }).masterdataMaker;
       const sheet = store.sheet();
       return rows.map((row) =>
         columns.map((column) => {
@@ -112,7 +112,7 @@ test('1. 1,000 行 × 20 列のテーブルで、1 行目から下へドラッ�
   await expect(page.locator('[data-testid=grid][data-table=big]')).toBeVisible({ timeout: 30_000 });
   const size = await page.evaluate(() => {
     type Sheet = { size: { rows: number; cols: number }; allColumns: unknown[] };
-    const sheet = (globalThis as unknown as { sheetcraft: { sheet(): Sheet } }).sheetcraft.sheet();
+    const sheet = (globalThis as unknown as { masterdataMaker: { sheet(): Sheet } }).masterdataMaker.sheet();
     return { rows: sheet.size.rows, cols: sheet.size.cols, all: sheet.allColumns.length };
   });
   expect(size).toEqual({ rows: 1000, cols: 20, all: 20 });
@@ -457,7 +457,7 @@ test('9. Firefox でプロジェクトのフォルダを読み込み、1 セル�
   });
   // サンプルを一時フォルダに複製したものを、プロジェクトのフォルダとして使う（Playwright のフォルダの選択は、パスに ASCII 以外の文字が
   // あると動かないので、テストの名前が入る出力先ではなく OS の一時フォルダに置く）
-  const temp = await mkdtemp(join(tmpdir(), 'sheetcraft-e2e-'));
+  const temp = await mkdtemp(join(tmpdir(), 'masterdata-maker-e2e-'));
   try {
     const folder = join(temp, 'basic-yaml');
     await cp(join(SAMPLES, 'basic-yaml'), folder, { recursive: true });

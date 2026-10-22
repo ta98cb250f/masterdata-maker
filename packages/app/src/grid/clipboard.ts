@@ -1,7 +1,7 @@
 // コピー・切り取り・貼り付け（FR-CLP-01〜07）。クリップボードとのやりとりは、見えない入力欄の copy / cut / paste のイベントで行う
 // （ブラウザの許可の確認が出ない方法）。ここではイベントから受け取ったテキストとモデルの間の変換だけをする
-import type { CellRange, ClipboardData } from '@sheetcraft/core';
-import { copyCells, extendTo, parseTsv, pasteCells, planPaste, selectCell, toHtmlTable, toTsv } from '@sheetcraft/core';
+import type { CellRange, ClipboardData } from '@masterdata-maker/core';
+import { copyCells, extendTo, parseTsv, pasteCells, planPaste, selectCell, toHtmlTable, toTsv } from '@masterdata-maker/core';
 import { selectionTarget } from '../commands/helpers';
 import type { AppStore } from '../store/AppStore';
 

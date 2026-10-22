@@ -1,17 +1,17 @@
 {
-  "name": "@sheetcraft/cli",
+  "name": "@masterdata-maker/cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "sheetcraft": "./dist/cli.mjs"
+    "masterdata-maker": "./dist/cli.mjs"
   },
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/cli.mjs \"--banner:js=import { createRequire as __sheetcraftCreateRequire } from 'node:module'; const require = __sheetcraftCreateRequire(import.meta.url);\"",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/cli.mjs \"--banner:js=import { createRequire as __masterdataMakerCreateRequire } from 'node:module'; const require = __masterdataMakerCreateRequire(import.meta.url);\"",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@sheetcraft/core": "workspace:*"
+    "@masterdata-maker/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

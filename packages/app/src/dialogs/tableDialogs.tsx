@@ -1,5 +1,5 @@
 // テーブル（シート）の新規作成・名前の変更（FR-TBL-01〜02）と、削除の確認（参照されていれば警告する）
-import type { TableReference } from '@sheetcraft/core';
+import type { TableReference } from '@masterdata-maker/core';
 import {
   EditCode,
   createTable,
@@ -9,7 +9,7 @@ import {
   renameTable,
   setTableDisplayName,
   validateTableName,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import { useMemo, useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import { useT } from '../store/hooks';

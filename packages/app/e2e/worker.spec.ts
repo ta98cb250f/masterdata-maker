@@ -13,12 +13,12 @@ interface WorkerStats {
 }
 
 function workerStats(page: Page): Promise<WorkerStats | null> {
-  return page.evaluate(() => (globalThis as unknown as { sheetcraftWorker: { stats(): WorkerStats | null } }).sheetcraftWorker.stats());
+  return page.evaluate(() => (globalThis as unknown as { masterdataMakerWorker: { stats(): WorkerStats | null } }).masterdataMakerWorker.stats());
 }
 
 async function waitValidated(page: Page): Promise<void> {
   await page.waitForFunction(() => {
-    const s = (globalThis as unknown as { sheetcraft: { getState(): { validation: { version: number; running: boolean } } } }).sheetcraft.getState();
+    const s = (globalThis as unknown as { masterdataMaker: { getState(): { validation: { version: number; running: boolean } } } }).masterdataMaker.getState();
     return s.validation.version > 0 && !s.validation.running;
   });
 }
@@ -90,7 +90,7 @@ function editAndMeasure(page: Page, table: string, text: string, errors: number)
 function errorCount(page: Page, table: string): Promise<number> {
   return page.evaluate(
     (name) =>
-      (globalThis as unknown as { sheetcraft: { getState(): { validation: { tables: Map<string, { errors: number }> } } } }).sheetcraft
+      (globalThis as unknown as { masterdataMaker: { getState(): { validation: { tables: Map<string, { errors: number }> } } } }).masterdataMaker
         .getState()
         .validation.tables.get(name)?.errors ?? 0,
     table,
@@ -161,7 +161,7 @@ test('時間制限を過ぎたら Worker を作り直し、時間切れを示す
   await page.goto('/?sample=large');
   await expect(page.locator('[data-testid=grid][data-table=big]')).toBeVisible({ timeout: 60_000 });
   await waitValidated(page);
-  await page.evaluate(() => (globalThis as unknown as { sheetcraftWorker: { setTimeLimit(ms: number): void } }).sheetcraftWorker.setTimeLimit(1));
+  await page.evaluate(() => (globalThis as unknown as { masterdataMakerWorker: { setTimeLimit(ms: number): void } }).masterdataMakerWorker.setTimeLimit(1));
   await clickCell(page, 0, await colIndex(page, 'hp'));
   await page.keyboard.type('0');
   await page.keyboard.press('Enter');
@@ -171,7 +171,7 @@ test('時間制限を過ぎたら Worker を作り直し、時間切れを示す
   expect(stats?.restarts).toBeGreaterThan(0);
   expect(stats?.mode).toBe('worker');
   // 時間制限を戻すと、作り直した Worker で検査できる（時間切れの間の変更も検査する）
-  await page.evaluate(() => (globalThis as unknown as { sheetcraftWorker: { setTimeLimit(ms: number): void } }).sheetcraftWorker.setTimeLimit(5000));
+  await page.evaluate(() => (globalThis as unknown as { masterdataMakerWorker: { setTimeLimit(ms: number): void } }).masterdataMakerWorker.setTimeLimit(5000));
   const before = await errorCount(page, 'big');
   await page.keyboard.type('-1');
   await page.keyboard.press('Enter');

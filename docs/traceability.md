@@ -1,4 +1,4 @@
-# SheetCraft 要件の対応表（トレーサビリティ）
+# MasterData Maker 要件の対応表（トレーサビリティ）
 
 | 項目 | 内容 |
 |---|---|
@@ -124,7 +124,7 @@
 | `export`（`output.format: yaml`） | サンプル | トップレベルがシーケンス、1 フィールド 1 行、`code: "NO"`・`start_at: "…"` は引用符付き |
 | `new monster --display-name モンスター` | サンプル | `table` / `display_name` / `fields: []` / `records: []` のファイルを作る。もう一度作ると終了コード 2。`Monster` は名前の書式の誤りで終了コード 2 |
 | `fmt --check` / `fmt` | コメント・余分な空白・不要な引用符を入れた `skill.yaml` | `--check` は「正規形ではありません」で終了コード 1。`fmt` で元のサンプルと 1 バイトも違わない形に戻る |
-| `convert --to json` → `--to yaml` | `basic-yaml` | JSON にしたテーブルと共通設定は `samples/basic-json` と 1 バイトも違わない。YAML に戻すと元の `basic-yaml` と完全に一致。設定ファイル `sheetcraft.yaml` は形式を変えない（P-01） |
+| `convert --to json` → `--to yaml` | `basic-yaml` | JSON にしたテーブルと共通設定は `samples/basic-json` と 1 バイトも違わない。YAML に戻すと元の `basic-yaml` と完全に一致。設定ファイル `masterdata-maker.yaml` は形式を変えない（P-01） |
 | 読み込みエラー | アンカー `&a`、列の直下の `required` | 行と桁付きの読み込みエラー。`fmt` はそのファイルを書き直さず終了コード 1 |
 | DR-42 | `string` 列に引用符なしの `1.10` | 警告「…数値として読まれます。元の表記の文字列として扱いました」。`fmt` で `"1.10"` になる |
 
@@ -257,8 +257,8 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 - 調べたこと: `packages/app/vite.config.ts`、リポジトリの中の配布の設定（CI の設定、README）
 - 分かったこと: `vite build` は `base: './'` で静的ファイルを出し、画面テストのたびにビルドと `vite preview` での配信が成功している。サーバーの処理は無い（NFR-07）。一方、どこに・どう配るか（例: GitHub Pages の設定、手順）が HEAD に無い。README も HEAD には無い（監査の終わりに、H が作成中の `README.md` に「ビルド（静的ホスティング用）」の節が現れた。内容は確かめていない）
 - 結論（初版）: 「一部」。配れる形のファイルはできるが、HTTPS で配る部分が無い
-- 直すなら: README（H が作業中）に `pnpm --filter @sheetcraft/app build` で `packages/app/dist` を作って HTTPS の静的ホスティングに置く手順と、`showDirectoryPicker()` が安全な環境（HTTPS か localhost）でしか使えないことを書く。必要なら配布の CI を足す
-- 再判定（2026-10-15）: H の `33a73b8` の `README.md`「ビルド（静的ホスティング用）」に、`pnpm --filter @sheetcraft/app build` で `packages/app/dist` を作り、そのまま静的ホスティングに置けばよいこと（相対パスで出力するのでサブディレクトリでもよい）、`showDirectoryPicker()` は安全なコンテキストでしか使えないので HTTPS で配ること（`localhost` は安全なコンテキスト）、ローカルでは `vite preview` で確かめることが書かれた。NFR-06 は「実装済み」（確認=コード）とした。残ること: 実際の HTTPS のホスティングに置いて動かしたことは無く（画面テストは `localhost` の `vite preview`）、配布の CI も無い（どこに配るかは利用者の運用で決まる）
+- 直すなら: README（H が作業中）に `pnpm --filter @masterdata-maker/app build` で `packages/app/dist` を作って HTTPS の静的ホスティングに置く手順と、`showDirectoryPicker()` が安全な環境（HTTPS か localhost）でしか使えないことを書く。必要なら配布の CI を足す
+- 再判定（2026-10-15）: H の `33a73b8` の `README.md`「ビルド（静的ホスティング用）」に、`pnpm --filter @masterdata-maker/app build` で `packages/app/dist` を作り、そのまま静的ホスティングに置けばよいこと（相対パスで出力するのでサブディレクトリでもよい）、`showDirectoryPicker()` は安全なコンテキストでしか使えないので HTTPS で配ること（`localhost` は安全なコンテキスト）、ローカルでは `vite preview` で確かめることが書かれた。NFR-06 は「実装済み」（確認=コード）とした。残ること: 実際の HTTPS のホスティングに置いて動かしたことは無く（画面テストは `localhost` の `vite preview`）、配布の CI も無い（どこに配るかは利用者の運用で決まる）
 
 #### G-4. Googleスプレッドシート本体との突き合わせをしていない（R-1 最重要、NFR-30 必須、FR-CLP-02 必須）
 
@@ -604,7 +604,7 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 
 | ID | 要件の要約 | 優先度 | 状態 | 実装 | テスト | 備考 |
 |---|---|---|---|---|---|---|
-| DR-01 | ルートのプロジェクト設定ファイルでプロジェクトを認識 | 必須 | 実装済み | `packages/core/src/io/project.ts` の `loadProject`（`sheetcraft.yaml` / `sheetcraft.json`。P-01） | `packages/core/src/io/project.test.ts`「設定ファイルが無ければプロジェクトではない。両方あればエラー」、`packages/app/src/store/store.test.ts`「プロジェクトでないフォルダは開かず、理由を残す」 | 確認=テスト |
+| DR-01 | ルートのプロジェクト設定ファイルでプロジェクトを認識 | 必須 | 実装済み | `packages/core/src/io/project.ts` の `loadProject`（`masterdata-maker.yaml` / `masterdata-maker.json`。P-01） | `packages/core/src/io/project.test.ts`「設定ファイルが無ければプロジェクトではない。両方あればエラー」、`packages/app/src/store/store.test.ts`「プロジェクトでないフォルダは開かず、理由を残す」 | 確認=テスト |
 | DR-02 | リソースファイルの形式を 1 つ指定。混在させない。違う拡張子は警告 | 必須 | 実装済み | `packages/core/src/io/decode-config.ts` の `decodeProjectConfig`、`packages/core/src/io/parse.ts` の `parseTableFile`（`formatMismatch`） | `packages/core/src/io/table.test.ts`「DR-02: storage.format と違う拡張子は警告する…」、`packages/core/src/io/project.test.ts` | 違う拡張子のファイルも読み込んで警告し、保存では元の形式のまま書く（混在は `convert` で解消する）。確認=テスト |
 | DR-03 | `format_version` を持たせる | 必須 | 実装済み | `packages/core/src/io/decode-config.ts`（`CURRENT_FORMAT_VERSION` より新しければエラー） | `packages/core/src/io/project.test.ts`「設定ファイルの知らないキー・新しすぎる版・形式の指定漏れはエラー」 | 確認=テスト |
 | DR-04 | テーブルの識別子は `table` に一本化。ファイル名が違えば警告 | 必須 | 実装済み | `packages/core/src/io/parse.ts` の `parseTableFile`（`fileNameMismatch`） | `packages/core/src/io/table.test.ts`「…DR-04: ファイル名が <table>.<拡張子> でなければ警告する」 | 同じ `table` が複数あれば、どれも読み込みエラーにする。確認=テスト |

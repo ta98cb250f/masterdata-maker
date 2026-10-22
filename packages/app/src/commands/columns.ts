@@ -1,6 +1,6 @@
 // 列の操作: 列の設定（FR-COL-02〜04）、左・右に挿入、削除（FR-COL-01）。
 // 列ヘッダーの右クリックメニューからは args に { table, column } を渡す。args が無ければ選択中の列
-import { deleteColumns } from '@sheetcraft/core';
+import { deleteColumns } from '@masterdata-maker/core';
 import { columnTarget } from '../dialogs/columnSettings';
 import type { AppStore } from '../store/AppStore';
 import { gridReady } from './helpers';

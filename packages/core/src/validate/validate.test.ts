@@ -555,7 +555,7 @@ describe('性能（NFR-12、D-4 の 1 万行 × 50 列）', () => {
       return record;
     });
     const fs = new MemoryProjectFs({
-      'sheetcraft.json': JSON.stringify({ format_version: 1, storage: { format: 'json' }, timezone: 'Asia/Tokyo' }),
+      'masterdata-maker.json': JSON.stringify({ format_version: 1, storage: { format: 'json' }, timezone: 'Asia/Tokyo' }),
       'config/enums.json': JSON.stringify({ enums: [{ name: 'kind', values: ['a', 'b', 'c'] }] }),
       'tables/wide.json': JSON.stringify({ table: 'wide', fields, records }),
     });

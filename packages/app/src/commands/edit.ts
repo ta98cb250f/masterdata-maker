@@ -1,6 +1,6 @@
 // 編集の操作: 元に戻す・やり直す（FR-HIS-01）、コピー・切り取り・貼り付け（FR-CLP-01〜07）、
 // 値の消去（FR-EDT-02）、編集の開始（FR-EDT-01）、下方向・右方向へのコピー（FR-FIL-04）
-import { clearCells, enterInput, fillDown, fillRight, isFieldEditable } from '@sheetcraft/core';
+import { clearCells, enterInput, fillDown, fillRight, isFieldEditable } from '@masterdata-maker/core';
 import { pasteClipboard } from '../grid/clipboard';
 import type { AppStore } from '../store/AppStore';
 import { gridReady, hasSheet, selectionTarget } from './helpers';

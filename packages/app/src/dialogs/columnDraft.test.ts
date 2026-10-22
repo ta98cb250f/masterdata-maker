@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { FieldDef } from '@sheetcraft/core';
-import { RichCell, checkColumnTypeChange, formatMessage, inputContext } from '@sheetcraft/core';
+import type { FieldDef } from '@masterdata-maker/core';
+import { RichCell, checkColumnTypeChange, formatMessage, inputContext } from '@masterdata-maker/core';
 import { openSampleStore, recordUid, tableUid } from '../testing/sampleStore';
 import type { ColumnDraft } from './columnDraft';
 import { buildField, draftErrors, draftFromField, planColumnChange } from './columnDraft';

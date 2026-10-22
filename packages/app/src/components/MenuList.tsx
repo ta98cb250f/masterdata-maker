@@ -3,7 +3,7 @@
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getShortcut, shortcutLabels } from '@sheetcraft/core';
+import { getShortcut, shortcutLabels } from '@masterdata-maker/core';
 import type { AppStore } from '../store/AppStore';
 import type { MenuEntry } from '../store/types';
 import { NoColorIcon } from './gridIcons';

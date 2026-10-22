@@ -1,6 +1,6 @@
 // グリッドのドラッグの計算（描画に依存しない。NFR-23）: フィルハンドルの向きと範囲（FR-FIL-01）、
 // 範囲の枠のドラッグの移動先（FR-CLP-06）、行・列のドラッグの挿入位置（FR-ROW-04、FR-COL-05）
-import type { CellPos, CellRange, FillDirection, GridSize } from '@sheetcraft/core';
+import type { CellPos, CellRange, FillDirection, GridSize } from '@masterdata-maker/core';
 import type { GridGeometry, ScrollPos } from './layout';
 
 /** 中身の座標（行は本体の上端から、列は列の並びの左端から。固定列の上なら固定列の位置）のピクセル */

@@ -1,5 +1,5 @@
 // 移動と選択（FR-SEL-01〜05、R-1）。キー操作は core の SHORTCUTS の割り当てに従う
-import type { Direction, GridSize, IsEmpty, Selection, ShortcutId } from '@sheetcraft/core';
+import type { Direction, GridSize, IsEmpty, Selection, ShortcutId } from '@masterdata-maker/core';
 import {
   extendCell,
   extendToDataEdge,
@@ -14,7 +14,7 @@ import {
   selectAll,
   selectCols,
   selectRows,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import { openSheetList } from '../components/focusRegions';
 import type { AppStore } from '../store/AppStore';
 import { emptyCellTest, gridReady } from './helpers';

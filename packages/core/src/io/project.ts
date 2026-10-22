@@ -242,7 +242,7 @@ export function planProjectWrite(project: Project, options: PlanOptions = {}): P
   const config: ProjectConfig = { ...project.config, storage: { ...project.config.storage, format: storage } };
   const configSource = project.config.source;
   const configFormat = configSource?.format ?? storage;
-  add(configSource?.path ?? `sheetcraft.${extensionOf(configFormat)}`, serializeProjectConfig(config, configFormat), configSource);
+  add(configSource?.path ?? `masterdata-maker.${extensionOf(configFormat)}`, serializeProjectConfig(config, configFormat), configSource);
 
   for (const name of COMMON_PART_NAMES) {
     const part = project.common[name];

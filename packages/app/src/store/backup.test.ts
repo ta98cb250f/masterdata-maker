@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Project } from '@sheetcraft/core';
-import { createTable, deleteTable, enterInput, setEnums, snapshotProject } from '@sheetcraft/core';
+import type { Project } from '@masterdata-maker/core';
+import { createTable, deleteTable, enterInput, setEnums, snapshotProject } from '@masterdata-maker/core';
 import { ValidationEngine } from '../worker/engine';
 import type { FromWorker, ToWorker } from '../worker/protocol';
 import { MemoryBackupStorage } from '../fs/backupStore';
@@ -40,7 +40,7 @@ describe('未保存の変更の退避の内容（FR-FIO-06）', () => {
     setCell(store, 'character', 'hp', '4321');
     const record = (await buildBackup(store, 1234)) as BackupRecord;
     expect(record.savedAt).toBe(1234);
-    expect(record.project).toEqual({ name: 'basic-yaml', configPath: 'sheetcraft.yaml', configText: basicSampleFiles()['sheetcraft.yaml'] });
+    expect(record.project).toEqual({ name: 'basic-yaml', configPath: 'masterdata-maker.yaml', configText: basicSampleFiles()['masterdata-maker.yaml'] });
     expect(record.tables).toHaveLength(1);
     expect(record.tables[0].basePath).toBe('tables/character.yaml');
     expect(record.tables[0].baseHash).toBe(hashText(basicSampleFiles()['tables/character.yaml']));
@@ -125,7 +125,7 @@ describe('退避と復元の流れ', () => {
     await tick();
     await handle.manager.idle();
     const key = [...storage.data.keys()][0];
-    expect(key).toMatch(/^sheetcraft\.backup:/);
+    expect(key).toMatch(/^masterdata-maker\.backup:/);
     await a.store.save();
     await tick();
     await handle.manager.idle();
@@ -167,7 +167,7 @@ describe('退避と復元の流れ', () => {
     installBackup(a.store, { storage, delay: 0 });
     setCell(a.store, 'character', 'hp', '4321');
     await tick();
-    await (globalThis as unknown as { sheetcraftBackup: { idle(): Promise<void> } }).sheetcraftBackup.idle();
+    await (globalThis as unknown as { masterdataMakerBackup: { idle(): Promise<void> } }).masterdataMakerBackup.idle();
     expect(storage.data.size).toBe(1);
 
     const later = await openTestStore();

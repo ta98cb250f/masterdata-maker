@@ -56,7 +56,7 @@ async function tabTo(page: Page, testId: string): Promise<void> {
 function columnWidth(page: Page, column: string): Promise<number | undefined> {
   return page.evaluate((name) => {
     type Store = { sheet(): { columns: { name: string; width: number }[] } | null };
-    return (globalThis as unknown as { sheetcraft: Store }).sheetcraft.sheet()?.columns.find((c) => c.name === name)?.width;
+    return (globalThis as unknown as { masterdataMaker: Store }).masterdataMaker.sheet()?.columns.find((c) => c.name === name)?.width;
   }, column);
 }
 

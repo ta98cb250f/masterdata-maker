@@ -1,6 +1,6 @@
 // 列のサイズを変更（FR-COL-06 をキーボードだけでも行う。NFR-40）。Googleスプレッドシートの列ヘッダーの右クリックの「列のサイズを変更」と
 // 同じく、ピクセル数を入れるか、既定の幅に戻すかを選ぶ。選んだ列すべてに同じ幅を当て、1 回の操作で元に戻せる（core の setColumnWidth）
-import { DEFAULT_COLUMN_WIDTH, setColumnWidth } from '@sheetcraft/core';
+import { DEFAULT_COLUMN_WIDTH, setColumnWidth } from '@masterdata-maker/core';
 import { useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import { MIN_COLUMN_WIDTH } from '../grid/layout';

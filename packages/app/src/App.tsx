@@ -1,6 +1,6 @@
 // 画面の構成（FR-UI-01〜05）: タイトル・メニューバー・ツールバー・数式バー・グリッド（と右・下のパネル）・シートタブ
-import type { ShortcutId } from '@sheetcraft/core';
-import { resolveShortcut } from '@sheetcraft/core';
+import type { ShortcutId } from '@masterdata-maker/core';
+import { resolveShortcut } from '@masterdata-maker/core';
 import { useEffect } from 'react';
 import { BrokenTableView } from './components/BrokenTableView';
 import { FindBar } from './components/FindBar';

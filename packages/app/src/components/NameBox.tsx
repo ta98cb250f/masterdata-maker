@@ -2,7 +2,7 @@
 // ふだんは「テーブル / 列名 / 主キー」を表示し、クリック（または Enter・F2）で入力欄になる。位置を入れて Enter でそのセルへ移る
 import type { KeyboardEvent } from 'react';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { selectCell, selectColRange } from '@sheetcraft/core';
+import { selectCell, selectColRange } from '@masterdata-maker/core';
 import type { LocationTarget } from '../sheet/location';
 import { resolveLocation } from '../sheet/location';
 import type { AppStore } from '../store/AppStore';

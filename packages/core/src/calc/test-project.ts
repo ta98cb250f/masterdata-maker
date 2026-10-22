@@ -14,12 +14,12 @@ export interface TestProjectFiles {
   enums?: string;
   /** config/base_fields.yaml の本文 */
   baseFields?: string;
-  /** sheetcraft.yaml の本文 */
+  /** masterdata-maker.yaml の本文 */
   config?: string;
 }
 
 export function testFiles(files: TestProjectFiles): MemoryProjectFs {
-  const fs = new MemoryProjectFs({ 'sheetcraft.yaml': files.config ?? TEST_CONFIG });
+  const fs = new MemoryProjectFs({ 'masterdata-maker.yaml': files.config ?? TEST_CONFIG });
   if (files.enums !== undefined) fs.write('config/enums.yaml', files.enums);
   if (files.baseFields !== undefined) fs.write('config/base_fields.yaml', files.baseFields);
   for (const [name, body] of Object.entries(files.tables)) fs.write(`tables/${name}.yaml`, `table: ${name}\n${body}`);

@@ -11,7 +11,7 @@ import type {
   Selection,
   Severity,
   SortDirection,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import type { ProjectSource } from '../fs/types';
 
 /** 表示だけの並べ替えの条件（FR-SRT-01。ファイルには保存しない） */

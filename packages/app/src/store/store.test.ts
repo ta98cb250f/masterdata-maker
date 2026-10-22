@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { SavePlan } from '@sheetcraft/core';
-import { MemoryProjectFs, deleteRows, extendTo, getShortcut, selectCell } from '@sheetcraft/core';
+import type { SavePlan } from '@masterdata-maker/core';
+import { MemoryProjectFs, deleteRows, extendTo, getShortcut, selectCell } from '@masterdata-maker/core';
 import { allCommands } from '../commands';
 import { downloadSource } from '../fs/download';
 import { basicSampleFiles } from '../fs/sample';

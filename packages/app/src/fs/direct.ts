@@ -1,5 +1,5 @@
 // 直接保存方式（NFR-02、FR-FIO-01、NFR-15）: File System Access API でフォルダを直接読み書きする
-import type { ProjectFs, SavePlan } from '@sheetcraft/core';
+import type { ProjectFs, SavePlan } from '@masterdata-maker/core';
 import { del as idbDel, get as idbGet, set as idbSet } from 'idb-keyval';
 import { blobText, errorMessage } from './text';
 import type { ProjectSource, SaveOutcome } from './types';
@@ -167,7 +167,7 @@ type DirectoryPicker = (options?: { mode?: PermissionMode; id?: string }) => Pro
 export async function pickDirectory(): Promise<DirectoryHandleLike | null> {
   const picker = (globalThis as unknown as { showDirectoryPicker: DirectoryPicker }).showDirectoryPicker;
   try {
-    return await picker({ mode: 'readwrite', id: 'sheetcraft' });
+    return await picker({ mode: 'readwrite', id: 'masterdata-maker' });
   } catch (e) {
     if ((e as { name?: unknown } | null)?.name === 'AbortError') return null;
     throw e;
@@ -196,7 +196,7 @@ export function directSource(handle: DirectoryHandleLike): ProjectSource {
 
 // ---- 前回のフォルダの記憶（FR-FIO-01） ----
 
-const LAST_DIRECTORY_KEY = 'sheetcraft.lastDirectory';
+const LAST_DIRECTORY_KEY = 'masterdata-maker.lastDirectory';
 
 export async function rememberDirectory(handle: DirectoryHandleLike): Promise<void> {
   try {

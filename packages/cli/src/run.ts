@@ -1,7 +1,7 @@
-// sheetcraft の CLI（§9.2）。main.ts はこの run を呼ぶだけにして、テストからは run を直接呼ぶ
+// masterdata-maker の CLI（§9.2）。main.ts はこの run を呼ぶだけにして、テストからは run を直接呼ぶ
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
-import type { Diagnostic, Locale, MessageParams, Project, StorageFormat, Table } from '@sheetcraft/core';
+import type { Diagnostic, Locale, MessageParams, Project, StorageFormat, Table } from '@masterdata-maker/core';
 import {
   Calculator,
   emptyView,
@@ -19,7 +19,7 @@ import {
   SerializeError,
   serializeTable,
   validateProject,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import { NodeProjectFs, writeFileAtomic } from './node-fs';
 
 export interface Output {

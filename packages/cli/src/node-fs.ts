@@ -2,7 +2,7 @@
 import { randomBytes } from 'node:crypto';
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import type { ProjectFs } from '@sheetcraft/core';
+import type { ProjectFs } from '@masterdata-maker/core';
 
 function isMissing(e: unknown): boolean {
   const code = (e as { code?: unknown }).code;

@@ -1,5 +1,5 @@
 {
-  "ui.app.name": "SheetCraft",
+  "ui.app.name": "MasterData Maker",
   "ui.menu.label": "メニュー",
   "ui.menu.file": "ファイル",
   "ui.menu.edit": "編集",
@@ -38,7 +38,7 @@
   "ui.edit.failed": "入力を確定できませんでした",
   "ui.edit.failedTitle": "操作できませんでした",
   "ui.paste.failedTitle": "貼り付けられませんでした",
-  "ui.open.notProject": "{name} はプロジェクトのフォルダではありません（sheetcraft.yaml または sheetcraft.json がありません）",
+  "ui.open.notProject": "{name} はプロジェクトのフォルダではありません（masterdata-maker.yaml または masterdata-maker.json がありません）",
   "ui.open.failedTitle": "プロジェクトを開けませんでした",
   "ui.open.permissionDenied": "フォルダの読み書きが許可されませんでした",
   "ui.open.noLastFolder": "前回のフォルダを覚えていません。フォルダを開いてください",

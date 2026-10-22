@@ -1,6 +1,6 @@
 // セル・列ヘッダー・行番号の描画。行ごとに memo にし、選択が変わっただけではセルを描き直さない
-import type { Calculator, Table, TableRecord } from '@sheetcraft/core';
-import { RichCell, cellValue, isEmptyValue } from '@sheetcraft/core';
+import type { Calculator, Table, TableRecord } from '@masterdata-maker/core';
+import { RichCell, cellValue, isEmptyValue } from '@masterdata-maker/core';
 import type { CSSProperties, ReactNode } from 'react';
 import { memo } from 'react';
 import { KeyIcon, LockIcon, NoExportIcon } from '../components/icons';

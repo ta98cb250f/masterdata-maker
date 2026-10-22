@@ -3,7 +3,7 @@
 //   キャンバス（中身全体の大きさ）
 //     列ヘッダーの行（sticky top）: スクロールする列の見出し ＋ 左上の角と固定列の見出し（sticky left）
 //     本体: スクロールする列のセル・選択範囲・入力欄 ＋ 左のペイン（sticky left）: 行番号・固定列のセル・選択範囲
-import type { CellPos, Selection } from '@sheetcraft/core';
+import type { CellPos, Selection } from '@masterdata-maker/core';
 import {
   autoScrollVelocity,
   extendTo,
@@ -16,7 +16,7 @@ import {
   selectRowRange,
   setColumnWidth,
   setColumnsHidden,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, RefObject } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toggleCheckboxes } from '../commands/edit';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RichCell, inputContext } from '@sheetcraft/core';
+import { RichCell, inputContext } from '@masterdata-maker/core';
 import { openSampleStore, recordUid } from '../testing/sampleStore';
 import type { CommonDraft } from './commonDraft';
 import { colorDraft, colorUsage, commonDraftErrors, commonDraftOf, countCells, enumDraft, enumUsage, enumValueCounts, hasCommonErrors, newBaseFieldDraft, newEnumValueDraft, planCommonChange } from './commonDraft';
