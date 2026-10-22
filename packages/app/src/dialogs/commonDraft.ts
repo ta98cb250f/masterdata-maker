@@ -1,6 +1,6 @@
 // 共通設定の編集（FR-TBL-03）の下書きと、下書きから編集の手順を作る処理。DOM に依存しない。
 // 列挙型・共通列・セル色の変更を、EditSession.applyGroup で 1 回の操作にする
-import type { CellTarget, ColorDef, EditFailure, EnumDef, FieldDef, FieldType, InputContext, Locale, Project } from '@sheetcraft/core';
+import type { CellTarget, ColorDef, EditFailure, EnumDef, FieldDef, FieldType, InputContext, Locale, Project } from '@masterdata-maker/core';
 import {
   EditCode,
   RichCell,
@@ -15,7 +15,7 @@ import {
   setCellColor,
   setColors,
   setEnums,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import type { ColumnDraft, DraftErrors, EditStep, FieldError } from './columnDraft';
 import { baseFieldDefinitionErrors, buildField, diagnosticKey, draftErrors, draftFromField, freshDefinitionFailures } from './columnDraft';
 

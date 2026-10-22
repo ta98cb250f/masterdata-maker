@@ -1,6 +1,6 @@
 // 性能の確認用（NFR-10、NFR-11）: 1 万行 × 50 列のテーブルを含むプロジェクトをメモリ上に生成する（`?sample=large`）。
-// 画面テストでは、大きなテーブルの数と大きさを変えて生成する（globalThis.sheetcraftSamples。main.tsx）
-import type { Cell, ColorDef, EnumDef, FieldDef, FieldType, RawValue, StorageFormat, Table, TableRecord } from '@sheetcraft/core';
+// 画面テストでは、大きなテーブルの数と大きさを変えて生成する（globalThis.masterdataMakerSamples。main.tsx）
+import type { Cell, ColorDef, EnumDef, FieldDef, FieldType, RawValue, StorageFormat, Table, TableRecord } from '@masterdata-maker/core';
 import {
   RichCell,
   defaultBaseFields,
@@ -9,7 +9,7 @@ import {
   serializeColors,
   serializeEnums,
   serializeTable,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 
 export interface LargeSampleOptions {
   /** 行数（既定 10000） */
@@ -168,7 +168,7 @@ export function generateLargeProjectFiles(options: LargeSampleOptions = {}): Rec
       ? 'format_version: 1\nstorage:\n  format: yaml\ntimezone: Asia/Tokyo\n'
       : '{\n  "format_version": 1,\n  "storage": {\n    "format": "json"\n  },\n  "timezone": "Asia/Tokyo"\n}\n';
   const files: Record<string, string> = {
-    [`sheetcraft.${ext}`]: config,
+    [`masterdata-maker.${ext}`]: config,
     [`config/enums.${ext}`]: serializeEnums(ENUMS, format),
     [`config/colors.${ext}`]: serializeColors(colors, format),
   };

@@ -1,7 +1,7 @@
 // ダウンロード保存方式（NFR-03）: `<input type="file" webkitdirectory>` で読み込み、保存は変更したファイルのダウンロード
 // （1 ファイルならそのファイル、複数ならフォルダ構成を保った ZIP）
-import type { ProjectFs, SavePlan } from '@sheetcraft/core';
-import { normalizeDir } from '@sheetcraft/core';
+import type { ProjectFs, SavePlan } from '@masterdata-maker/core';
+import { normalizeDir } from '@masterdata-maker/core';
 import { strToU8, zipSync } from 'fflate';
 import { baseName, blobText, dirName } from './text';
 import type { ProjectSource, SaveOutcome, SourceKind } from './types';

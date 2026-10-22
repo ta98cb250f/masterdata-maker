@@ -1,5 +1,5 @@
 // セル色とメモ（FR-ANN-01〜02）。セル色はプリセットから選んで範囲にまとめて当てる。メモは現在のセルの近くの小さな編集欄で書く
-import { RichCell, setCellColor, setCellComment } from '@sheetcraft/core';
+import { RichCell, setCellColor, setCellComment } from '@masterdata-maker/core';
 import { FillColorIcon } from '../components/gridIcons';
 import type { AnchorRect } from '../grid/domAnchors';
 import { activeCellOrGridRect } from '../grid/domAnchors';

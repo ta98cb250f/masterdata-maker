@@ -220,7 +220,7 @@ describe('未保存の判定（FR-FIO-03〜05）', () => {
 
   it('読み込んだファイルが正規形でなくても、開いた直後は未保存にしない', async () => {
     const fs = new MemoryProjectFs({
-      'sheetcraft.yaml': 'format_version: 1\nstorage:\n  format: yaml\ntimezone: Asia/Tokyo\n',
+      'masterdata-maker.yaml': 'format_version: 1\nstorage:\n  format: yaml\ntimezone: Asia/Tokyo\n',
       'tables/item.yaml': '# コメント\ntable: item\nfields: []\nrecords:\n  - {id: 1}\n',
     });
     const result = await loadProject(fs);

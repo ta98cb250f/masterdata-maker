@@ -1,6 +1,6 @@
 // テーブル（シート）の管理（FR-TBL-01〜02）: 新規作成・名前の変更・複製・削除。
 // シートタブの右クリックメニューからは args に { table } を渡す。args が無ければ表示中のテーブル
-import { duplicateTable, formatInputError, suggestTableName } from '@sheetcraft/core';
+import { duplicateTable, formatInputError, suggestTableName } from '@masterdata-maker/core';
 import type { AppStore } from '../store/AppStore';
 import type { CommandDef } from './registry';
 

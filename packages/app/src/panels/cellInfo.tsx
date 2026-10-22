@@ -1,7 +1,7 @@
 // セル情報パネル（FR-UI-07。右側）: 選択中のセルの位置・列・値の出どころ（値／セル単位式／列レベル式／既定値／未入力）と式・
 // 実効値・セル色・メモ・検査のメッセージ
-import type { CellSource } from '@sheetcraft/core';
-import { RichCell, cellValue, formatDiagnostic, formatMessage, formatValueText, isEmptyValue } from '@sheetcraft/core';
+import type { CellSource } from '@masterdata-maker/core';
+import { RichCell, cellValue, formatDiagnostic, formatMessage, formatValueText, isEmptyValue } from '@masterdata-maker/core';
 import type { ReactNode } from 'react';
 import { cellDisplay } from '../sheet/display';
 import { useAppState, useT } from '../store/hooks';

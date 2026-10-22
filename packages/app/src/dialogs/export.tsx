@@ -1,6 +1,6 @@
 // 出力のダイアログ（FR-OUT-06、FR-OUT-05、FR-OUT-07）: 出力するテーブルと形式（と版）を選び、出力する。検査エラーがあればエラーを示して出力しない
-import type { OutputFormat } from '@sheetcraft/core';
-import { DEFAULT_OUTPUT_FORMAT, isOutputFormat, OUTPUT_FORMATS, parseSemver, resolveProjectPaths } from '@sheetcraft/core';
+import type { OutputFormat } from '@masterdata-maker/core';
+import { DEFAULT_OUTPUT_FORMAT, isOutputFormat, OUTPUT_FORMATS, parseSemver, resolveProjectPaths } from '@masterdata-maker/core';
 import { useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import type { ExportOutcome } from '../store/exportOutput';

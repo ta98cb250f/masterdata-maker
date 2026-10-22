@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MemoryProjectFs, extendTo, resolveShortcut, selectCell, selectColRange, selectRowRange } from '@sheetcraft/core';
+import { MemoryProjectFs, extendTo, resolveShortcut, selectCell, selectColRange, selectRowRange } from '@masterdata-maker/core';
 import { downloadSource } from '../fs/download';
 import { basicSampleFiles } from '../fs/sample';
 import { AppStore } from '../store/AppStore';

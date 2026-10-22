@@ -33,8 +33,8 @@ installExternalChanges(store);
 installBackup(store);
 
 // 開発・画面テスト用に、外から store を触れるようにする。性能の確認用のプロジェクトの生成（NFR-11）も呼べるようにする
-(globalThis as { sheetcraft?: AppStore }).sheetcraft = store;
-(globalThis as { sheetcraftSamples?: unknown }).sheetcraftSamples = { generateLargeProjectFiles };
+(globalThis as { masterdataMaker?: AppStore }).masterdataMaker = store;
+(globalThis as { masterdataMakerSamples?: unknown }).masterdataMakerSamples = { generateLargeProjectFiles };
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>

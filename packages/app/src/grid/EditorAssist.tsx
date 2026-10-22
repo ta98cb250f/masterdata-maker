@@ -2,8 +2,8 @@
 // - enum: 絞り込み付きのプルダウン / list<enum>: 候補からの複数選択
 // - 参照列（ref）: 参照先の候補（主キーと名前を並べる）。リスト型なら複数選択
 // - datetime: 日付と時刻の選択部品 / その他のリスト型: 要素ごとの部品（タグ）
-import type { Calculator, FieldDef } from '@sheetcraft/core';
-import { formatDisplay, formatListText, isListType, parseListText, parseRef, parseUserDateTime } from '@sheetcraft/core';
+import type { Calculator, FieldDef } from '@masterdata-maker/core';
+import { formatDisplay, formatListText, isListType, parseListText, parseRef, parseUserDateTime } from '@masterdata-maker/core';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import type { Translate } from '../i18n';

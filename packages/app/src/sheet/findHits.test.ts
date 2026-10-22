@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createMatcher, defaultFindOptions, replaceCells } from '@sheetcraft/core';
-import type { FindOptions, TextMatcher } from '@sheetcraft/core';
+import { createMatcher, defaultFindOptions, replaceCells } from '@masterdata-maker/core';
+import type { FindOptions, TextMatcher } from '@masterdata-maker/core';
 import { openSampleStore, tableUid } from '../testing/sampleStore';
 import { computedHitFailures, findInSheet, nextHitIndex } from './findHits';
 

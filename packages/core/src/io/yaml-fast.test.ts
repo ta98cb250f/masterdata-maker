@@ -44,7 +44,7 @@ function decodeFile(parse: Parse, path: string, text: string): unknown {
   const node = parse(text, reporter).node;
   const name = path.slice(path.lastIndexOf('/') + 1);
   let value: unknown;
-  if (name === 'sheetcraft.yaml') value = decodeProjectConfig(node, reporter, { path, format: 'yaml', text });
+  if (name === 'masterdata-maker.yaml') value = decodeProjectConfig(node, reporter, { path, format: 'yaml', text });
   else if (name === 'enums.yaml') value = decodeEnums(node, reporter);
   else if (name === 'base_fields.yaml') value = decodeBaseFields(node, reporter);
   else if (name === 'colors.yaml') value = decodeColors(node, reporter);
@@ -415,7 +415,7 @@ async function sampleYamlFiles(): Promise<Map<string, string>> {
 describe('サンプルを専用の処理で読むと、yaml ライブラリの経路と同じ結果になる', () => {
   it('basic-yaml と、basic-json を YAML にしたもの', async () => {
     const files = await sampleYamlFiles();
-    // basic-yaml の 7 ファイルと、basic-json の設定以外の 6 ファイル（sheetcraft.json は JSON のまま）
+    // basic-yaml の 7 ファイルと、basic-json の設定以外の 6 ファイル（masterdata-maker.json は JSON のまま）
     expect(files.size).toBe(13);
     for (const [path, text] of files) expectSameAsLibrary(path, text);
   });

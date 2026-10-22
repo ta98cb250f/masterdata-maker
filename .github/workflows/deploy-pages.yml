@@ -31,7 +31,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm --filter @sheetcraft/app build
+      - run: pnpm --filter @masterdata-maker/app build
 
       - uses: actions/configure-pages@v5
 

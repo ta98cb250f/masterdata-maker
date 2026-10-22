@@ -1,7 +1,7 @@
 // 拡張（フィルハンドル・範囲の移動・行と列の移動）のドラッグ。ポインタのキャプチャ、表示領域の外に出たときの自動スクロール（FR-SEL-04）、
 // ドラッグ中に重ねて描く印（移す先の枠・挿入位置の線）の状態を受け持つ
-import type { CellRange } from '@sheetcraft/core';
-import { autoScrollVelocity } from '@sheetcraft/core';
+import type { CellRange } from '@masterdata-maker/core';
+import { autoScrollVelocity } from '@masterdata-maker/core';
 import { useSyncExternalStore } from 'react';
 import type { GridGeometry, ScrollPos } from './layout';
 

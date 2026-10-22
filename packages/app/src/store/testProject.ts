@@ -1,6 +1,6 @@
 // テスト用: 組み込みのサンプルなどをメモリ上の ProjectFs で開いた AppStore（*.test.ts から使う）
-import type { ProjectFs, SavePlan } from '@sheetcraft/core';
-import { MemoryProjectFs } from '@sheetcraft/core';
+import type { ProjectFs, SavePlan } from '@masterdata-maker/core';
+import { MemoryProjectFs } from '@masterdata-maker/core';
 import { allCommands } from '../commands';
 import { downloadSource } from '../fs/download';
 import { basicSampleFiles } from '../fs/sample';

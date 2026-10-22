@@ -4,7 +4,7 @@
 // - キャンバス座標: スクロールする中身の左上を原点とする。列ヘッダーの行と行番号の列を含む
 // - 本体座標（body）: キャンバスから列ヘッダーの行を除いた部分。y は行の上端（row * rowHeight）
 // 固定列（左から frozenCount 個）は横にスクロールしても動かず、スクロールする列はその下に隠れる
-import type { CellPos, CellRange } from '@sheetcraft/core';
+import type { CellPos, CellRange } from '@masterdata-maker/core';
 
 export const ROW_HEIGHT = 21;
 export const HEADER_HEIGHT = 40;

@@ -1,4 +1,4 @@
-// sheetcraft の CLI の入口（FR-CLI-06）
+// masterdata-maker の CLI の入口（FR-CLI-06）
 import { run } from './run';
 
 process.exitCode = await run(process.argv.slice(2), {

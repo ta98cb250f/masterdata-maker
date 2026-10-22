@@ -22,23 +22,23 @@
   background: #e1e5ea;
 }
 .sc-filter-button.active {
-  background: #ceead6;
-  color: #137333;
+  background: var(--sc-theme-soft-strong);
+  color: var(--sc-theme-text);
 }
 .sc-colhead.selected .sc-filter-button:not(.active) {
-  color: #d2e3fc;
+  color: var(--sc-accent-on-strong);
 }
 .sc-sort-mark {
   position: absolute;
   right: 23px;
   bottom: 3px;
-  color: #137333;
+  color: var(--sc-theme-text);
   font-weight: bold;
   font-size: 12px;
   line-height: 16px;
 }
 .sc-colhead.selected .sc-sort-mark {
-  color: #ceead6;
+  color: var(--sc-theme-soft-strong);
 }
 .sc-filter-title {
   margin-bottom: 4px;
@@ -79,8 +79,8 @@
 }
 .sc-filter-tab.active {
   border-color: var(--sc-accent);
-  background: #e8f0fe;
-  color: #174ea6;
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent-text-strong);
 }
 .sc-filter-values-actions {
   display: flex;

@@ -1,7 +1,7 @@
 // 画面の文言（FR-ETC-02）。文言ファイルは i18n/locales/<言語>/<機能>.json に置く（キーは `ui.` で始める）。
 // ファイルを足すだけで登録される（後の段階で機能ごとにファイルを分けて足せるように）
-import type { Locale, MessageParams, Messages } from '@sheetcraft/core';
-import { formatMessage, registerMessages } from '@sheetcraft/core';
+import type { Locale, MessageParams, Messages } from '@masterdata-maker/core';
+import { formatMessage, registerMessages } from '@masterdata-maker/core';
 
 const files = import.meta.glob<Messages>('./locales/*/*.json', { eager: true, import: 'default' });
 

@@ -20,7 +20,7 @@ importers:
 
   packages/app:
     dependencies:
-      '@sheetcraft/core':
+      '@masterdata-maker/core':
         specifier: workspace:*
         version: link:../core
       '@tanstack/virtual-core':
@@ -57,7 +57,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@sheetcraft/core':
+      '@masterdata-maker/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:

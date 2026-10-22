@@ -2,8 +2,8 @@
 // Worker にプロジェクトの複製を持たせ、メインスレッドで当てたパッチを同じ順で送って同期する。
 // 検査・出力・正規形のテキストの作成を Worker で行い、メインスレッドを止めない。
 // 時間制限（FR-VAL-10）を過ぎたら Worker を止めて作り直す（複製は送り直す）。Worker が使えなければメインスレッドで行う
-import type { BrokenTable, Calculator, ExportOptions, ExportResult, Project } from '@sheetcraft/core';
-import { COMMON_PART_NAMES, snapshotProject } from '@sheetcraft/core';
+import type { BrokenTable, Calculator, ExportOptions, ExportResult, Project } from '@masterdata-maker/core';
+import { COMMON_PART_NAMES, snapshotProject } from '@masterdata-maker/core';
 import type { BackupStorage } from '../fs/backupStore';
 import { indexedDbBackupStorage } from '../fs/backupStore';
 import type { BackupRecord, BackupTarget } from './backupRecord';
@@ -332,12 +332,12 @@ export function backgroundJobs(project: Project, calc: Calculator): BackgroundJo
 }
 
 /**
- * 検査の実行役を作る関数（AppStore の validator に渡す）。開発・画面テスト用に、globalThis.sheetcraftWorker から
+ * 検査の実行役を作る関数（AppStore の validator に渡す）。開発・画面テスト用に、globalThis.masterdataMakerWorker から
  * 状態（stats）を見たり、時間制限を変えたりできる
  */
 export function createValidatorFactory(options: WorkerValidatorOptions = {}): ValidatorFactory {
   const debug = { current: null as WorkerValidator | null, timeLimit: options.timeLimit };
-  (globalThis as { sheetcraftWorker?: unknown }).sheetcraftWorker = {
+  (globalThis as { masterdataMakerWorker?: unknown }).masterdataMakerWorker = {
     stats: (): WorkerStats | null => (debug.current === null ? null : { ...debug.current.stats }),
     setTimeLimit: (ms: number): void => {
       debug.timeLimit = ms;

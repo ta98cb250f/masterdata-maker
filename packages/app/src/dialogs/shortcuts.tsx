@@ -1,7 +1,7 @@
 // キーボード ショートカットの一覧（FR-ETC-01。Ctrl+/）。core の SHORTCUTS を分類ごとに並べる。
 // キーの表記は動いている環境（Windows など / Mac）に合わせ、切り替えても見られる。語で絞り込める
-import type { Platform, ShortcutCategory, ShortcutDef } from '@sheetcraft/core';
-import { SHORTCUTS, categoryDescriptionKey, shortcutLabels } from '@sheetcraft/core';
+import type { Platform, ShortcutCategory, ShortcutDef } from '@masterdata-maker/core';
+import { SHORTCUTS, categoryDescriptionKey, shortcutLabels } from '@masterdata-maker/core';
 import { useMemo, useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import { useT } from '../store/hooks';

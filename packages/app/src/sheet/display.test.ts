@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { CellResult, FieldDef } from '@sheetcraft/core';
-import { DateTimeValue, EMPTY, FList, FormulaError } from '@sheetcraft/core';
+import type { CellResult, FieldDef } from '@masterdata-maker/core';
+import { DateTimeValue, EMPTY, FList, FormulaError } from '@masterdata-maker/core';
 import { cellDisplay } from './display';
 
 const field = (type: FieldDef['type']): FieldDef => ({ name: 'x', type });

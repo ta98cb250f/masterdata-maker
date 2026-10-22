@@ -1,5 +1,5 @@
 // 組み込みのサンプル（P-45）。samples/basic-yaml をビルドに含め、メモリ上の ProjectFs で開く（保存はダウンロード保存方式）
-import { MemoryProjectFs } from '@sheetcraft/core';
+import { MemoryProjectFs } from '@masterdata-maker/core';
 import { downloadSource } from './download';
 import type { DownloadFn } from './download';
 import { generateLargeProjectFiles } from './largeSample';

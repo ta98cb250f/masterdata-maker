@@ -1,7 +1,7 @@
 // 列の挿入のダイアログ（FR-COL-01）。左・右に、列名・型・表示名（列挙型なら列挙型も）を入れて挿入する。
 // 挿入した列を選ぶ。列の細かい設定は、挿入した後に列の設定で行う
-import type { FieldDef, FieldType, Project, Table } from '@sheetcraft/core';
-import { EditCode, FIELD_TYPES, formatInputError, insertColumn, isValidIdentifier, selectColRange, validateColumnName } from '@sheetcraft/core';
+import type { FieldDef, FieldType, Project, Table } from '@masterdata-maker/core';
+import { EditCode, FIELD_TYPES, formatInputError, insertColumn, isValidIdentifier, selectColRange, validateColumnName } from '@masterdata-maker/core';
 import { useMemo, useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import type { AppStore } from '../store/AppStore';

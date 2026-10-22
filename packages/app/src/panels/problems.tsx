@@ -1,8 +1,8 @@
 // 問題パネル（FR-UI-06。下側）: 全テーブルのエラー・警告の一覧（重大度・テーブル・主キー・列・メッセージ。FR-VAL-08）。
 // 行を押すと（または Enter）、そのテーブルに切り替えてセルを選ぶ。重大度で絞り込める。
 // パネルを開くと一覧にフォーカスが入り（NFR-40）、↑↓・Home / End・PageUp / PageDown で行を選んで Enter で移る。Esc でグリッドへ戻る
-import type { Diagnostic, Locale } from '@sheetcraft/core';
-import { formatDiagnostic, selectCell, selectColRange, selectRowRange } from '@sheetcraft/core';
+import type { Diagnostic, Locale } from '@masterdata-maker/core';
+import { formatDiagnostic, selectCell, selectColRange, selectRowRange } from '@masterdata-maker/core';
 import type { KeyboardEvent } from 'react';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ErrorCircleIcon, WarningIcon } from '../components/featureIcons';

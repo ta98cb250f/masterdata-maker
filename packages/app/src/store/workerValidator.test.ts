@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Diagnostic, Project } from '@sheetcraft/core';
-import { Calculator, enterInput, insertRows, serializeTable, snapshotProject } from '@sheetcraft/core';
+import type { Diagnostic, Project } from '@masterdata-maker/core';
+import { Calculator, enterInput, insertRows, serializeTable, snapshotProject } from '@masterdata-maker/core';
 import { ValidationEngine } from '../worker/engine';
 import type { FromWorker, ToWorker } from '../worker/protocol';
 import { generateLargeProjectFiles } from '../fs/largeSample';

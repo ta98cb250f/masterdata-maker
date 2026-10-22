@@ -1,6 +1,6 @@
 // セルの表示（FR-FML-13、P-16）。Calculator の結果を型に応じた表示用の文字列にする
-import type { CellResult, CellSource, FieldDef, RawValue } from '@sheetcraft/core';
-import { formatValueText, isListType, numberToText } from '@sheetcraft/core';
+import type { CellResult, CellSource, FieldDef, RawValue } from '@masterdata-maker/core';
+import { formatValueText, isListType, numberToText } from '@masterdata-maker/core';
 
 export type CellAlign = 'left' | 'right' | 'center';
 

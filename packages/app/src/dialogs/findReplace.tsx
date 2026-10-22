@@ -1,8 +1,8 @@
 // 検索と置換のダイアログ（FR-FND-01〜04。Ctrl+H）。Googleスプレッドシートと同じく、検索・置換後の文字列・検索範囲
 // （すべてのテーブル／このテーブル／選択範囲）・大文字と小文字の区別・セル全体の一致・正規表現（RE2）・数式内も検索を選ぶ。
 // 置換は型の変換規則と編集可否に従い（core の replaceCells）、置換できなかったセルを一覧で示す
-import type { CellRange, EditFailure, TextMatcher } from '@sheetcraft/core';
-import { createMatcher, formatInputError, formatMessage, replaceCells, selectCell } from '@sheetcraft/core';
+import type { CellRange, EditFailure, TextMatcher } from '@masterdata-maker/core';
+import { createMatcher, formatInputError, formatMessage, replaceCells, selectCell } from '@masterdata-maker/core';
 import { useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import type { FindHit, FindScope } from '../sheet/findHits';

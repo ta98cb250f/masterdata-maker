@@ -135,7 +135,7 @@ export async function putGeneratedProject(page: Page, options: GeneratedProjectO
   return page.evaluate(
     async ({ dir, options }) => {
       type Samples = { generateLargeProjectFiles(o: GeneratedProjectOptions): Record<string, string> };
-      const files = (globalThis as unknown as { sheetcraftSamples: Samples }).sheetcraftSamples.generateLargeProjectFiles(options);
+      const files = (globalThis as unknown as { masterdataMakerSamples: Samples }).masterdataMakerSamples.generateLargeProjectFiles(options);
       const root = await navigator.storage.getDirectory();
       await root.removeEntry(dir, { recursive: true }).catch(() => undefined);
       const proj = await root.getDirectoryHandle(dir, { create: true });

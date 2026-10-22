@@ -1,6 +1,6 @@
 // 読み込みエラーのテーブル（P-40）: エラーの内容だけを表示する（編集も保存もしない）
-import type { BrokenTable } from '@sheetcraft/core';
-import { resolveShortcut } from '@sheetcraft/core';
+import type { BrokenTable } from '@masterdata-maker/core';
+import { resolveShortcut } from '@masterdata-maker/core';
 import { useEffect, useRef } from 'react';
 import { useStore, useT } from '../store/hooks';
 

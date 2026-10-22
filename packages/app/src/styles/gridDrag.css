@@ -21,7 +21,7 @@
 }
 .sc-drag-range.move {
   border-color: var(--sc-accent);
-  background: rgba(26, 115, 232, 0.06);
+  background: var(--sc-drag-fill);
 }
 .sc-drop-line {
   position: absolute;

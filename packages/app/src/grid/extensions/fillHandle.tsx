@@ -2,8 +2,8 @@
 // フィル: 選択範囲の右下の四角をドラッグし、広げる先の枠を示して、離したら core の fillCells を 1 回の操作として当てる。
 // 移動: 選択範囲の枠をつかんでドラッグし、移す先の枠を示して、離したら切り取りと貼り付けを 1 回の操作として当てる。
 // どちらも表示中の行だけが対象（フィルタ中は隠れた行を飛ばす。FR-SRT-04）
-import type { CellRange, CommandResult, FillArgs } from '@sheetcraft/core';
-import { copyCells, extendTo, fillCells, pasteCells, selectCell } from '@sheetcraft/core';
+import type { CellRange, CommandResult, FillArgs } from '@masterdata-maker/core';
+import { copyCells, extendTo, fillCells, pasteCells, selectCell } from '@masterdata-maker/core';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { emptyCellTest } from '../../commands/helpers';

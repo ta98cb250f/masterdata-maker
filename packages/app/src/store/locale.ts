@@ -1,9 +1,9 @@
 // 言語の切り替え（FR-ETC-02）。選んだ言語はブラウザに覚える（localStorage。使えない環境では覚えないだけ）
-import type { Locale } from '@sheetcraft/core';
+import type { Locale } from '@masterdata-maker/core';
 import { SUPPORTED_LOCALES } from '../i18n';
 import type { AppStore } from './AppStore';
 
-export const LOCALE_STORAGE_KEY = 'sheetcraft.locale';
+export const LOCALE_STORAGE_KEY = 'masterdata-maker.locale';
 
 export interface LocaleStorage {
   getItem(key: string): string | null;

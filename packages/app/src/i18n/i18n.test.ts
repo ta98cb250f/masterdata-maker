@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMessage, hasMessage } from '@sheetcraft/core';
+import { formatMessage, hasMessage } from '@masterdata-maker/core';
 import { UI_BUNDLES, registerUiMessages } from './index';
 
 function placeholders(template: string): string[] {

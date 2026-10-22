@@ -4,7 +4,7 @@
 // （復元すると、保存していない変更として読み込む。1 回の操作なので元に戻すで取り消せる）。
 // プロジェクトの同一性: フォルダの名前・プロジェクト設定ファイルのパスと中身が同じなら同じプロジェクトとみなす
 // （直接保存方式では、さらにフォルダのハンドルの isSameEntry が偽なら別のプロジェクトとする）
-import type { CommonPartName, FieldDef, Patch, Project, StorageFormat, Table, Transaction } from '@sheetcraft/core';
+import type { CommonPartName, FieldDef, Patch, Project, StorageFormat, Table, Transaction } from '@masterdata-maker/core';
 import {
   COMMON_PART_NAMES,
   defaultBaseFields,
@@ -17,7 +17,7 @@ import {
   resolveProjectPaths,
   serializeCommonPart,
   toTableData,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import type { BackupStorage } from '../fs/backupStore';
 import { indexedDbBackupStorage } from '../fs/backupStore';
 import { DirectoryProjectFs } from '../fs/direct';
@@ -31,7 +31,7 @@ import { backgroundJobs } from './workerValidator';
 export type { BackupCommon, BackupRecord, BackupTable, ProjectIdentity } from './backupRecord';
 export { BACKUP_VERSION, hashText } from './backupRecord';
 
-export const BACKUP_PREFIX = 'sheetcraft.backup:';
+export const BACKUP_PREFIX = 'masterdata-maker.backup:';
 export const BACKUP_DIALOG = 'backupRestore';
 /** 変更の後、退避するまでの待ち時間（ミリ秒） */
 export const DEFAULT_BACKUP_DELAY = 800;
@@ -296,7 +296,7 @@ export class BackupManager {
   private chain: Promise<void> = Promise.resolve();
   /** 提案のダイアログの答えを待っているとき、答えずに終わらせる */
   private pendingDecision: (() => void) | null = null;
-  /** 退避に失敗したことを知らせた後、まだ書き込めていない（成功から失敗に変わったときだけ知らせる。P-65） */
+  /** 退避に失敗したことを知らせた後、まだ書き込めていない（成功から失敗に変わったときだけ知らせる。P-66） */
   private failing = false;
   /** 最後に書き込んだ・消した日時（テスト用） */
   lastWrite: { at: number; kind: 'set' | 'del' } | null = null;
@@ -474,7 +474,7 @@ export interface BackupHandle {
 export function installBackup(store: AppStore, options: BackupOptions = {}): BackupHandle {
   const manager = new BackupManager(store, options);
   // 開発・画面テスト用に、外から退避の状態を見られるようにする
-  (globalThis as { sheetcraftBackup?: BackupManager }).sheetcraftBackup = manager;
+  (globalThis as { masterdataMakerBackup?: BackupManager }).masterdataMakerBackup = manager;
   manager.sync();
   const unsubscribe = store.subscribe(manager.sync);
   const onHide = () => {

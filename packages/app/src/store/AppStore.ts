@@ -15,7 +15,7 @@ import type {
   Project,
   Selection,
   Table,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import {
   COMMON_PART_NAMES,
   Calculator,
@@ -39,7 +39,7 @@ import {
   selectCell,
   selectColRange,
   selectRowRange,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import type { CommandDef } from '../commands/registry';
 import { CommandRegistry } from '../commands/registry';
 import type { ProjectSource } from '../fs/types';
