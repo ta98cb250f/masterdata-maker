@@ -9,8 +9,11 @@ import type { FieldDef } from '../model/field';
 import { cloneFieldDef, cloneRawValue } from '../model/field';
 import type { Project } from '../model/project';
 import { compareNames } from '../model/project';
+import type { TableProto } from '../model/proto';
+import { cloneTableProto, nextTableProto } from '../model/proto';
 import type { SourceFile } from '../model/source';
 import type { Table, TableRecord, TableView } from '../model/table';
+import { tableColumns } from '../model/table';
 import { UidAllocator } from '../model/uid';
 
 /** セルの中身（プレーンな形）。空のセルは null で表す */
@@ -36,6 +39,7 @@ export interface TableData {
   fields: FieldDef[];
   records: RecordData[];
   view: TableView;
+  proto?: TableProto;
   source: SourceFile | null;
   diagnostics: Diagnostic[];
 }
@@ -54,6 +58,14 @@ export interface IndexedRecord {
   record: RecordData;
 }
 
+/**
+ * 列の変更の後のフィールド番号（P-63）。省略すれば変更に合わせて決める（protoAfterColumnChange）。
+ * 逆のパッチは変更前の番号をそのまま持つ（null は `proto` の無いテーブル）
+ */
+interface ProtoAfter {
+  proto?: TableProto | null;
+}
+
 /** テーブルは内部の uid、レコードは uid、列は名前で指す */
 export type Patch =
   | { op: 'setCells'; table: number; cells: CellChange[] }
@@ -63,23 +75,35 @@ export type Patch =
   /** 全レコードの uid の並び */
   | { op: 'setRecordOrder'; table: number; order: number[] }
   /** index は table.fields（共通列を含まない）の中の位置。cells はレコードの uid → セル */
-  | { op: 'insertField'; table: number; index: number; field: FieldDef; cells: [number, CellData][] }
-  | { op: 'deleteField'; table: number; name: string }
+  | ({ op: 'insertField'; table: number; index: number; field: FieldDef; cells: [number, CellData][] } & ProtoAfter)
+  | ({ op: 'deleteField'; table: number; name: string } & ProtoAfter)
   /** 列名は変えない（列名の変更は renameField） */
-  | { op: 'updateField'; table: number; name: string; field: FieldDef }
+  | ({ op: 'updateField'; table: number; name: string; field: FieldDef } & ProtoAfter)
   /** 列定義の名前と、各レコードのセルのキーを変える */
-  | { op: 'renameField'; table: number; from: string; to: string }
+  | ({ op: 'renameField'; table: number; from: string; to: string } & ProtoAfter)
   /** 各レコードのセルのキーだけを変える（共通列の名前の変更に使う） */
   | { op: 'renameCellKey'; table: number; from: string; to: string }
   /** table.fields の名前の並び */
-  | { op: 'setFieldOrder'; table: number; order: string[] }
+  | ({ op: 'setFieldOrder'; table: number; order: string[] } & ProtoAfter)
   | { op: 'setView'; table: number; view: TableView }
   | { op: 'setTableName'; table: number; name: string }
   | { op: 'setTableDisplayName'; table: number; displayName: string | null }
   | { op: 'addTable'; table: TableData }
   | { op: 'removeTable'; table: number }
   | { op: 'setCommon'; part: 'enums'; items: EnumDef[]; isDefault: boolean }
-  | { op: 'setCommon'; part: 'base_fields'; items: FieldDef[]; isDefault: boolean }
+  /**
+   * rename は共通列の名前の変更（フィールド番号を引き継ぐ）。protos は変更後の各テーブルのフィールド番号
+   * （省略すれば変更に合わせて決める。無いテーブルは今の番号のまま。外部での変更の読み込み直しは [] にして、
+   * 手での編集と同じく保存・出力のときに列に合わせる。逆のパッチは変更前の番号を持つ）
+   */
+  | {
+      op: 'setCommon';
+      part: 'base_fields';
+      items: FieldDef[];
+      isDefault: boolean;
+      rename?: { from: string; to: string };
+      protos?: [number, TableProto | null][];
+    }
   | { op: 'setCommon'; part: 'colors'; items: ColorDef[]; isDefault: boolean };
 
 export type PatchOp = Patch['op'];
@@ -231,6 +255,7 @@ export function toTableData(table: Table): TableData {
     diagnostics: table.diagnostics.map(cloneDiagnostic),
   };
   if (table.display_name !== undefined) data.display_name = table.display_name;
+  if (table.proto !== undefined) data.proto = cloneTableProto(table.proto);
   return data;
 }
 
@@ -246,6 +271,7 @@ export function fromTableData(data: TableData): Table {
     diagnostics: data.diagnostics.map(cloneDiagnostic),
   };
   if (data.display_name !== undefined) table.display_name = data.display_name;
+  if (data.proto !== undefined) table.proto = cloneTableProto(data.proto);
   return table;
 }
 
@@ -467,7 +493,7 @@ function applySetRecordOrder(project: Project, p: Extract<Patch, { op: 'setRecor
   return { op: 'setRecordOrder', table: table.uid, order: old };
 }
 
-function applyInsertField(project: Project, p: Extract<Patch, { op: 'insertField' }>): Patch {
+function applyInsertField(project: Project, p: Extract<Patch, { op: 'insertField' }>): FieldPatch {
   const table = tableOf(project, p.table, p.op);
   if (!Number.isInteger(p.index) || p.index < 0 || p.index > table.fields.length) {
     throw new PatchError(p.op, `invalid index ${p.index}`);
@@ -486,7 +512,7 @@ function applyInsertField(project: Project, p: Extract<Patch, { op: 'insertField
   return { op: 'deleteField', table: table.uid, name: p.field.name };
 }
 
-function applyDeleteField(project: Project, p: Extract<Patch, { op: 'deleteField' }>): Patch {
+function applyDeleteField(project: Project, p: Extract<Patch, { op: 'deleteField' }>): FieldPatch {
   const table = tableOf(project, p.table, p.op);
   const i = fieldIndexOf(table, p.name, p.op);
   const [def] = table.fields.splice(i, 1);
@@ -504,7 +530,7 @@ function applyDeleteField(project: Project, p: Extract<Patch, { op: 'deleteField
   return { op: 'insertField', table: table.uid, index: i, field: def, cells };
 }
 
-function applyUpdateField(project: Project, p: Extract<Patch, { op: 'updateField' }>): Patch {
+function applyUpdateField(project: Project, p: Extract<Patch, { op: 'updateField' }>): FieldPatch {
   const table = tableOf(project, p.table, p.op);
   if (p.field.name !== p.name) throw new PatchError(p.op, `field name must stay ${p.name}`);
   const i = fieldIndexOf(table, p.name, p.op);
@@ -514,7 +540,7 @@ function applyUpdateField(project: Project, p: Extract<Patch, { op: 'updateField
   return { op: 'updateField', table: table.uid, name: p.name, field: old };
 }
 
-function applyRenameField(project: Project, p: Extract<Patch, { op: 'renameField' }>): Patch {
+function applyRenameField(project: Project, p: Extract<Patch, { op: 'renameField' }>): FieldPatch {
   const table = tableOf(project, p.table, p.op);
   const i = fieldIndexOf(table, p.from, p.op);
   if (p.from === p.to) throw new PatchError(p.op, 'from and to are the same');
@@ -533,7 +559,7 @@ function applyRenameCellKey(project: Project, p: Extract<Patch, { op: 'renameCel
   return { op: 'renameCellKey', table: table.uid, from: p.to, to: p.from };
 }
 
-function applySetFieldOrder(project: Project, p: Extract<Patch, { op: 'setFieldOrder' }>): Patch {
+function applySetFieldOrder(project: Project, p: Extract<Patch, { op: 'setFieldOrder' }>): FieldPatch {
   const table = tableOf(project, p.table, p.op);
   if (p.order.length !== table.fields.length || new Set(p.order).size !== p.order.length) {
     throw new PatchError(p.op, 'order is not a permutation of the fields');
@@ -625,13 +651,55 @@ function applySetCommon(project: Project, p: Extract<Patch, { op: 'setCommon' }>
     case 'base_fields': {
       const part = project.common.base_fields;
       const old = { items: part.items, isDefault: part.isDefault };
+      const given = p.protos === undefined ? undefined : new Map(p.protos);
+      const oldProtos: [number, TableProto | null][] = [];
+      const nextProtos = project.tables.map((table): TableProto | undefined => {
+        oldProtos.push([table.uid, table.proto === undefined ? null : table.proto]);
+        if (given !== undefined) {
+          const proto = given.get(table.uid);
+          return proto === undefined ? table.proto : proto === null ? undefined : cloneTableProto(proto);
+        }
+        const before = tableColumns(old.items, table);
+        const after = tableColumns(p.items, table);
+        return nextTableProto(table.proto, before, after, p.rename);
+      });
       part.items = p.items.map(cloneFieldDef);
       part.isDefault = p.isDefault;
+      project.tables.forEach((table, i) => setProto(table, nextProtos[i]));
       // 共通列はすべてのテーブルの列なので、全テーブルの版数を進める
       for (const table of project.tables) bumpTable(project, table.uid);
-      return { op: 'setCommon', part: 'base_fields', items: old.items, isDefault: old.isDefault };
+      const inverse: Patch = { op: 'setCommon', part: 'base_fields', items: old.items, isDefault: old.isDefault, protos: oldProtos };
+      if (p.rename !== undefined) inverse.rename = { from: p.rename.to, to: p.rename.from };
+      return inverse;
     }
   }
+}
+
+function setProto(table: Table, proto: TableProto | undefined): void {
+  if (proto === undefined) delete table.proto;
+  else table.proto = proto;
+}
+
+type FieldPatch = Extract<Patch, { op: 'insertField' | 'deleteField' | 'updateField' | 'renameField' | 'setFieldOrder' }>;
+
+/**
+ * 列定義を変えるパッチを当て、フィールド番号を合わせる（P-63）。番号はパッチが持っていればそれにし、
+ * 無ければ変更の前後の列から決める。番号を持たないテーブル（`proto` の無いファイル）は、ここで以前の規則の番号を持つ
+ * （列の並べ替えや出力対象の切り替えで番号が変わらないように）。逆のパッチに変更前の番号を持たせる（元に戻すと番号も元に戻る）
+ */
+function withProto<P extends FieldPatch>(project: Project, p: P, apply: (p: P) => FieldPatch): Patch {
+  const table = tableOf(project, p.table, p.op);
+  const base = project.common.base_fields.items;
+  const old = table.proto;
+  const before = tableColumns(base, table).map(cloneFieldDef);
+  const inverse = apply(p);
+  if (p.proto !== undefined) {
+    setProto(table, p.proto === null ? undefined : cloneTableProto(p.proto));
+  } else {
+    const rename = p.op === 'renameField' ? { from: p.from, to: p.to } : undefined;
+    setProto(table, nextTableProto(old, before, tableColumns(base, table), rename));
+  }
+  return { ...inverse, proto: old === undefined ? null : old };
 }
 
 /**
@@ -650,17 +718,17 @@ export function applyPatch(project: Project, patch: Patch): Patch {
     case 'setRecordOrder':
       return applySetRecordOrder(project, patch);
     case 'insertField':
-      return applyInsertField(project, patch);
+      return withProto(project, patch, (p) => applyInsertField(project, p));
     case 'deleteField':
-      return applyDeleteField(project, patch);
+      return withProto(project, patch, (p) => applyDeleteField(project, p));
     case 'updateField':
-      return applyUpdateField(project, patch);
+      return withProto(project, patch, (p) => applyUpdateField(project, p));
     case 'renameField':
-      return applyRenameField(project, patch);
+      return withProto(project, patch, (p) => applyRenameField(project, p));
     case 'renameCellKey':
       return applyRenameCellKey(project, patch);
     case 'setFieldOrder':
-      return applySetFieldOrder(project, patch);
+      return withProto(project, patch, (p) => applySetFieldOrder(project, p));
     case 'setView':
       return applySetView(project, patch);
     case 'setTableName':

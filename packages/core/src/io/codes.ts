@@ -45,6 +45,7 @@ export const IoCode = {
   unknownValidationKey: 'io.unknownValidationKey',
   unknownAnomalyKey: 'io.unknownAnomalyKey',
   unknownViewKey: 'io.unknownViewKey',
+  unknownProtoKey: 'io.unknownProtoKey',
   unknownRichCellKey: 'io.unknownRichCellKey',
   unknownConfigKey: 'io.unknownConfigKey',
   unknownCommonKey: 'io.unknownCommonKey',

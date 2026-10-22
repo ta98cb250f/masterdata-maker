@@ -208,7 +208,9 @@ export function planRestore(project: Project, record: BackupRecord): RestorePlan
       }
       commonItems = parsed.value;
     }
-    patches.push({ op: 'setCommon', part: c.part, items: commonItems, isDefault: c.text === null } as Patch);
+    // 共通列のフィールド番号は作り直さない（退避したテーブルのテキストの番号をそのまま使う。P-63）
+    const protos = c.part === 'base_fields' ? { protos: [] } : {};
+    patches.push({ op: 'setCommon', part: c.part, items: commonItems, isDefault: c.text === null, ...protos } as Patch);
     if (c.part === 'base_fields') baseFields = commonItems as FieldDef[];
     items.push({ kind: 'common', label: c.path, path: c.path, changedSince: false });
   }

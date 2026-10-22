@@ -7,6 +7,8 @@ import type { FieldDef, FieldType } from '../model/field';
 import { elementType, isFieldExported, isListType } from '../model/field';
 import type { OutputFormat, Project } from '../model/project';
 import { compareNames, joinPath, normalizeDir, resolveProjectPaths } from '../model/project';
+import type { TableProto } from '../model/proto';
+import { isValidProtoFieldNumber, resolveProto } from '../model/proto';
 import { parseSemver } from '../sheet/compare';
 import type { BrokenTable, Table } from '../model/table';
 import type { Calculator, CellResult } from '../calc';
@@ -124,10 +126,43 @@ export function exportTableText(calc: Calculator, table: Table, format: 'json' |
 function exportTableFiles(calc: Calculator, table: Table, format: OutputFormat): { name: string; content: string | Uint8Array }[] {
   if (format !== 'protobuf') return [{ name: `${table.name}.${format}`, content: exportTableText(calc, table, format) }];
   const { columns, rows } = exportRows(calc, table);
+  const proto = tableProto(calc, table);
   return [
-    { name: `${table.name}.proto`, content: emitProtoSchema(table.name, table.display_name, columns) },
-    { name: `${table.name}.pb`, content: encodeProtoTable(columns, rows) },
+    { name: `${table.name}.proto`, content: emitProtoSchema(table.name, table.display_name, columns, proto) },
+    { name: `${table.name}.pb`, content: encodeProtoTable(columns, rows, proto) },
   ];
+}
+
+/** テーブルのフィールド番号（出力しない列も含む、今の列に合わせたもの。P-63） */
+function tableProto(calc: Calculator, table: Table): TableProto {
+  return resolveProto(table.proto, calc.columns(table));
+}
+
+/** フィールド番号の診断（P-63）: 使えない番号（範囲外と 19000〜19999）、列と reserved での番号の重なり、識別子でない reserved の名前 */
+function protoNumberDiagnostics(table: Table, proto: TableProto): Diagnostic[] {
+  const ds: Diagnostic[] = [];
+  const owners = new Map<number, string[]>();
+  const items: { label: string; field?: string; number: number }[] = [
+    ...proto.fields.map(([name, number]) => ({ label: name, field: name, number })),
+    ...proto.reserved.map((r) => ({ label: 'reserved', number: r.number })),
+  ];
+  for (const item of items) {
+    const where = item.field === undefined ? {} : { field: item.field };
+    if (!isValidProtoFieldNumber(item.number)) {
+      ds.push({ severity: 'error', code: ExportCode.protoInvalidFieldNumber, table: table.name, ...where, params: { owner: item.label, number: item.number } });
+    }
+    const others = owners.get(item.number) ?? [];
+    if (others.length > 0) {
+      ds.push({ severity: 'error', code: ExportCode.protoFieldNumberConflict, table: table.name, ...where, params: { owner: item.label, other: others.join(', '), number: item.number } });
+    }
+    owners.set(item.number, [...others, item.label]);
+  }
+  for (const r of proto.reserved) {
+    if (r.name !== undefined && !isProtoIdentifier(r.name)) {
+      ds.push({ severity: 'error', code: ExportCode.protoInvalidName, table: table.name, params: { name: r.name, proto: r.name } });
+    }
+  }
+  return ds;
 }
 
 /**
@@ -161,6 +196,7 @@ function protobufDiagnostics(calc: Calculator, all: readonly (Table | BrokenTabl
     for (const [a, b] of protoFieldConflicts(columns)) {
       ds.push({ severity: 'error', code: ExportCode.protoFieldConflict, table: table.name, field: b, params: { field: b, other: a } });
     }
+    ds.push(...protoNumberDiagnostics(table, tableProto(calc, table)));
   }
   return ds;
 }

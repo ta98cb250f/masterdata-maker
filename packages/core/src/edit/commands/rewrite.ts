@@ -4,6 +4,7 @@ import { cloneFieldDef } from '../../model/field';
 import type { Project } from '../../model/project';
 import type { Table, TableView } from '../../model/table';
 import { recordsOf } from '../helpers';
+import type { Patch } from '../patch';
 import { cloneView, toCellData } from '../patch';
 import type { TxBuilder } from '../transaction';
 
@@ -18,6 +19,8 @@ export interface DefinitionRewrite {
   baseFields?: FieldDef[];
   /** 共通列の定義を、書き換えが無くても setCommon で入れ直す（baseFields を渡したとき） */
   forceBaseFields?: boolean;
+  /** 共通列の名前の変更（setCommon に持たせ、各テーブルのフィールド番号を引き継ぐ。P-63） */
+  baseRename?: { from: string; to: string };
 }
 
 /** `<テーブル>.<列>` を分ける。形が違えば null */
@@ -61,7 +64,11 @@ export function addDefinitionRewrites(project: Project, b: TxBuilder, rw: Defini
     if (r !== null) baseChanged = true;
     return r ?? cloneFieldDef(field);
   });
-  if (baseChanged) b.add({ op: 'setCommon', part: 'base_fields', items: nextBase, isDefault: false });
+  if (baseChanged) {
+    const patch: Patch = { op: 'setCommon', part: 'base_fields', items: nextBase, isDefault: false };
+    if (rw.baseRename !== undefined) patch.rename = { ...rw.baseRename };
+    b.add(patch);
+  }
 
   const nameAfter = rw.nameAfter ?? ((_owner: Table, name: string) => name);
   for (const table of project.tables) {

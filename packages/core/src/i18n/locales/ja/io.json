@@ -37,6 +37,7 @@
   "io.unknownValidationKey": "列 {field} の validation に知らないキー {key} があります",
   "io.unknownAnomalyKey": "列 {field} の anomaly に知らないキー {key} があります",
   "io.unknownViewKey": "view に知らないキー {key} があります",
+  "io.unknownProtoKey": "proto に知らないキー {key} があります",
   "io.unknownRichCellKey": "列 {field} のセルに知らないキー {key} があります（使えるキーは value・override・color・comment です）",
   "io.unknownConfigKey": "プロジェクト設定に知らないキー {key} があります",
   "io.unknownCommonKey": "共通設定のファイルに知らないキー {key} があります",

@@ -1,6 +1,7 @@
 import type { Cell, ExtraValue } from './cell';
 import type { Diagnostic } from './diagnostic';
 import type { FieldDef } from './field';
+import type { TableProto } from './proto';
 import type { SourceFile } from './source';
 
 /** レコード（行）。名前が組み込みの Record と衝突するので TableRecord とする */
@@ -31,6 +32,11 @@ export interface Table {
   fields: FieldDef[];
   records: TableRecord[];
   view: TableView;
+  /**
+   * Protocol Buffers のフィールド番号（ファイルの `proto`。P-63）。無ければ以前の規則（出力する列の順）で決める。
+   * 今の列と合っていないこともある（手で書き換えたファイル）ので、使うときは resolveProto で列に合わせる
+   */
+  proto?: TableProto;
   /** 読み込み元。新しく作ったテーブルなら null */
   source: SourceFile | null;
   /** 読み込み時の警告 */
