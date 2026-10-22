@@ -1,8 +1,8 @@
 // 列の設定のダイアログ（FR-COL-02〜04）。表示名・説明・出力対象・編集可否・列レベル式・既定値・検査ルール・警告条件・
 // 列挙型の参照・参照先に加えて、列名の変更（FR-COL-03）と型の変更（FR-COL-04）も行い、全体を 1 回の操作にする。
 // 型を変えるときは、変換できない値を先に一覧で示し、承認されてから変換する。共通列は共通設定へ案内する
-import type { FieldDef, Table, TypeChangeIssue } from '@sheetcraft/core';
-import { checkColumnTypeChange, formatInputError, formatValueText, inputContext } from '@sheetcraft/core';
+import type { FieldDef, Table, TypeChangeIssue } from '@masterdata-maker/core';
+import { checkColumnTypeChange, formatInputError, formatValueText, inputContext } from '@masterdata-maker/core';
 import { useMemo, useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import { completionColumnsOf } from '../sheet/complete';

@@ -9,7 +9,7 @@ import type {
   Patch,
   ProjectSnapshot,
   StorageFormat,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import type { BackupRecord, BackupTarget } from '../store/backupRecord';
 import type { ValidationOutput, ValidationRequest } from '../store/validation';
 

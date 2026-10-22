@@ -19,7 +19,7 @@ export const DEFAULT_OUTPUT_FORMAT: OutputFormat = 'json';
 export const DEFAULT_OUT_DIR = 'build/';
 
 /** P-01: プロジェクト設定ファイルの名前（設定ファイル自身の形式は拡張子で決める） */
-export const PROJECT_CONFIG_FILES = ['sheetcraft.yaml', 'sheetcraft.json'] as const;
+export const PROJECT_CONFIG_FILES = ['masterdata-maker.yaml', 'masterdata-maker.json'] as const;
 
 /**
  * プロジェクト設定（P-01）。省略可能なキーは、ファイルに書かれていたときだけ値を持つ。

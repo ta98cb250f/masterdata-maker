@@ -1,5 +1,5 @@
 // パネルの置き場（右側と下側）。パネルは機能ごとのファイル（panels/<機能>.tsx）に書き、panels/index.ts の一覧に 1 行足して登録する
-import type { ShortcutId } from '@sheetcraft/core';
+import type { ShortcutId } from '@masterdata-maker/core';
 import type { ComponentType } from 'react';
 import type { CommandDef } from '../commands/registry';
 import { panelRegion, requestRegionFocus } from '../components/focusRegions';

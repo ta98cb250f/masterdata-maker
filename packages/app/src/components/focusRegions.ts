@@ -2,7 +2,7 @@
 // Ctrl+Alt+. / Ctrl+Alt+,（Googleスプレッドシートの「サイドパネルに移動」）で開いているパネルへ移る。
 // 領域は要素に data-region を付けて示す（巡回の順は画面の上から下・左から右の REGION_ORDER）。領域に入ったときにフォーカスを
 // 置く要素には data-region-focus を付ける（無ければ data-region-fallback、それも無ければ最初のボタンなど）
-import { resolveShortcut } from '@sheetcraft/core';
+import { resolveShortcut } from '@masterdata-maker/core';
 import { useEffect } from 'react';
 import type { AppStore } from '../store/AppStore';
 

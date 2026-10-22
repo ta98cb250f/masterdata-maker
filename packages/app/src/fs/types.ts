@@ -1,5 +1,5 @@
 // ファイルの読み書きの方式（§4.4、NFR-02〜05）
-import type { ProjectFs, SaveFile, SavePlan } from '@sheetcraft/core';
+import type { ProjectFs, SaveFile, SavePlan } from '@masterdata-maker/core';
 
 /** direct: 直接保存方式 / download: ダウンロード保存方式 / sample: 組み込みのサンプル（保存はダウンロード。P-45） */
 export type SourceKind = 'direct' | 'download' | 'sample';

@@ -20,7 +20,7 @@ test('1 万行 × 50 列: 矢印キーの移動・入力の確定・スクロー
   await expect(page.locator('.sc-rowhead').first()).toBeVisible();
   // 開いた直後の全体の検査を待つ
   await page.waitForFunction(() => {
-    const s = (globalThis as unknown as { sheetcraft: { getState(): { validation: { version: number; running: boolean } } } }).sheetcraft.getState();
+    const s = (globalThis as unknown as { masterdataMaker: { getState(): { validation: { version: number; running: boolean } } } }).masterdataMaker.getState();
     return s.validation.version > 0 && !s.validation.running;
   });
 
@@ -30,7 +30,7 @@ test('1 万行 × 50 列: 矢印キーの移動・入力の確定・スクロー
       flushValidation(): Promise<void>;
       scheduleValidation(changed: string[]): void;
     };
-    const store = (globalThis as unknown as { sheetcraft: Store }).sheetcraft;
+    const store = (globalThis as unknown as { masterdataMaker: Store }).masterdataMaker;
     const input = document.querySelector<HTMLTextAreaElement>('[data-testid=cell-input]') as HTMLTextAreaElement;
     const scroller = document.querySelector<HTMLElement>('.sc-grid-scroller') as HTMLElement;
     // 描画が終わって次のフレームが始まるまで
@@ -195,7 +195,7 @@ for (const format of ['yaml', 'json'] as const) {
     const measured = await page.evaluate(async () => {
       type State = { phase: string; validation: { version: number; running: boolean } };
       type Store = { getState(): State; project: { tables: unknown[]; brokenTables: unknown[] } | null };
-      const store = (globalThis as unknown as { sheetcraft: Store }).sheetcraft;
+      const store = (globalThis as unknown as { masterdataMaker: Store }).masterdataMaker;
       const until = (done: () => boolean) =>
         new Promise<void>((resolve) => {
           const poll = () => (done() ? resolve() : requestAnimationFrame(poll));

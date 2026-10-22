@@ -1,6 +1,6 @@
-# SheetCraft
+# MasterData Maker
 
-SheetCraft は、ゲームのマスターデータを Googleスプレッドシートと同じ画面と操作で編集する、ブラウザで動く Web アプリです。キー操作・マウス操作・数式・範囲のコピーと貼り付けは Googleスプレッドシートに合わせ、迷ったときは Googleスプレッドシートの挙動を正解とします（要件定義書 R-1）。シートの中身は 1 シート＝1 ファイルの YAML または JSON（プロジェクトごとに選ぶ）として保存し、1 セル変えたらファイルの差分もおおむね 1 行になる形で書き出します（R-2）。
+MasterData Maker は、ゲームのマスターデータを Googleスプレッドシートと同じ画面と操作で編集する、ブラウザで動く Web アプリです。キー操作・マウス操作・数式・範囲のコピーと貼り付けは Googleスプレッドシートに合わせ、迷ったときは Googleスプレッドシートの挙動を正解とします（要件定義書 R-1）。シートの中身は 1 シート＝1 ファイルの YAML または JSON（プロジェクトごとに選ぶ）として保存し、1 セル変えたらファイルの差分もおおむね 1 行になる形で書き出します（R-2）。
 
 - 公開版（GitHub Pages）: https://ta98cb250f.github.io/masterdata-maker/
 - 要件定義書: [docs/requirements.md](docs/requirements.md)
@@ -31,11 +31,11 @@ Vite の開発サーバー（既定は http://localhost:5173 ）が起動しま�
 ### ビルド（静的ホスティング用）
 
 ```sh
-pnpm build                              # 画面と CLI の両方
-pnpm --filter @sheetcraft/app build     # 画面だけ（packages/app/dist に出力）
+pnpm build                                    # 画面と CLI の両方
+pnpm --filter @masterdata-maker/app build     # 画面だけ（packages/app/dist に出力）
 ```
 
-`packages/app/dist` をそのまま静的ホスティングに置けば動きます（サーバー側の処理はありません。NFR-06、NFR-07）。相対パスで出力するので、サブディレクトリに置いてもかまいません。直接保存方式の `showDirectoryPicker()` は安全なコンテキストでしか使えないので、HTTPS で配ってください（`localhost` は安全なコンテキストとして扱われます）。ローカルで確かめるときは `pnpm --filter @sheetcraft/app preview` を使います。
+`packages/app/dist` をそのまま静的ホスティングに置けば動きます（サーバー側の処理はありません。NFR-06、NFR-07）。相対パスで出力するので、サブディレクトリに置いてもかまいません。直接保存方式の `showDirectoryPicker()` は安全なコンテキストでしか使えないので、HTTPS で配ってください（`localhost` は安全なコンテキストとして扱われます）。ローカルで確かめるときは `pnpm --filter @masterdata-maker/app preview` を使います。
 
 ### GitHub Pages への公開
 
@@ -53,7 +53,7 @@ pnpm test         # 単体テスト（Vitest。core・cli・app）
 pnpm e2e          # 画面テスト（Playwright、Chromium）
 ```
 
-- 画面テストは、画面をビルドして `vite preview` で配り、Chromium で動かします。初めて動かす環境では `pnpm --filter @sheetcraft/app exec playwright install chromium` でブラウザを入れてください（すでに入っているブラウザを使うなら、環境変数 `PLAYWRIGHT_BROWSERS_PATH` で場所を指定します）
+- 画面テストは、画面をビルドして `vite preview` で配り、Chromium で動かします。初めて動かす環境では `pnpm --filter @masterdata-maker/app exec playwright install chromium` でブラウザを入れてください（すでに入っているブラウザを使うなら、環境変数 `PLAYWRIGHT_BROWSERS_PATH` で場所を指定します）
 - 複数の画面テストを同時に動かすときは、ポートとビルドの出力先を環境変数で変えます: `cd packages/app && E2E_PORT=4174 E2E_OUTDIR=dist-e2e-x pnpm exec playwright test --output test-results-x`
 - 要件定義書 §5.17 の受け入れ基準 1〜9 は [packages/app/e2e/acceptance.spec.ts](packages/app/e2e/acceptance.spec.ts) に、番号順に並べてあります。手で確かめる必要があるもの（Googleスプレッドシート本体・Firefox・Safari）は、各テストの注記と下の「既知の制限と未検証の事項」に書きました
 - 性能の確認（NFR-10〜12）は [packages/app/e2e/perf.spec.ts](packages/app/e2e/perf.spec.ts) と [packages/app/e2e/worker.spec.ts](packages/app/e2e/worker.spec.ts) で、測った値を `[perf]` で始まる行で標準出力に出します
@@ -61,7 +61,7 @@ pnpm e2e          # 画面テスト（Playwright、Chromium）
 ### CLI
 
 ```sh
-pnpm --filter @sheetcraft/cli build              # packages/cli/dist/cli.mjs（Node.js 用の 1 ファイル）
+pnpm --filter @masterdata-maker/cli build    # packages/cli/dist/cli.mjs（Node.js 用の 1 ファイル）
 node packages/cli/dist/cli.mjs <コマンド> [プロジェクトのフォルダ] [オプション]
 ```
 
@@ -139,11 +139,11 @@ node packages/cli/dist/cli.mjs convert --to json path/to/project
 
 ## プロジェクトの構成
 
-プロジェクトは、プロジェクト設定ファイル（`sheetcraft.yaml` か `sheetcraft.json`）を置いたフォルダです（DR-01、P-01）。
+プロジェクトは、プロジェクト設定ファイル（`masterdata-maker.yaml` か `masterdata-maker.json`）を置いたフォルダです（DR-01、P-01）。
 
 ```
 my-project/
-  sheetcraft.yaml        プロジェクト設定（sheetcraft.json でもよい。両方あればエラー）
+  masterdata-maker.yaml  プロジェクト設定（masterdata-maker.json でもよい。両方あればエラー）
   config/                共通設定（paths.config）。拡張子は storage.format に従う（P-02）
     enums.yaml           列挙型
     base_fields.yaml     共通列（無ければ id と version）
@@ -154,7 +154,7 @@ my-project/
   build/                 出力先（output.out_dir）。CLI の export と画面の「出力」が書き込む
 ```
 
-プロジェクト設定（[samples/basic-yaml/sheetcraft.yaml](samples/basic-yaml/sheetcraft.yaml)）:
+プロジェクト設定（[samples/basic-yaml/masterdata-maker.yaml](samples/basic-yaml/masterdata-maker.yaml)）:
 
 ```yaml
 format_version: 1
@@ -265,6 +265,7 @@ app ──→ core ←── cli
 - **性能（U-5）**: NFR-10〜12 の測定は、この開発環境のヘッドレスの Chromium だけで行いました（`[perf]` の行）。Firefox・Safari と、利用者の実際の環境では測っていません
 - **ダウンロード保存方式の保存**: 削除・名前の変更をしたテーブルの元のファイルはダウンロードでは消せないので、手で消すファイルの名前を表示します（P-43）。複数のファイルを保存すると ZIP になるので、展開して元のフォルダに置き直してください
 - **メニューからのクリップボード**: ブラウザによっては、メニューの「コピー」「貼り付け」からクリップボードを使えません。その場合は Ctrl+C / Ctrl+X / Ctrl+V（Mac は ⌘）を使ってください
+- **旧版（SheetCraft）からの移行**: 旧名の設定ファイル（`sheetcraft.yaml` / `sheetcraft.json`）は読みません。`masterdata-maker.yaml` / `masterdata-maker.json` に名前を変えてください。ブラウザに残っている旧版の未保存の変更の退避・表示言語・最後に開いたフォルダは引き継ぎません（計画書 P-65）
 - **TypeScript 7.0（U-3）**: 新しい版なので、型検査で問題が出たら 6.0 系に下げる方針です
-- **開発・画面テスト用の口**: ビルドした画面にも `globalThis.sheetcraft`（状態）、`sheetcraftWorker`、`sheetcraftBackup`、`sheetcraftSamples`（性能の確認用のプロジェクトの生成）を残しています
+- **開発・画面テスト用の口**: ビルドした画面にも `globalThis.masterdataMaker`（状態）、`masterdataMakerWorker`、`masterdataMakerBackup`、`masterdataMakerSamples`（性能の確認用のプロジェクトの生成）を残しています
 - **画面テストの環境**: Playwright のフォルダの選択（`webkitdirectory` への読み込み）は、パスに ASCII 以外の文字があると動かないため、受け入れ基準 9 番は OS の一時フォルダを使います

@@ -1,7 +1,7 @@
 // 連番入力（FR-FIL-05）: 開始値と増分を入れて選択範囲を埋める（core の fillSeriesCells）。
 // 複数の行を選んでいれば列ごとに上から下へ、1 行だけなら左から右へ埋める。datetime の列では増分は日数（P-15）
-import type { CellTarget } from '@sheetcraft/core';
-import { EditCode, fillSeriesCells, formatValueText } from '@sheetcraft/core';
+import type { CellTarget } from '@masterdata-maker/core';
+import { EditCode, fillSeriesCells, formatValueText } from '@masterdata-maker/core';
 import { useState } from 'react';
 import { selectionTarget } from '../commands/helpers';
 import { DialogFrame } from '../components/Dialog';

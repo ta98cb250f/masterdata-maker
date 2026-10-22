@@ -1,5 +1,5 @@
 // 単体テスト用: 組み込みのサンプル（samples/basic-yaml）を開いた store（保存はしない）
-import { MemoryProjectFs } from '@sheetcraft/core';
+import { MemoryProjectFs } from '@masterdata-maker/core';
 import { allCommands } from '../commands';
 import { downloadSource } from '../fs/download';
 import { basicSampleFiles } from '../fs/sample';

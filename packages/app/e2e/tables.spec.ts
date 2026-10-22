@@ -19,7 +19,7 @@ async function tabMenu(page: Page, table: string, command: string): Promise<void
 function fieldRef(page: Page, table: string, column: string): Promise<string | undefined> {
   return page.evaluate(
     ([t, c]) => {
-      const store = (globalThis as unknown as { sheetcraft: { project: { tables: { name: string; fields: { name: string; ref?: string }[] }[] } } }).sheetcraft;
+      const store = (globalThis as unknown as { masterdataMaker: { project: { tables: { name: string; fields: { name: string; ref?: string }[] }[] } } }).masterdataMaker;
       return store.project.tables.find((x) => x.name === t)?.fields.find((f) => f.name === c)?.ref;
     },
     [table, column],

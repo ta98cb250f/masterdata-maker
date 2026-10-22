@@ -1,8 +1,8 @@
 // 画面からの出力（FR-OUT-06）。検査エラーがあれば出力しない（強制して出力することもできる。FR-OUT-05）。
 // 直接保存方式ではプロジェクト設定の出力先のフォルダ（output.out_dir。無ければ作る）へ書き込み、
 // ダウンロード保存方式ではダウンロードする（複数なら ZIP）。出力するのはエディタの今の内容（保存していない変更も含む）
-import type { Diagnostic, ExportFile, OutputFormat } from '@sheetcraft/core';
-import { formatDiagnostic, isError, resolveProjectPaths } from '@sheetcraft/core';
+import type { Diagnostic, ExportFile, OutputFormat } from '@masterdata-maker/core';
+import { formatDiagnostic, isError, resolveProjectPaths } from '@masterdata-maker/core';
 import type { DownloadFn } from '../fs/download';
 import { browserDownload, zipFiles } from '../fs/download';
 import { baseName, errorMessage } from '../fs/text';

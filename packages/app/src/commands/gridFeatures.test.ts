@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_COLUMN_WIDTH, MemoryProjectFs, RichCell, enterInput, extendTo, resolveShortcut, selectCell, selectColRange, selectRowRange, setColumnWidth } from '@sheetcraft/core';
+import { DEFAULT_COLUMN_WIDTH, MemoryProjectFs, RichCell, enterInput, extendTo, resolveShortcut, selectCell, selectColRange, selectRowRange, setColumnWidth } from '@masterdata-maker/core';
 import { menuEntriesToItems } from '../components/MenuList';
 import { MAX_COLUMN_WIDTH, parseColumnWidth } from '../dialogs/columnResize';
 import { downloadSource } from '../fs/download';

@@ -6,8 +6,8 @@
 //   テーブル               … そのテーブルに切り替える
 //   列名                   … 表示中のテーブルの列全体
 //   主キー                 … 表示中のテーブルの、今の列のそのレコードのセル
-import type { BrokenTable, Calculator, FieldDef, MessageParams, Project, Table, TableRecord } from '@sheetcraft/core';
-import { formatValueText } from '@sheetcraft/core';
+import type { BrokenTable, Calculator, FieldDef, MessageParams, Project, Table, TableRecord } from '@masterdata-maker/core';
+import { formatValueText } from '@masterdata-maker/core';
 
 export type LocationTarget =
   | { kind: 'cell'; table: number; record: number; column: string }

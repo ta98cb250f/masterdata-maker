@@ -1,6 +1,6 @@
 // メモ（FR-ANN-02）: メモのあるセルにマウスを重ねると、セルの右に中身を出す（Googleスプレッドシートと同じ）。
 // 印（右上の三角）はセルの描画が出す。編集は Shift+F2 か右クリックの「メモ」（dialogs/note.tsx）
-import { RichCell } from '@sheetcraft/core';
+import { RichCell } from '@masterdata-maker/core';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppState } from '../../store/hooks';

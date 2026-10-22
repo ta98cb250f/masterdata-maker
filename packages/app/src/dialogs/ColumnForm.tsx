@@ -1,7 +1,7 @@
 // 列の設定の入力欄（FR-COL-02）。列の設定のダイアログと、共通設定の共通列のタブで使う。
 // 型で使えない検査ルール・警告条件は出さない（値が入っていれば、使えない旨を添えて出す）
-import type { FieldType } from '@sheetcraft/core';
-import { FIELD_TYPES } from '@sheetcraft/core';
+import type { FieldType } from '@masterdata-maker/core';
+import { FIELD_TYPES } from '@masterdata-maker/core';
 import { useMemo, useRef } from 'react';
 import type { FormulaAssistHandle } from '../components/FormulaAssist';
 import { FormulaAssist } from '../components/FormulaAssist';

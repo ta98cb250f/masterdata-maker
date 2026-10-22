@@ -1,15 +1,15 @@
 {
-  "name": "sheetcraft",
+  "name": "masterdata-maker",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "scripts": {
-    "dev": "pnpm --filter @sheetcraft/app dev",
+    "dev": "pnpm --filter @masterdata-maker/app dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "pnpm --filter @sheetcraft/app e2e"
+    "e2e": "pnpm --filter @masterdata-maker/app e2e"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

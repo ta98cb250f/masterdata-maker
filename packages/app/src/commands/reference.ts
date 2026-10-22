@@ -1,6 +1,6 @@
 // 参照先へ移動（FR-REF-01）: 参照列のセルから、参照先のテーブルのレコードへ移る（右クリックの「参照先へ移動」・Ctrl+クリック）
-import type { FValue } from '@sheetcraft/core';
-import { selectCell } from '@sheetcraft/core';
+import type { FValue } from '@masterdata-maker/core';
+import { selectCell } from '@masterdata-maker/core';
 import type { RefTarget } from '../sheet/references';
 import { findRefRecord, refKeyText, refKeys, refNamesText, refTargetOf } from '../sheet/references';
 import type { AppStore } from '../store/AppStore';

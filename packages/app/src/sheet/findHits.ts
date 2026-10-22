@@ -1,8 +1,8 @@
 // 検索と置換（FR-FND-01〜04）のうち、どのセルが一致するかを求める部分。照合は core の createMatcher、置換は core の replaceCells。
 // 照合するテキストは replaceCells と同じ（値は表示用のテキスト、セル単位式は `=` 付きの式）。
 // 式や既定値で決まった値（セルに値の無いもの）は、表示どおりのテキストで検索できるが、置換はできない
-import type { Calculator, CellRange, EditFailure, FieldDef, Table, TableRecord, TextMatcher } from '@sheetcraft/core';
-import { cellFormula, cellValue, formatValueText, isEmptyValue, numberToText } from '@sheetcraft/core';
+import type { Calculator, CellRange, EditFailure, FieldDef, Table, TableRecord, TextMatcher } from '@masterdata-maker/core';
+import { cellFormula, cellValue, formatValueText, isEmptyValue, numberToText } from '@masterdata-maker/core';
 import type { SheetModel } from './model';
 
 /** value: セルの値 / formula: セル単位式（`=` 付き） / computed: 式・既定値で決まった値（置換できない） */

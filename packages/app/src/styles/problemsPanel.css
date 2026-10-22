@@ -76,7 +76,7 @@
   background: #f8f9fa;
 }
 .sc-problems-row.active {
-  background: #e8f0fe;
+  background: var(--sc-accent-soft);
 }
 .sc-problems-row > span,
 .sc-problems-head > span {

@@ -1,6 +1,6 @@
 // 表示するシートの形（表示中の列・行の並び）。DOM に依存しない
-import type { FieldDef, GridSize, Project, Table, TableRecord } from '@sheetcraft/core';
-import { DEFAULT_COLUMN_WIDTH, isFieldEditable, isFieldExported, primaryColumn, recordIndex, tableColumns } from '@sheetcraft/core';
+import type { FieldDef, GridSize, Project, Table, TableRecord } from '@masterdata-maker/core';
+import { DEFAULT_COLUMN_WIDTH, isFieldEditable, isFieldExported, primaryColumn, recordIndex, tableColumns } from '@masterdata-maker/core';
 
 export interface SheetColumn {
   field: FieldDef;

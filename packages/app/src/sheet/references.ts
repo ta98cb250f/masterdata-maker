@@ -1,7 +1,7 @@
 // 参照列（ref）の参照先（FR-ANN-05、FR-REF-01）。DOM に依存しない。
 // 参照先のテーブルの「名前」は name 列、無ければ最初の string 列（参照先の列そのものは除く）
-import type { Calculator, CellResult, FValue, FieldDef, Table, TableRecord } from '@sheetcraft/core';
-import { FList, displayValue, parseRef, valueKey } from '@sheetcraft/core';
+import type { Calculator, CellResult, FValue, FieldDef, Table, TableRecord } from '@masterdata-maker/core';
+import { FList, displayValue, parseRef, valueKey } from '@masterdata-maker/core';
 import { cellDisplay } from './display';
 
 export interface RefTarget {

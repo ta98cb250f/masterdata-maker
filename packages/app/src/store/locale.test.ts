@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMessage, hasMessage } from '@sheetcraft/core';
+import { formatMessage, hasMessage } from '@masterdata-maker/core';
 import { UI_BUNDLES } from '../i18n';
 import { AppStore } from './AppStore';
 import type { LocaleStorage } from './locale';
