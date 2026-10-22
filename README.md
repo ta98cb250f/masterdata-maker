@@ -265,6 +265,7 @@ app ──→ core ←── cli
 - **性能（U-5）**: NFR-10〜12 の測定は、この開発環境のヘッドレスの Chromium だけで行いました（`[perf]` の行）。Firefox・Safari と、利用者の実際の環境では測っていません
 - **ダウンロード保存方式の保存**: 削除・名前の変更をしたテーブルの元のファイルはダウンロードでは消せないので、手で消すファイルの名前を表示します（P-43）。複数のファイルを保存すると ZIP になるので、展開して元のフォルダに置き直してください
 - **メニューからのクリップボード**: ブラウザによっては、メニューの「コピー」「貼り付け」からクリップボードを使えません。その場合は Ctrl+C / Ctrl+X / Ctrl+V（Mac は ⌘）を使ってください
+- **旧版（SheetCraft）からの移行**: 旧名の設定ファイル（`sheetcraft.yaml` / `sheetcraft.json`）は読みません。`masterdata-maker.yaml` / `masterdata-maker.json` に名前を変えてください。ブラウザに残っている旧版の未保存の変更の退避・表示言語・最後に開いたフォルダは引き継ぎません（計画書 P-65）
 - **TypeScript 7.0（U-3）**: 新しい版なので、型検査で問題が出たら 6.0 系に下げる方針です
 - **開発・画面テスト用の口**: ビルドした画面にも `globalThis.masterdataMaker`（状態）、`masterdataMakerWorker`、`masterdataMakerBackup`、`masterdataMakerSamples`（性能の確認用のプロジェクトの生成）を残しています
 - **画面テストの環境**: Playwright のフォルダの選択（`webkitdirectory` への読み込み）は、パスに ASCII 以外の文字があると動かないため、受け入れ基準 9 番は OS の一時フォルダを使います
