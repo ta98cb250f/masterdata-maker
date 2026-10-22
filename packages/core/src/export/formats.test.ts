@@ -174,6 +174,36 @@ records:
     expect([json.ok, json.blocked]).toEqual([true, false]);
   });
 
+  it('番号はテーブルの proto のもの。.pb は番号の順に書き、reserved は .proto の先頭に書く', async () => {
+    const project = await testProject({
+      baseFields: BASE_ID,
+      tables: {
+        t: 'fields:\n  - { name: b, type: int }\n  - { name: a, type: int }\nrecords:\n  - { id: 1, a: 2, b: 3 }\nproto:\n  fields: { id: 1, b: 5, a: 2 }\n  reserved: [{ number: 3, name: old }, { number: 4 }]\n',
+      },
+    });
+    const result = planExport(project, new Calculator(project), { format: 'protobuf' });
+    expect(result.files[0].content).toContain(
+      'message T {\n  reserved 3, 4;\n  reserved "old";\n  optional int64 id = 1;\n  optional int64 b = 5;\n  optional int64 a = 2;\n}\n',
+    );
+    expect(hex(result.files[1].content)).toBe('0a 06 08 01 10 02 28 03');
+  });
+
+  it('使えない番号（範囲外・19000〜19999）と、列・reserved での番号の重なりは force でも出力しない', async () => {
+    const project = await testProject({
+      baseFields: BASE_ID,
+      tables: {
+        t: 'fields:\n  - { name: a, type: int }\n  - { name: b, type: int }\nrecords: []\nproto:\n  fields: { id: 19000, a: 2, b: 0 }\n  reserved: [{ number: 2 }]\n',
+      },
+    });
+    const result = planExport(project, new Calculator(project), { format: 'protobuf', force: true });
+    expect(result).toMatchObject({ ok: false, blocked: true, files: [] });
+    expect(result.diagnostics.filter((d) => d.table === 't').map((d) => [d.code, d.field, d.params])).toEqual([
+      [ExportCode.protoInvalidFieldNumber, 'id', { owner: 'id', number: 19000 }],
+      [ExportCode.protoInvalidFieldNumber, 'b', { owner: 'b', number: 0 }],
+      [ExportCode.protoFieldNumberConflict, undefined, { owner: 'reserved', other: 'a', number: 2 }],
+    ]);
+  });
+
   it('表示名の改行と NUL はコメントに入れない（protoc は NUL を読めない）', async () => {
     const project = await testProject({
       baseFields: BASE_ID,

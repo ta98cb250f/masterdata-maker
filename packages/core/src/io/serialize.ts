@@ -4,6 +4,7 @@ import type { ColorDef, CommonConfig, CommonPartName, EnumDef } from '../model/c
 import type { FieldDef, FieldType } from '../model/field';
 import { ANOMALY_KEYS, elementType, isListType, VALIDATION_KEYS } from '../model/field';
 import type { ProjectConfig } from '../model/project';
+import { resolveProto } from '../model/proto';
 import type { StorageFormat } from '../model/source';
 import type { Table, TableRecord, TableView } from '../model/table';
 import { isViewEmpty, tableColumns } from '../model/table';
@@ -179,6 +180,40 @@ function viewNode(view: TableView, columns: readonly FieldDef[]): OutNode {
   return map(entries, false);
 }
 
+/**
+ * Protocol Buffers のフィールド番号（P-63）。今の列に合わせて書く（手で列を変えたファイルでも、保存すれば番号が決まる）。
+ * fields は列の順、reserved は番号の順。番号を持たないテーブル（`proto` の無いファイルで、列をまだ変えていない）と、
+ * 列も reserved も無いテーブルは書かない（以前の規則の番号のままなので、既存のファイルの正規形を変えない）
+ */
+function protoNode(table: Table, columns: readonly FieldDef[]): OutNode | undefined {
+  if (table.proto === undefined) return undefined;
+  const proto = resolveProto(table.proto, columns);
+  if (proto.fields.length === 0 && proto.reserved.length === 0) return undefined;
+  const entries: [string, OutNode][] = [
+    [
+      'fields',
+      map(
+        proto.fields.map(([name, n]) => [name, numberNode(n, `proto.fields.${name}`)]),
+        proto.fields.length === 0,
+      ),
+    ],
+  ];
+  if (proto.reserved.length > 0) {
+    entries.push([
+      'reserved',
+      seq(
+        proto.reserved.map((r) => {
+          const items: [string, OutNode][] = [['number', numberNode(r.number, 'proto.reserved.number')]];
+          if (r.name !== undefined) items.push(['name', scalar(r.name)]);
+          return map(items, true);
+        }),
+        false,
+      ),
+    ]);
+  }
+  return map(entries, false);
+}
+
 export function tableToTree(table: Table, baseFields: readonly FieldDef[], format: StorageFormat): OutMap {
   const columns = tableColumns(baseFields, table);
   const entries: [string, OutNode][] = [['table', scalar(table.name)]];
@@ -198,6 +233,8 @@ export function tableToTree(table: Table, baseFields: readonly FieldDef[], forma
     ),
   ]);
   if (!isViewEmpty(table.view)) entries.push(['view', viewNode(table.view, columns)]);
+  const proto = protoNode(table, columns);
+  if (proto !== undefined) entries.push(['proto', proto]);
   return map(entries, false);
 }
 

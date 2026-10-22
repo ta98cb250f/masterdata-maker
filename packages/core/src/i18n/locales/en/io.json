@@ -37,6 +37,7 @@
   "io.unknownValidationKey": "Unknown key {key} in the validation of column {field}",
   "io.unknownAnomalyKey": "Unknown key {key} in the anomaly of column {field}",
   "io.unknownViewKey": "Unknown key {key} in view",
+  "io.unknownProtoKey": "Unknown key {key} in proto",
   "io.unknownRichCellKey": "Unknown key {key} in a cell of column {field} (allowed keys: value, override, color, comment)",
   "io.unknownConfigKey": "Unknown key {key} in the project settings",
   "io.unknownCommonKey": "Unknown key {key} in the shared settings file",

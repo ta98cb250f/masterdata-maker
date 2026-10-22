@@ -293,6 +293,7 @@ export function renameBaseField(project: Project, args: { from: string; to: stri
   addDefinitionRewrites(project, b, {
     baseFields: renamedBase,
     forceBaseFields: true,
+    baseRename: { from, to },
     formula: (formula) => {
       // 共通列はどのテーブルにもあるので、同じレコードの参照とすべてのテーブルへの REF を書き換える
       let f = renameColumnInFormula(formula, from, to);

@@ -494,3 +494,80 @@ describe('読み込み元の情報と内部番号', () => {
     expect(t.diagnostics[0]).toMatchObject({ severity: 'error', code: IoCode.yamlSyntaxError, file: 'tables/t.yaml' });
   });
 });
+
+describe('proto（Protocol Buffers のフィールド番号。P-63）', () => {
+  const YAML = `table: t
+fields:
+  - name: a
+    type: int
+records: []
+proto:
+  fields:
+    id: 1
+    version: 2
+    a: 4
+  reserved:
+    - { number: 3, name: old }
+    - { number: 5 }
+`;
+  const JSON_TEXT = `{
+  "table": "t",
+  "fields": [
+    { "name": "a", "type": "int" }
+  ],
+  "records": [],
+  "proto": {
+    "fields": {
+      "id": 1,
+      "version": 2,
+      "a": 4
+    },
+    "reserved": [
+      { "number": 3, "name": "old" },
+      { "number": 5 }
+    ]
+  }
+}
+`;
+
+  it('読んで書き出すと 1 バイトも変わらず、YAML と JSON で同じ', () => {
+    const t = load(YAML);
+    expect(t.proto).toEqual({
+      fields: [
+        ['id', 1],
+        ['version', 2],
+        ['a', 4],
+      ],
+      reserved: [{ number: 3, name: 'old' }, { number: 5 }],
+    });
+    expect(yaml(t)).toBe(YAML);
+    expect(json(t)).toBe(JSON_TEXT);
+    expect(yaml(load(JSON_TEXT, 'tables/t.json'))).toBe(YAML);
+  });
+
+  it('proto の無いファイルには書かない（既存のファイルの正規形を変えない）', () => {
+    const text = 'table: t\nfields:\n  - name: a\n    type: int\nrecords: []\n';
+    expect(load(text).proto).toBeUndefined();
+    expect(yaml(load(text))).toBe(text);
+  });
+
+  it('手で列を変えたファイルは、保存で列に合わせる（無くなった列は reserved、番号の無い列は最大 + 1、列の順）', () => {
+    const t = load(
+      'table: t\nfields:\n  - name: b\n    type: int\n  - name: a\n    type: int\nrecords: []\nproto:\n  fields: { id: 1, version: 2, a: 3, gone: 7 }\n',
+    );
+    expect(yaml(t).split('proto:\n')[1]).toBe(
+      '  fields:\n    id: 1\n    version: 2\n    b: 8\n    a: 3\n  reserved:\n    - { number: 7, name: gone }\n',
+    );
+  });
+
+  it('知らないキーと、整数でない番号は読み込みエラー', () => {
+    expect(codes(broken('table: t\nfields: []\nrecords: []\nproto: { numbers: {} }\n').diagnostics)).toEqual([IoCode.unknownProtoKey]);
+    expect(codes(broken('table: t\nfields: []\nrecords: []\nproto: { reserved: [{ number: 1, label: x }] }\n').diagnostics)).toEqual([
+      IoCode.unknownProtoKey,
+    ]);
+    expect(codes(broken('table: t\nfields: []\nrecords: []\nproto: { fields: { id: "1" } }\n').diagnostics)).toEqual([
+      IoCode.expectedInteger,
+    ]);
+    expect(codes(broken('table: t\nfields: []\nrecords: []\nproto: { reserved: [{ name: x }] }\n').diagnostics)).toEqual([IoCode.missingKey]);
+  });
+});

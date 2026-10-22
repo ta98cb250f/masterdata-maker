@@ -4,6 +4,8 @@ export const ExportCode = {
   protoMessageConflict: 'export.protoMessageConflict',
   protoFieldConflict: 'export.protoFieldConflict',
   protoInvalidName: 'export.protoInvalidName',
+  protoInvalidFieldNumber: 'export.protoInvalidFieldNumber',
+  protoFieldNumberConflict: 'export.protoFieldNumberConflict',
   invalidVersion: 'export.invalidVersion',
   invalidRecordVersion: 'export.invalidRecordVersion',
 } as const;

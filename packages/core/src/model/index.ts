@@ -4,6 +4,7 @@ export * from './defaults';
 export * from './diagnostic';
 export * from './field';
 export * from './project';
+export * from './proto';
 export * from './source';
 export * from './table';
 export * from './uid';

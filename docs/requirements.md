@@ -429,7 +429,7 @@ output:
 
 | ID | 要件 | 優先度 |
 |---|---|---|
-| DR-10 | テーブルファイルは `table`（識別子）、`display_name`、`fields`（列定義の配列）、`records`（レコードの配列）、`view`（表示設定。省略可）を持つ | 必須 |
+| DR-10 | テーブルファイルは `table`（識別子）、`display_name`、`fields`（列定義の配列）、`records`（レコードの配列）、`view`（表示設定。省略可）、`proto`（Protocol Buffers のフィールド番号。省略可。P-63）を持つ | 必須 |
 | DR-11 | セルは SimpleCell（値だけ）か RichCell（`{ value, override, color, comment }`）。セル色・メモ・セル単位式が無いセルは値だけで保存する。RichCell の `value` にはリストも入れられる | 必須 |
 | DR-12 | 列定義に知らないキーがあれば、読み込み時にエラーにする（例: フィールドの直下に書いた `required` は、`validation.required` の書き間違いとして見つかる） | 必須 |
 | DR-13 | フィールド型は 11 種: `int` `int64` `float` `string` `bool` `enum` `datetime` `list<int>` `list<float>` `list<string>` `list<enum>`。`enum` と `list<enum>` は `enum_ref` が必須 | 必須 |
@@ -456,7 +456,7 @@ output:
 |---|---|---|
 | DR-30 | 同じデータは必ず同じバイト列で書き出す。読み込んで何も変えずに保存したら、正規形のファイルは 1 バイトも変わらない | 必須 |
 | DR-31 | 文字コードは UTF-8（BOM なし）、改行は LF、ファイル末尾に改行を 1 つ、インデントは半角スペース 2 つ | 必須 |
-| DR-32 | キーの順序を固定する。テーブルは `table` → `display_name` → `fields` → `records` → `view`。レコードの中は列定義の順（共通列が先）。列定義の中は DR-14 の順 | 必須 |
+| DR-32 | キーの順序を固定する。テーブルは `table` → `display_name` → `fields` → `records` → `view` → `proto`。レコードの中は列定義の順（共通列が先）。列定義の中は DR-14 の順 | 必須 |
 | DR-33 | YAML では、レコードは 1 フィールドを 1 行で書く。値だけのリストは 1 行（`[1, 3, 7]`）、RichCell も 1 行（`{ value: 800, color: red }`）で書く | 推奨 |
 | DR-34 | 列定義に無いキーがレコードにあれば、消さずにレコードの末尾に残し、警告する | 推奨 |
 | DR-35 | 小数は、読み戻して同じ値になる最も短い 10 進表記で書く（JavaScript の `Number.prototype.toString` と同じ）。`NaN` と `Infinity` は保存できない | 必須 |

@@ -3,6 +3,8 @@
   "export.protoMessageConflict": "Protocol Buffers のメッセージ名 {message} がテーブル {other} と重なるため出力できません（テーブル名を変えてください）",
   "export.protoFieldConflict": "列 {field} と列 {other} は Protocol Buffers の JSON 名が重なるため出力できません（どちらかの列名を変えてください）",
   "export.protoInvalidName": "名前 {name} は Protocol Buffers の名前（{proto}）にできないため出力できません（英小文字で始まり、英小文字・数字・_ だけの名前にしてください）",
+  "export.protoInvalidFieldNumber": "{owner} のフィールド番号 {number} は Protocol Buffers で使えないため出力できません（テーブルファイルの proto で、1〜536870911 のうち 19000〜19999 を除く番号にしてください）",
+  "export.protoFieldNumberConflict": "{owner} のフィールド番号 {number} が {other} と重なるため出力できません（テーブルファイルの proto で、どちらかの番号を変えてください）",
   "export.invalidVersion": "出力する版 {value} はセマンティック バージョニングの形式（例: 1.2.3）ではありません",
   "export.invalidRecordVersion": "version の値 {value} はセマンティック バージョニングの形式（例: 1.2.3）ではないため、版を指定した出力では比べられません（このレコードは出力しません）"
 }
