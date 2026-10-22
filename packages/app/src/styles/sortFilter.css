@@ -26,7 +26,7 @@
   color: var(--sc-theme-text);
 }
 .sc-colhead.selected .sc-filter-button:not(.active) {
-  color: #d2e3fc;
+  color: var(--sc-accent-on-strong);
 }
 .sc-sort-mark {
   position: absolute;
@@ -79,8 +79,8 @@
 }
 .sc-filter-tab.active {
   border-color: var(--sc-accent);
-  background: #e8f0fe;
-  color: #174ea6;
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent-text-strong);
 }
 .sc-filter-values-actions {
   display: flex;

@@ -38,8 +38,8 @@
   color: var(--sc-theme-text);
 }
 .sc-cellinfo-source.override {
-  background: #e8f0fe;
-  color: #1967d2;
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent-text);
 }
 .sc-cellinfo-formula {
   display: block;

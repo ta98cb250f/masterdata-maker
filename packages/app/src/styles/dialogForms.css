@@ -220,7 +220,7 @@
   cursor: pointer;
 }
 .sc-master-item.active {
-  background: #e8f0fe;
+  background: var(--sc-accent-soft);
 }
 .sc-master-item.invalid {
   color: var(--sc-error);
