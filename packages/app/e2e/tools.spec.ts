@@ -59,8 +59,8 @@ test('共通設定: 列挙型の名前の変更（列の参照も書き換え）
     page.evaluate(() => {
       type Cell = { color?: string } | number | string;
       const store = (globalThis as unknown as {
-        sheetcraft: { project: { common: { enums: { items: { name: string; values: string[] }[] }; colors: { items: { key: string }[] } }; tables: { name: string; fields: { name: string; enum_ref?: string }[]; records: { cells: Map<string, Cell> }[] }[] } };
-      }).sheetcraft;
+        masterdataMaker: { project: { common: { enums: { items: { name: string; values: string[] }[] }; colors: { items: { key: string }[] } }; tables: { name: string; fields: { name: string; enum_ref?: string }[]; records: { cells: Map<string, Cell> }[] }[] } };
+      }).masterdataMaker;
       const p = store.project;
       const character = p.tables.find((t) => t.name === 'character');
       const hp = character?.records[1].cells.get('hp');

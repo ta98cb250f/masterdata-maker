@@ -34,12 +34,12 @@
   line-height: 18px;
 }
 .sc-cellinfo-source.formula {
-  background: #e6f4ea;
-  color: #137333;
+  background: var(--sc-theme-soft);
+  color: var(--sc-theme-text);
 }
 .sc-cellinfo-source.override {
-  background: #e8f0fe;
-  color: #1967d2;
+  background: var(--sc-override-soft);
+  color: var(--sc-override-text);
 }
 .sc-cellinfo-formula {
   display: block;

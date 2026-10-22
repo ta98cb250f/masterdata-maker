@@ -4,7 +4,7 @@
 // - decorateColumnHeader: 列ヘッダーの装飾（並べ替え・フィルタの印とボタンなど）
 // - overlay: 選択範囲の上に重ねる要素（フィルハンドルなど）
 // - pointerDown: グリッドのマウス操作を先に受け取る（フィルハンドルのドラッグなど）
-import type { Cell, CellResult, Selection, Severity, Table, TableRecord } from '@sheetcraft/core';
+import type { Cell, CellResult, Selection, Severity, Table, TableRecord } from '@masterdata-maker/core';
 import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import type { CellDisplay } from '../sheet/display';
 import type { SheetColumn, SheetModel } from '../sheet/model';

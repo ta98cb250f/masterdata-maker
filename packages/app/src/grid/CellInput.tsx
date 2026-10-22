@@ -1,8 +1,8 @@
 // グリッドの入力欄。グリッドがフォーカスを持っている間は、この見えない textarea に常にフォーカスを置く。
 // 文字を打つ・IME の変換を始めると、同じ textarea をそのままセルの上の入力欄にする（IME が途切れない。FR-EDT-01）。
 // コピー・切り取り・貼り付けは、この textarea の copy / cut / paste のイベントで行う（FR-CLP-01〜02）
-import type { AdvanceKey, Direction } from '@sheetcraft/core';
-import { resolveShortcut } from '@sheetcraft/core';
+import type { AdvanceKey, Direction } from '@masterdata-maker/core';
+import { resolveShortcut } from '@masterdata-maker/core';
 import type { ClipboardEvent, KeyboardEvent, RefObject } from 'react';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { toggleCheckboxes } from '../commands/edit';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { SavePlan } from '@sheetcraft/core';
-import { EditSession, enterInput, loadProject } from '@sheetcraft/core';
+import type { SavePlan } from '@masterdata-maker/core';
+import { EditSession, enterInput, loadProject } from '@masterdata-maker/core';
 import { unzipSync, strFromU8 } from 'fflate';
 import type { DirectoryHandleLike, FileHandleLike, WritableLike } from './direct';
 import { DirectoryProjectFs, directSource, ensurePermission, supportsDirectAccess, writePlan } from './direct';
@@ -131,9 +131,9 @@ async function readAll(fs: DirectoryProjectFs, dir: FakeDirHandle, prefix = ''):
 
 describe('直接保存方式（DirectoryProjectFs）', () => {
   it('list / read / write / remove / lastModified。BOM は残す', async () => {
-    const root = fakeFolder('proj', { 'sheetcraft.yaml': 'a', 'tables/x.yaml': '﻿x', 'tables/sub/y.yaml': 'y' });
+    const root = fakeFolder('proj', { 'masterdata-maker.yaml': 'a', 'tables/x.yaml': '﻿x', 'tables/sub/y.yaml': 'y' });
     const fs = new DirectoryProjectFs(root);
-    expect(await fs.list('')).toEqual(['sheetcraft.yaml']);
+    expect(await fs.list('')).toEqual(['masterdata-maker.yaml']);
     expect(await fs.list('tables')).toEqual(['x.yaml']);
     expect(await fs.list('tables/')).toEqual(['x.yaml']);
     expect(await fs.list('nothing')).toEqual([]);
@@ -218,10 +218,10 @@ describe('ダウンロード保存方式', () => {
   }
 
   it('webkitdirectory のファイル一式から、選んだフォルダからの相対パスで読める', async () => {
-    const r = filesToProject([relFile('proj/sheetcraft.yaml', 'a'), relFile('proj/tables/x.yaml', 'x'), relFile('proj/tables/y.json', 'y')]);
+    const r = filesToProject([relFile('proj/masterdata-maker.yaml', 'a'), relFile('proj/tables/x.yaml', 'x'), relFile('proj/tables/y.json', 'y')]);
     expect(r?.name).toBe('proj');
     const fs = r?.fs as FileListProjectFs;
-    expect(await fs.list('')).toEqual(['sheetcraft.yaml']);
+    expect(await fs.list('')).toEqual(['masterdata-maker.yaml']);
     expect(await fs.list('tables/')).toEqual(['x.yaml', 'y.json']);
     expect(await fs.read('tables/x.yaml')).toBe('x');
     expect(await fs.read('tables/z.yaml')).toBeNull();
@@ -261,7 +261,7 @@ describe('ダウンロード保存方式', () => {
       'config/base_fields.yaml',
       'config/colors.yaml',
       'config/enums.yaml',
-      'sheetcraft.yaml',
+      'masterdata-maker.yaml',
       'tables/character.yaml',
       'tables/skill.yaml',
       'tables/stage.yaml',

@@ -1,6 +1,6 @@
 // ダイアログの入力欄の部品（見出し・欄・誤りの表示）。列の設定・共通設定・テーブル・連番入力・検索と置換で使う
-import type { Locale } from '@sheetcraft/core';
-import { formatInputError } from '@sheetcraft/core';
+import type { Locale } from '@masterdata-maker/core';
+import { formatInputError } from '@masterdata-maker/core';
 import type { ReactNode } from 'react';
 import type { FieldError } from './columnDraft';
 import { useAppState } from '../store/hooks';

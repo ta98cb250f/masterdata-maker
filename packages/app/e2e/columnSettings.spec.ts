@@ -84,7 +84,7 @@ test('値が型に合わない・列定義の検査に違反するときは、�
   await page.getByTestId('column-settings-ok').click();
   await expect(page.getByTestId('column-settings-dialog')).toHaveCount(0);
   const field = await page.evaluate(() => {
-    const store = (globalThis as unknown as { sheetcraft: { project: { tables: { name: string; fields: { name: string; default?: unknown; validation?: unknown }[] }[] } } }).sheetcraft;
+    const store = (globalThis as unknown as { masterdataMaker: { project: { tables: { name: string; fields: { name: string; default?: unknown; validation?: unknown }[] }[] } } }).masterdataMaker;
     const f = store.project.tables.find((t) => t.name === 'character')?.fields.find((x) => x.name === 'defense');
     return { default: f?.default, validation: f?.validation };
   });

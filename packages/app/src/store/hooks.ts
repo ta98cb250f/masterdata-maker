@@ -1,6 +1,6 @@
 // AppStore を React から購読する
-import type { MessageParams } from '@sheetcraft/core';
-import { formatMessage } from '@sheetcraft/core';
+import type { MessageParams } from '@masterdata-maker/core';
+import { formatMessage } from '@masterdata-maker/core';
 import { createContext, useCallback, useContext, useRef, useSyncExternalStore } from 'react';
 import type { Translate } from '../i18n';
 import type { AppStore } from './AppStore';

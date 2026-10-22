@@ -1,4 +1,4 @@
-# SheetCraft 要件定義書
+# MasterData Maker 要件定義書
 
 | 項目 | 内容 |
 |---|---|
@@ -412,7 +412,7 @@ R-1 を具体化するため、Googleスプレッドシートの主な機能ご�
 プロジェクト設定ファイルの例（キー名は確定ではない）:
 
 ```yaml
-# sheetcraft.yaml
+# masterdata-maker.yaml
 format_version: 1
 storage:
   format: yaml          # リソースファイルの形式: yaml | json
@@ -622,7 +622,7 @@ id,hp,defense,effective_hp
 ```proto
 syntax = "proto3";
 
-package sheetcraft;
+package masterdata_maker;
 
 message Character {
   optional int64 id = 1;

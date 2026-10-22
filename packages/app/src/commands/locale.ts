@@ -1,5 +1,5 @@
 // 言語の切り替え（FR-ETC-02）: ヘルプのメニューの「日本語」「English」
-import type { Locale } from '@sheetcraft/core';
+import type { Locale } from '@masterdata-maker/core';
 import { changeLocale } from '../store/locale';
 import type { CommandDef } from './registry';
 

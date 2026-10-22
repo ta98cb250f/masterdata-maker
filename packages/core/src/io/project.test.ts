@@ -48,10 +48,10 @@ describe('NFR-16・DR-30: サンプルの往復', () => {
     const jsonFiles = await readTree(`${repoRoot()}/samples/basic-json`);
     const converted = planProjectWrite(fromYaml, { format: 'json' });
     for (const file of converted.files) {
-      if (file.path === 'sheetcraft.yaml') {
+      if (file.path === 'masterdata-maker.yaml') {
         // 設定ファイル自身の形式は拡張子で決まる（P-01）。JSON にすると basic-json と一致する
         const config = { ...fromYaml.config, storage: { format: 'json' as const } };
-        expect(serializeProjectConfig(config, 'json')).toBe(jsonFiles.get('sheetcraft.json'));
+        expect(serializeProjectConfig(config, 'json')).toBe(jsonFiles.get('masterdata-maker.json'));
         expect(file.text).toBe(CONFIG_YAML.replace('yaml\n', 'json\n') + 'timezone: Asia/Tokyo\npaths:\n  tables: tables/\n  config: config/\noutput:\n  format: json\n  out_dir: build/\n');
         continue;
       }
@@ -110,8 +110,15 @@ describe('NFR-16・DR-30: サンプルの往復', () => {
 describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () => {
   it('設定ファイルが無ければプロジェクトではない。両方あればエラー', async () => {
     expect(await loadProject(new MemoryProjectFs({ 'tables/a.yaml': 'table: a\n' }))).toEqual({ status: 'not-project' });
-    const both = await loadProject(new MemoryProjectFs({ 'sheetcraft.yaml': CONFIG_YAML, 'sheetcraft.json': '{}' }));
+    const both = await loadProject(new MemoryProjectFs({ 'masterdata-maker.yaml': CONFIG_YAML, 'masterdata-maker.json': '{}' }));
     expect(both).toMatchObject({ status: 'error', diagnostics: [{ code: IoCode.multipleProjectConfigs }] });
+  });
+
+  it('旧名（SheetCraft）の設定ファイルだけがあるフォルダはプロジェクトではない（P-65。互換の読み込みはしない）', async () => {
+    for (const config of ['sheetcraft.yaml', 'sheetcraft.json']) {
+      const result = await loadProject(new MemoryProjectFs({ [config]: CONFIG_YAML, 'tables/a.yaml': 'table: a\n' }));
+      expect(result, config).toEqual({ status: 'not-project' });
+    }
   });
 
   it('設定ファイルの知らないキー・新しすぎる版・形式の指定漏れはエラー', async () => {
@@ -126,20 +133,20 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
       [`${CONFIG_YAML}output:\n  format: xml\n`, IoCode.invalidOutputFormat],
     ];
     for (const [text, code] of cases) {
-      const result = await loadProject(new MemoryProjectFs({ 'sheetcraft.yaml': text }));
-      expect(result, text).toMatchObject({ status: 'error', diagnostics: [{ code, file: 'sheetcraft.yaml' }] });
+      const result = await loadProject(new MemoryProjectFs({ 'masterdata-maker.yaml': text }));
+      expect(result, text).toMatchObject({ status: 'error', diagnostics: [{ code, file: 'masterdata-maker.yaml' }] });
     }
   });
 
   it('使えないタイムゾーンは警告にとどめる', async () => {
-    const project = ok(await loadProject(new MemoryProjectFs({ 'sheetcraft.yaml': `${CONFIG_YAML}timezone: Mars/Base\n` })));
+    const project = ok(await loadProject(new MemoryProjectFs({ 'masterdata-maker.yaml': `${CONFIG_YAML}timezone: Mars/Base\n` })));
     expect(project.diagnostics).toMatchObject([{ severity: 'warning', code: IoCode.invalidTimezone }]);
     expect(project.config.timezone).toBe('Mars/Base');
   });
 
   it('共通設定のファイルが無ければ既定値を使い、保存してもファイルを作らない', async () => {
     const fs = new MemoryProjectFs({
-      'sheetcraft.yaml': CONFIG_YAML,
+      'masterdata-maker.yaml': CONFIG_YAML,
       'tables/a.yaml': 'table: a\nfields: []\nrecords:\n  - id: 1\n    version: "1.0"\n',
     });
     const project = ok(await loadProject(fs));
@@ -152,14 +159,14 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
     expect(project.tables[0].diagnostics).toEqual([]);
     const plan = planProjectWrite(project);
     expect(plan.files.map((f) => [f.path, f.changed])).toEqual([
-      ['sheetcraft.yaml', false],
+      ['masterdata-maker.yaml', false],
       ['tables/a.yaml', false],
     ]);
   });
 
   it('paths で置き場所を変えられる（DR-05）。共通列の定義がテーブルの読み込みに使われる', async () => {
     const fs = new MemoryProjectFs({
-      'sheetcraft.yaml': `${CONFIG_YAML}paths:\n  tables: data/\n  config: ./common\n`,
+      'masterdata-maker.yaml': `${CONFIG_YAML}paths:\n  tables: data/\n  config: ./common\n`,
       'common/base_fields.yaml': 'base_fields:\n  - name: key\n    type: string\n    primary: true\n',
       'data/a.yaml': 'table: a\nfields: []\nrecords:\n  - key: k1\n    id: 1\n',
     });
@@ -172,7 +179,7 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
 
   it('共通設定の読み込みエラーはプロジェクトのエラー。同じ種類のファイルが複数あってもエラー', async () => {
     const broken = await loadProject(
-      new MemoryProjectFs({ 'sheetcraft.yaml': CONFIG_YAML, 'config/enums.yaml': 'enums:\n  - name: a\n    vals: [x]\n' }),
+      new MemoryProjectFs({ 'masterdata-maker.yaml': CONFIG_YAML, 'config/enums.yaml': 'enums:\n  - name: a\n    vals: [x]\n' }),
     );
     expect(broken).toMatchObject({ status: 'error' });
     if (broken.status === 'error') {
@@ -180,7 +187,7 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
     }
     const twice = await loadProject(
       new MemoryProjectFs({
-        'sheetcraft.yaml': CONFIG_YAML,
+        'masterdata-maker.yaml': CONFIG_YAML,
         'config/colors.yaml': 'colors: []\n',
         'config/colors.json': '{ "colors": [] }',
       }),
@@ -192,7 +199,7 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
     const project = ok(
       await loadProject(
         new MemoryProjectFs({
-          'sheetcraft.yaml': CONFIG_YAML,
+          'masterdata-maker.yaml': CONFIG_YAML,
           'config/enums.yaml': 'enums:\n  - name: grade\n    values: [1, 2.50, "3"]\n',
         }),
       ),
@@ -206,7 +213,7 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
 
   it('DR-02・DR-04 の警告と、table 名の重複、読み込みエラーのテーブル、並び順（P-06）', async () => {
     const fs = new MemoryProjectFs({
-      'sheetcraft.yaml': CONFIG_YAML,
+      'masterdata-maker.yaml': CONFIG_YAML,
       'tables/zeta.yaml': 'table: zeta\nfields: []\nrecords: []\n',
       'tables/alpha.json': '{ "table": "alpha", "fields": [], "records": [] }',
       'tables/beta.yml': 'table: b\nfields: []\nrecords: []\n',
@@ -235,7 +242,7 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
     expect(plan.skipped.map((t) => t.source.path)).toEqual(['tables/bad.yaml', 'tables/dup1.yaml', 'tables/dup2.yaml']);
     // 違う形式・違う名前のファイルも、保存では元のパスに書く
     expect(plan.files.map((f) => [f.path, f.changed])).toEqual([
-      ['sheetcraft.yaml', false],
+      ['masterdata-maker.yaml', false],
       ['tables/alpha.json', true],
       ['tables/beta.yml', false],
       ['tables/zeta.yaml', false],
@@ -244,13 +251,13 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
 
   it('形式を変えた書き出し（convert）は拡張子を替え、元のファイルを消す一覧を返す', async () => {
     const fs = new MemoryProjectFs({
-      'sheetcraft.yaml': CONFIG_YAML,
+      'masterdata-maker.yaml': CONFIG_YAML,
       'config/colors.yaml': 'colors:\n  - key: red\n    color: "#ff0000"\n',
       'tables/a.yml': 'table: a\nfields: []\nrecords:\n  - id: 1\n',
     });
     const plan = planProjectWrite(ok(await loadProject(fs)), { format: 'json' });
     expect(plan.files.map((f) => [f.path, f.changed])).toEqual([
-      ['sheetcraft.yaml', true],
+      ['masterdata-maker.yaml', true],
       ['config/colors.json', true],
       ['tables/a.json', true],
     ]);
@@ -261,8 +268,8 @@ describe('プロジェクトの読み込み（DR-01〜07、P-01、P-02）', () =
 
   it('JSON の設定ファイル', async () => {
     const config = '{\n  "format_version": 1,\n  "storage": {\n    "format": "json"\n  },\n  "paths": {}\n}\n';
-    const project = ok(await loadProject(new MemoryProjectFs({ 'sheetcraft.json': config })));
+    const project = ok(await loadProject(new MemoryProjectFs({ 'masterdata-maker.json': config })));
     expect(project.config).toMatchObject({ format_version: 1, storage: { format: 'json' }, paths: {} });
-    expect(planProjectWrite(project).files).toEqual([{ path: 'sheetcraft.json', text: config, changed: false }]);
+    expect(planProjectWrite(project).files).toEqual([{ path: 'masterdata-maker.json', text: config, changed: false }]);
   });
 });

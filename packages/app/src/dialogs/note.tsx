@@ -2,7 +2,7 @@
 // （Googleスプレッドシートのメモと同じく、閉じると保存される）。空にして閉じるか「削除」でメモを消す
 import type { KeyboardEvent } from 'react';
 import { useEffect, useRef } from 'react';
-import { RichCell, setCellComment } from '@sheetcraft/core';
+import { RichCell, setCellComment } from '@masterdata-maker/core';
 import { Popover } from '../components/Popover';
 import type { AnchorRect } from '../grid/domAnchors';
 import { useT } from '../store/hooks';

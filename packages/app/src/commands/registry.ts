@@ -1,6 +1,6 @@
 // 操作の登録簿。メニューバー・ツールバー・キー操作・右クリックメニューは、すべて操作の識別子で操作を呼ぶ。
 // 操作は機能ごとのファイル（commands/<機能>.ts）で定義し、commands/index.ts の一覧に 1 行足して登録する
-import type { ShortcutId } from '@sheetcraft/core';
+import type { ShortcutId } from '@masterdata-maker/core';
 import type { ComponentType } from 'react';
 import type { AppStore } from '../store/AppStore';
 

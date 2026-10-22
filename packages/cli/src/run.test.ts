@@ -14,7 +14,7 @@ afterEach(async () => {
 });
 
 async function tempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'sheetcraft-cli-'));
+  const dir = await mkdtemp(join(tmpdir(), 'masterdata-maker-cli-'));
   temps.push(dir);
   return dir;
 }
@@ -113,13 +113,13 @@ describe('使い方の誤りと読み込みの失敗（終了コード 2）', ()
       const result = await cli(args, dir);
       expect(result.code, args.join(' ')).toBe(2);
       expect(result.stdout, args.join(' ')).toBe('');
-      expect(result.stderr, args.join(' ')).toContain('使い方: sheetcraft');
+      expect(result.stderr, args.join(' ')).toContain('使い方: masterdata-maker');
     }
     expect((await cli(['nothing'], dir)).stderr.split('\n')[0]).toBe('コマンド nothing はありません');
     expect((await cli(['validate', '--force'], dir)).stderr.split('\n')[0]).toBe('validate では --force を使えません');
     const help = await cli(['--help', '--lang', 'en'], dir);
     expect(help.code).toBe(0);
-    expect(help.stdout.startsWith('Usage: sheetcraft <command>')).toBe(true);
+    expect(help.stdout.startsWith('Usage: masterdata-maker <command>')).toBe(true);
   });
 
   it('プロジェクトのフォルダでない・設定ファイルが読めない', async () => {
@@ -127,12 +127,12 @@ describe('使い方の誤りと読み込みの失敗（終了コード 2）', ()
     expect(await cli(['validate'], empty)).toEqual({
       code: 2,
       stdout: '',
-      stderr: '. はプロジェクトのフォルダではありません（sheetcraft.yaml か sheetcraft.json がありません）\n',
+      stderr: '. はプロジェクトのフォルダではありません（masterdata-maker.yaml か masterdata-maker.json がありません）\n',
     });
-    await writeFile(join(empty, 'sheetcraft.yaml'), 'format_version: 1\n');
+    await writeFile(join(empty, 'masterdata-maker.yaml'), 'format_version: 1\n');
     const result = await cli(['validate'], empty);
     expect(result.code).toBe(2);
-    expect(result.stderr).toBe('エラー sheetcraft.yaml:1:1 - - -: storage がありません\nプロジェクトを読み込めませんでした\n');
+    expect(result.stderr).toBe('エラー masterdata-maker.yaml:1:1 - - -: storage がありません\nプロジェクトを読み込めませんでした\n');
   });
 });
 
@@ -215,7 +215,7 @@ describe('export（FR-CLI-02）', () => {
     expect([...(await readFile(join(dir, 'build/stage.pb'))).subarray(0, 23)]).toEqual([
       0x0a, 21, 0x08, 1, 0x12, 5, ...Buffer.from('0.1.2'), 0x1a, 8, ...Buffer.from('stage_01'), 0x20, 3,
     ]);
-    await editFile(join(dir, 'sheetcraft.yaml'), (t) => t.replace('format: json', 'format: csv'));
+    await editFile(join(dir, 'masterdata-maker.yaml'), (t) => t.replace('format: json', 'format: csv'));
     expect((await cli(['export', '--tables', 'skill'], dir)).stdout).toBe('出力しました: build/skill.csv\n');
     const bad = await cli(['export', '--format', 'xml'], dir);
     expect(bad).toEqual({ code: 2, stdout: '', stderr: '--format には json・yaml・csv・protobuf のいずれかを指定してください（xml が指定されました）\n' });
@@ -288,16 +288,16 @@ describe('fmt（FR-CLI-04）', () => {
       .replace('  - id: 1\n    name: ファイア\n    cost: 10\n    element: 火\n', '  - { cost: 10, id: 1, element: "火", name: ファイア }\n')
       .replace(/\n/g, '\r\n');
     await writeFile(join(dir, 'tables/skill.yaml'), messy);
-    await writeFile(join(dir, 'sheetcraft.yaml'), `# 設定\n${original.get('sheetcraft.yaml') ?? ''}`);
+    await writeFile(join(dir, 'masterdata-maker.yaml'), `# 設定\n${original.get('masterdata-maker.yaml') ?? ''}`);
     expect(await cli(['fmt', '--check'], dir)).toEqual({
       code: 1,
-      stdout: '正規形ではありません: sheetcraft.yaml\n正規形ではありません: tables/skill.yaml\n',
+      stdout: '正規形ではありません: masterdata-maker.yaml\n正規形ではありません: tables/skill.yaml\n',
       stderr: '',
     });
     expect(await readFile(join(dir, 'tables/skill.yaml'), 'utf8')).toBe(messy);
     expect(await cli(['fmt'], dir)).toEqual({
       code: 0,
-      stdout: '書き直しました: sheetcraft.yaml\n書き直しました: tables/skill.yaml\n',
+      stdout: '書き直しました: masterdata-maker.yaml\n書き直しました: tables/skill.yaml\n',
       stderr: '',
     });
     expect(await readTree(dir)).toEqual(original);
@@ -327,7 +327,7 @@ describe('convert（FR-CLI-05）', () => {
     const toJson = await cli(['convert', '--to', 'json'], dir);
     expect(toJson.code).toBe(0);
     expect(toJson.stdout.split('\n')).toEqual([
-      '書き出しました: sheetcraft.yaml',
+      '書き出しました: masterdata-maker.yaml',
       '書き出しました: config/enums.json',
       '書き出しました: config/base_fields.json',
       '書き出しました: config/colors.json',
@@ -346,9 +346,9 @@ describe('convert（FR-CLI-05）', () => {
     // 設定ファイル自身の形式は拡張子で決まる（P-01）。それ以外は basic-json と同じ
     const converted = await readTree(dir);
     const jsonSample = await readTree(join(SAMPLES, 'basic-json'));
-    expect([...converted.keys()]).toEqual([...[...jsonSample.keys()].filter((p) => p !== 'sheetcraft.json'), 'sheetcraft.yaml'].sort());
+    expect([...converted.keys()]).toEqual([...[...jsonSample.keys()].filter((p) => p !== 'masterdata-maker.json'), 'masterdata-maker.yaml'].sort());
     for (const [path, text] of converted) {
-      if (path === 'sheetcraft.yaml') expect(text).toContain('storage:\n  format: json\n');
+      if (path === 'masterdata-maker.yaml') expect(text).toContain('storage:\n  format: json\n');
       else expect(text, path).toBe(jsonSample.get(path));
     }
     expect((await cli(['validate'], dir)).code).toBe(0);

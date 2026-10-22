@@ -14,7 +14,7 @@ import type {
   Project,
   RawValue,
   Table,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import {
   Calculator,
   EditCode,
@@ -35,7 +35,7 @@ import {
   updateColumn,
   validateCommon,
   validateTable,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 
 /** 列の設定の欄（すべてテキストか真偽値で持ち、確定するときに列の型で解釈する） */
 export interface ColumnDraft {

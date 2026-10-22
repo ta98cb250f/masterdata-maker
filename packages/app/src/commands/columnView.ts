@@ -1,6 +1,6 @@
 // 列の固定・非表示・幅（FR-COL-06〜08）。表示設定のパッチとして当てるので、元に戻せる（FR-HIS-01）。
 // 列のサイズの変更は、境界のドラッグ（grid/Grid.tsx）をキーボードだけでも行えるようにするもの（NFR-40。dialogs/columnResize.tsx）
-import { setColumnsHidden, setFrozenColumns } from '@sheetcraft/core';
+import { setColumnsHidden, setFrozenColumns } from '@masterdata-maker/core';
 import type { AppStore } from '../store/AppStore';
 import { gridReady } from './helpers';
 import type { CommandDef } from './registry';

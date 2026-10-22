@@ -1,5 +1,5 @@
 // 行の複製（FR-ROW-03）。主キーと自動採番の列は採番し直し、複製した行を選ぶ
-import { duplicateRows, selectRowRange } from '@sheetcraft/core';
+import { duplicateRows, selectRowRange } from '@masterdata-maker/core';
 import type { AppStore } from '../store/AppStore';
 import { selectionTarget } from './helpers';
 import type { CommandDef } from './registry';

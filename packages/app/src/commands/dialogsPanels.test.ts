@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SHORTCUTS, enterInput, selectCell, selectColRange } from '@sheetcraft/core';
+import { SHORTCUTS, enterInput, selectCell, selectColRange } from '@masterdata-maker/core';
 import { goToLocationText } from '../components/NameBox';
 import { findBar } from '../components/findBarState';
 import { insertColumnAndSelect, suggestColumnName } from '../dialogs/columnInsert';

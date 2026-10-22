@@ -3,8 +3,8 @@
 // 更新日時が変わっていれば中身を読み、エディタが知っているファイルの中身（読み込んだ・最後に保存したテキスト）と違えば、
 // ほかのエディタや Git で書き換えられたとみなし、ファイルごとに「読み込み直す」か「上書きする」かを選ばせる。
 // 読み込み直したテーブルを指す元に戻す履歴は当てられなくなるので、そういう履歴があれば履歴をすべて消して、その旨を示す
-import type { CommonPartName, CommonReload, FieldDef, Project, TableReload } from '@sheetcraft/core';
-import { COMMON_PART_NAMES, defaultBaseFields, formatDiagnostic, formatFromPath, parseCommonFile, parseTableFile } from '@sheetcraft/core';
+import type { CommonPartName, CommonReload, FieldDef, Project, TableReload } from '@masterdata-maker/core';
+import { COMMON_PART_NAMES, defaultBaseFields, formatDiagnostic, formatFromPath, parseCommonFile, parseTableFile } from '@masterdata-maker/core';
 import type { ProjectSource } from '../fs/types';
 import type { AppStore } from './AppStore';
 import { openDecisionDialog } from './dialogDecision';

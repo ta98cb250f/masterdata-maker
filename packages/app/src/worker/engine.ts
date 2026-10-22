@@ -1,6 +1,6 @@
 // 検査用の Web Worker の中身（Worker の外でも動くように、受け取ったメッセージを処理する関数として切り出す）。
 // 検査は core の validate（CLI と同じ処理。FR-VAL-11）を、メインスレッドと同じパッチで同期した複製に対して行う
-import type { Project } from '@sheetcraft/core';
+import type { Project } from '@masterdata-maker/core';
 import {
   Calculator,
   SerializeError,
@@ -9,7 +9,7 @@ import {
   planExport,
   restoreProject,
   serializeTable,
-} from '@sheetcraft/core';
+} from '@masterdata-maker/core';
 import type { BackupStorage } from '../fs/backupStore';
 import { persistBackup } from '../store/backupRecord';
 import { runValidation } from '../store/validation';

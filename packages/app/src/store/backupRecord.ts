@@ -1,8 +1,8 @@
 // 未保存の変更の退避の内容（FR-FIO-06）。画面のメインスレッドと検査用の Web Worker の両方で使う（AppStore には依存しない）。
 // 1 万行のテーブルでは、正規形のテキストを作る・ハッシュを取る・IndexedDB に書き込む（構造化複製）のそれぞれに数十ミリ秒かかるので、
 // Worker が使えるときは Worker で行い、メインスレッドを止めない（NFR-10）
-import type { CommonPartName, Project, StorageFormat } from '@sheetcraft/core';
-import { SerializeError, serializeTable } from '@sheetcraft/core';
+import type { CommonPartName, Project, StorageFormat } from '@masterdata-maker/core';
+import { SerializeError, serializeTable } from '@masterdata-maker/core';
 import type { BackupStorage } from '../fs/backupStore';
 
 export const BACKUP_VERSION = 1;

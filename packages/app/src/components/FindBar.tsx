@@ -3,7 +3,7 @@
 // 入力すると最初の一致を選び、Enter / ↓ で次、Shift+Enter / ↑ で前、Esc で閉じる
 import type { KeyboardEvent } from 'react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createMatcher, defaultFindOptions, resolveShortcut, selectCell } from '@sheetcraft/core';
+import { createMatcher, defaultFindOptions, resolveShortcut, selectCell } from '@masterdata-maker/core';
 import type { FindHit } from '../sheet/findHits';
 import { findInSheet, nextHitIndex } from '../sheet/findHits';
 import type { AppStore } from '../store/AppStore';

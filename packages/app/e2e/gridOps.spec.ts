@@ -18,7 +18,7 @@ function selection(page: Page): Promise<SelectionInfo> {
   return page.evaluate(() => {
     type Sheet = { table: { name: string; uid: number }; columns: { name: string }[]; recordAt(row: number): { cells: Map<string, unknown> } | undefined };
     type Sel = { kind: string; ranges: SelectionInfo['range'][]; anchor: { row: number; col: number } };
-    const store = (globalThis as unknown as { sheetcraft: { sheet(): Sheet; view(uid: number): { selection: Sel } } }).sheetcraft;
+    const store = (globalThis as unknown as { masterdataMaker: { sheet(): Sheet; view(uid: number): { selection: Sel } } }).masterdataMaker;
     const sheet = store.sheet();
     const sel = store.view(sheet.table.uid).selection;
     return {

@@ -1,5 +1,5 @@
 // 操作で共通に使う処理（選択範囲の行・列など）
-import type { Calculator, CellRange, IsEmpty, Selection, Table } from '@sheetcraft/core';
+import type { Calculator, CellRange, IsEmpty, Selection, Table } from '@masterdata-maker/core';
 import type { SheetModel } from '../sheet/model';
 import type { AppStore } from '../store/AppStore';
 

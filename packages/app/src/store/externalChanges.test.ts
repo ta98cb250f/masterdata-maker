@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Project } from '@sheetcraft/core';
-import { MemoryProjectFs, enterInput } from '@sheetcraft/core';
+import type { Project } from '@masterdata-maker/core';
+import { MemoryProjectFs, enterInput } from '@masterdata-maker/core';
 import { basicSampleFiles } from '../fs/sample';
 import type { AppStore } from './AppStore';
 import type { ChangeChoice, ExternalChangesDialogArgs } from './externalChanges';
@@ -190,7 +190,7 @@ describe('外部での変更の検知（FR-FIO-07）', () => {
 
     // 設定ファイルを読み込み直すと、プロジェクトを開き直す
     const before = o.store.project;
-    o.external('sheetcraft.yaml', (t) => t.replace('out_dir: build/', 'out_dir: out/'));
+    o.external('masterdata-maker.yaml', (t) => t.replace('out_dir: build/', 'out_dir: out/'));
     void o.watcher()?.onFocus();
     await tick();
     expect(dialogArgs(o.store).changes.map((c) => c.kind)).toEqual(['config']);

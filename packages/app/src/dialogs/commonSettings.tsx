@@ -1,7 +1,7 @@
 // 共通設定の編集（FR-TBL-03）: 列挙型・共通列・セル色のプリセットを、タブで分けたダイアログで編集する。
 // 3 つのタブの変更は「保存」でまとめて 1 回の操作にする（元に戻すと全部戻る）
-import type { FieldType } from '@sheetcraft/core';
-import { formatInputError, inputContext } from '@sheetcraft/core';
+import type { FieldType } from '@masterdata-maker/core';
+import { formatInputError, inputContext } from '@masterdata-maker/core';
 import { useMemo, useRef, useState } from 'react';
 import { DialogFrame } from '../components/Dialog';
 import { completionColumnsOf } from '../sheet/complete';

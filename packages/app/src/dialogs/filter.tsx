@@ -1,6 +1,6 @@
 // 列のフィルタの小さな画面（FR-SRT-01、03）。Googleスプレッドシートのフィルタのメニューと同じく、列ヘッダーの下に出す:
 // 昇順・降順の並べ替え、値で絞り込み（値の一覧から選ぶ）、条件で絞り込み（等しい・含む・範囲・空欄・空欄以外）
-import type { FilterCondition } from '@sheetcraft/core';
+import type { FilterCondition } from '@masterdata-maker/core';
 import type { KeyboardEvent } from 'react';
 import { useMemo, useState } from 'react';
 import { setColumnFilter, setSort } from '../commands/sortFilter';

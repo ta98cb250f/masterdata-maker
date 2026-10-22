@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Project } from '@sheetcraft/core';
-import { enterInput, insertColumn } from '@sheetcraft/core';
+import type { Project } from '@masterdata-maker/core';
+import { enterInput, insertColumn } from '@masterdata-maker/core';
 import { strFromU8, unzipSync } from 'fflate';
 import type { AppStore } from './AppStore';
 import { formatExportError, runExport } from './exportOutput';

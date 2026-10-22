@@ -1,8 +1,8 @@
 // 行・列のドラッグによる並べ替え（FR-ROW-04、FR-COL-05、P-42）。選択済みの行番号・列ヘッダーをつかんでドラッグすると
 // 挿入位置の線を示し、離したら moveRows / moveColumns を当てる（ファイル上の順序も変わる）。共通列は動かせない。
 // 動かさずに離したら、Googleスプレッドシートと同じく、その行（列）だけを選ぶ
-import type { Patch } from '@sheetcraft/core';
-import { moveColumns, moveRows, selectColRange, selectRowRange } from '@sheetcraft/core';
+import type { Patch } from '@masterdata-maker/core';
+import { moveColumns, moveRows, selectColRange, selectRowRange } from '@masterdata-maker/core';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AppStore } from '../../store/AppStore';

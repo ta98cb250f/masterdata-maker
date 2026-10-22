@@ -1,5 +1,5 @@
 // 行の挿入・削除（FR-ROW-01〜02）。挿入メニューと、後の段階の右クリックメニューから呼ぶ
-import { deleteRows, extendTo, insertRows, selectCell } from '@sheetcraft/core';
+import { deleteRows, extendTo, insertRows, selectCell } from '@masterdata-maker/core';
 import type { AppStore } from '../store/AppStore';
 import { gridReady, selectionTarget } from './helpers';
 import type { CommandDef } from './registry';

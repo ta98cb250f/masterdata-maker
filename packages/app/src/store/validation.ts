@@ -1,6 +1,6 @@
 // 検査（FR-VAL-09）。検査の呼び出しはここにまとめる（後の段階で Web Worker に差し替える。FR-VAL-10）
-import type { Calculator, Diagnostic, MessageParams, Patch, Project, Severity } from '@sheetcraft/core';
-import { patchTable, validateCommon, validateTable } from '@sheetcraft/core';
+import type { Calculator, Diagnostic, MessageParams, Patch, Project, Severity } from '@masterdata-maker/core';
+import { patchTable, validateCommon, validateTable } from '@masterdata-maker/core';
 import type { TableIssues } from './types';
 
 export interface ValidationRequest {

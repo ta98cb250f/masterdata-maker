@@ -1,5 +1,5 @@
 // 式の入力補完（FR-EDT-07）: 数式バー・セル内の編集・列の設定のダイアログで、列名と関数名を候補として出す。DOM に依存しない
-import { FUNCTION_NAMES } from '@sheetcraft/core';
+import { FUNCTION_NAMES } from '@masterdata-maker/core';
 
 /** 補完する語の位置（式のテキストの中の位置） */
 export interface CompletionContext {

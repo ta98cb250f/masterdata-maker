@@ -1,4 +1,4 @@
-// @sheetcraft/core の公開 API（画面と CLI で共有する。NFR-24）
+// @masterdata-maker/core の公開 API（画面と CLI で共有する。NFR-24）
 export * from './model';
 export * from './io';
 export * from './formula';
