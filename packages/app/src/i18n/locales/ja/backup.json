@@ -14,5 +14,6 @@
   "ui.backup.restored": "保存していない変更を復元しました（{count} 件）",
   "ui.backup.failedTitle": "復元できませんでした",
   "ui.backup.failedMessage": "残っていた変更を、今のファイルに当てられませんでした。",
-  "ui.backup.skippedTitle": "一部を復元できませんでした"
+  "ui.backup.skippedTitle": "一部を復元できませんでした",
+  "ui.backup.saveFailed": "最新の変更をブラウザに退避できませんでした。異常終了すると復元できないので、こまめに保存してください"
 }

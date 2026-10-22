@@ -116,6 +116,21 @@ describe('プロジェクトの同一性', () => {
   });
 });
 
+const SAVE_FAILED = '最新の変更をブラウザに退避できませんでした。異常終了すると復元できないので、こまめに保存してください';
+
+/** 書き込みを失敗させられる退避先。hold にすると、書き込みは release を呼ぶまで終わらない */
+function failingStorage() {
+  const storage = new MemoryBackupStorage();
+  const control = { broken: true, hold: false, release: [] as (() => void)[] };
+  const set = storage.set.bind(storage);
+  storage.set = async (key, value) => {
+    if (control.hold) await new Promise<void>((r) => control.release.push(r));
+    if (control.broken) throw new Error('QuotaExceededError');
+    await set(key, value);
+  };
+  return { storage, control };
+}
+
 describe('退避と復元の流れ', () => {
   it('変更の後に退避し、保存したら消す。退避が残ったまま開くと復元を提案し、復元すると未保存の変更になる', async () => {
     const storage = new MemoryBackupStorage();
@@ -188,6 +203,96 @@ describe('退避と復元の流れ', () => {
     await h2.manager.idle();
     expect(storage.data.size).toBe(0);
   });
+
+  it('退避の書き込みに失敗したら、成功から失敗に変わったときに 1 回だけ知らせる（P-65）', async () => {
+    const { storage, control } = failingStorage();
+    const { store } = await openTestStore();
+    const handle = installBackup(store, { storage, delay: 0 });
+    setCell(store, 'character', 'hp', '4321');
+    await tick();
+    await handle.manager.idle();
+    expect(store.getState().status).toMatchObject({ kind: 'error', text: SAVE_FAILED });
+    expect(storage.data.size).toBe(0);
+
+    // 失敗が続いても、もう一度は知らせない
+    store.setState({ status: null });
+    setCell(store, 'character', 'hp', '4322');
+    await tick();
+    await handle.manager.idle();
+    expect(store.getState().status).toBeNull();
+
+    // 書き込めるようになったら退避する。その後また失敗したら、もう一度知らせる
+    control.broken = false;
+    setCell(store, 'character', 'hp', '4323');
+    await tick();
+    await handle.manager.idle();
+    expect(storage.data.size).toBe(1);
+    expect(store.getState().status).toBeNull();
+    control.broken = true;
+    setCell(store, 'character', 'hp', '4324');
+    await tick();
+    await handle.manager.idle();
+    expect(store.getState().status).toMatchObject({ kind: 'error', text: SAVE_FAILED });
+    handle.dispose();
+  });
+
+  it('知らせた後でも、プロジェクトを開き直したら、また失敗したときに知らせる', async () => {
+    const { storage } = failingStorage();
+    const { store, source } = await openTestStore();
+    const handle = installBackup(store, { storage, delay: 0 });
+    setCell(store, 'character', 'hp', '4321');
+    await tick();
+    await handle.manager.idle();
+    expect(store.getState().status?.text).toBe(SAVE_FAILED);
+    store.closeProject();
+    expect(await store.open(source)).toBe(true);
+    await tick();
+    await handle.manager.idle();
+    store.setState({ status: null });
+    setCell(store, 'character', 'hp', '4322');
+    await tick();
+    await handle.manager.idle();
+    expect(store.getState().status?.text).toBe(SAVE_FAILED);
+    handle.dispose();
+  });
+
+  it('書き込みの途中でプロジェクトを閉じたら、その後に失敗しても知らせない', async () => {
+    const { storage, control } = failingStorage();
+    const { store } = await openTestStore();
+    const handle = installBackup(store, { storage, delay: 0 });
+    control.hold = true;
+    setCell(store, 'character', 'hp', '4321');
+    await tick();
+    expect(control.release).toHaveLength(1);
+    store.closeProject();
+    control.release.forEach((r) => r());
+    await tick();
+    await handle.manager.idle();
+    expect(store.getState().status?.text).not.toBe(SAVE_FAILED);
+    handle.dispose();
+  });
+
+  it('ページが隠れている間の失敗は知らせたことにせず、見える状態で失敗したときに知らせる', async () => {
+    const { storage } = failingStorage();
+    const { store } = await openTestStore();
+    const handle = installBackup(store, { storage, delay: 0 });
+    const g = globalThis as { document?: unknown };
+    const saved = g.document;
+    g.document = { visibilityState: 'hidden' };
+    try {
+      setCell(store, 'character', 'hp', '4321');
+      await tick();
+      await handle.manager.idle();
+      expect(store.getState().status).toBeNull();
+    } finally {
+      g.document = saved;
+    }
+    setCell(store, 'character', 'hp', '4322');
+    await tick();
+    await handle.manager.idle();
+    expect(store.getState().status?.text).toBe(SAVE_FAILED);
+    handle.dispose();
+  });
 });
 
 describe('退避の書き込み（Worker で行う部分）', () => {
@@ -220,5 +325,20 @@ describe('退避の書き込み（Worker で行う部分）', () => {
     const unchanged = { ...plan, targets: plan.targets.map((t) => ({ ...t, uid: table(store, 'skill').uid, baseHash: hashText(basicSampleFiles()['tables/skill.yaml']) })) };
     expect(await persistBackup(store.project as Project, storage, plan.key, plan.record, unchanged.targets)).toBe(false);
     expect(storage.data.has(plan.key)).toBe(false);
+  });
+
+  it('Worker の中で書き込みに失敗したら、failed を返す', async () => {
+    const { store } = await openTestStore();
+    setCell(store, 'character', 'hp', '4321');
+    const plan = await planBackup(store, 99);
+    if (plan === null) throw new Error('no plan');
+    const { storage } = failingStorage();
+    const posted: FromWorker[] = [];
+    const engine = new ValidationEngine((m) => posted.push(m), storage);
+    engine.handle(structuredClone({ type: 'init', snapshot: snapshotProject(store.project as Project) }) as ToWorker);
+    const sync = { tableSources: [], commonSources: [] };
+    engine.handle(structuredClone({ type: 'job', id: 1, job: { kind: 'backup', ...plan }, sync }) as ToWorker);
+    await tick();
+    expect(posted.at(-1)).toEqual({ type: 'failed', id: 1, message: 'Error: QuotaExceededError', desync: false });
   });
 });
