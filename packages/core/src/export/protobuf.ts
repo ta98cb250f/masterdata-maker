@@ -6,7 +6,9 @@ import type { RawValue } from '../model/cell';
 import type { FieldDef, FieldType } from '../model/field';
 import { isListType } from '../model/field';
 import type { TableProto } from '../model/proto';
-import { scalarProtoType } from '../model/proto';
+import { isProtoIdentifier, scalarProtoType } from '../model/proto';
+
+export { isProtoIdentifier };
 
 /** 出力する proto のパッケージ名 */
 export const PROTO_PACKAGE = 'sheetcraft';
@@ -38,11 +40,6 @@ export function protoJsonName(field: string): string {
     }
   }
   return out;
-}
-
-/** proto の識別子にできるか（英字か _ で始まり、英数字と _ が続く）。型名・フィールド名に使う */
-export function isProtoIdentifier(name: string): boolean {
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
 }
 
 /** JSON 名が重なる列の組（protoc がエラーにする。P-63） */

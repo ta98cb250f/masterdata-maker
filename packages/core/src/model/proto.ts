@@ -59,6 +59,11 @@ export function isValidProtoFieldNumber(n: number): boolean {
   );
 }
 
+/** proto の識別子にできるか（英字か _ で始まり、英数字と _ が続く）。型名・フィールド名・reserved の名前に使う */
+export function isProtoIdentifier(name: string): boolean {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name);
+}
+
 function uniqueColumns(columns: readonly FieldDef[]): FieldDef[] {
   const seen = new Set<string>();
   return columns.filter((c) => {
@@ -85,7 +90,8 @@ function nextNumber(max: number): number {
 }
 
 /**
- * 保存されている番号（無ければ legacyProto）を今の列に合わせる。列に無い名前の番号は名前ごと reserved にし、
+ * 保存されている番号（無ければ legacyProto）を今の列に合わせる。列に無い名前の番号は名前ごと reserved にし
+ * （proto の識別子でない名前と、既に reserved にある名前は番号だけにする。.proto に書けない・重ねて書けないため）、
  * 番号の無い列には使った番号（reserved を含む）の最大 + 1 を列の順に付ける（19000〜19999 は飛ばす）。
  * 今の列名と同じ reserved の名前は外す（protoc は reserved の名前のフィールドをエラーにする）。
  * 結果の fields は列の順、reserved は番号の順。同じ入力からは同じ結果になる
@@ -99,8 +105,15 @@ export function resolveProto(stored: TableProto | undefined, columns: readonly F
     if (!assigned.has(name)) assigned.set(name, n);
   }
   const reserved = base.reserved.map((r) => ({ ...r }));
+  const reservedNames = new Set(reserved.flatMap((r) => (r.name === undefined ? [] : [r.name])));
   for (const [name, n] of assigned) {
-    if (!names.has(name)) reserved.push({ number: n, name });
+    if (names.has(name)) continue;
+    if (isProtoIdentifier(name) && !reservedNames.has(name)) {
+      reserved.push({ number: n, name });
+      reservedNames.add(name);
+    } else {
+      reserved.push({ number: n });
+    }
   }
   let max = 0;
   for (const [, n] of base.fields) max = Math.max(max, n);
@@ -116,12 +129,18 @@ export function resolveProto(stored: TableProto | undefined, columns: readonly F
   for (const r of reserved) {
     if (r.name !== undefined && names.has(r.name)) delete r.name;
   }
-  reserved.sort((a, b) => a.number - b.number || (a.name ?? '').localeCompare(b.name ?? ''));
+  reserved.sort((a, b) => a.number - b.number || compareText(a.name ?? '', b.name ?? ''));
   return { fields, reserved };
+}
+
+/** 環境の照合順序に依らない比較（同じ入力から同じ結果にする。FR-OUT-03） */
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 /**
  * 列の変更の後の番号。before は変更前の列（`proto` が無ければ、この列で以前の番号を決める）。
+ * 保存されていた番号は先に before に合わせる（手で消した列の番号を reserved にしてから変更を当てる）。
  * rename は列名の変更（番号はそのまま）。proto の型が変わった列（int → string など）は古い番号を reserved にして
  * 新しい番号を付ける。結果は after の列に合わせる（resolveProto）
  */
@@ -131,7 +150,7 @@ export function protoAfterColumnChange(
   after: readonly FieldDef[],
   rename?: { from: string; to: string },
 ): TableProto {
-  const base = stored ?? legacyProto(before);
+  const base = resolveProto(stored, before);
   const renamed = (name: string) => (rename !== undefined && name === rename.from ? rename.to : name);
   const fields = new Map<string, number>();
   for (const [name, n] of base.fields) {
@@ -154,9 +173,25 @@ export function protoAfterColumnChange(
   return resolveProto({ fields: [...fields], reserved }, after);
 }
 
-/** 列名を変えたときの番号（列に合わせない。共通列の名前の変更で、列定義より先にセルのキーを変えるときに使う） */
-export function renameProtoField(stored: TableProto | undefined, columns: readonly FieldDef[], from: string, to: string): TableProto {
-  const base = cloneTableProto(stored ?? legacyProto(columns));
-  base.fields = base.fields.map(([name, n]) => [name === from ? to : name, n]);
-  return base;
+function sameProto(a: TableProto, b: TableProto): boolean {
+  return (
+    a.fields.length === b.fields.length &&
+    a.fields.every(([name, n], i) => b.fields[i][0] === name && b.fields[i][1] === n) &&
+    a.reserved.length === 0 &&
+    b.reserved.length === 0
+  );
+}
+
+/**
+ * 列を変えるパッチの後にテーブルが持つ番号（protoAfterColumnChange）。`proto` の無いテーブルで、結果が変更後の列に
+ * 以前の規則を当てたものと同じなら undefined のままにする（番号は同じで、ファイルに `proto` を書き足さずに済む）
+ */
+export function nextTableProto(
+  stored: TableProto | undefined,
+  before: readonly FieldDef[],
+  after: readonly FieldDef[],
+  rename?: { from: string; to: string },
+): TableProto | undefined {
+  const next = protoAfterColumnChange(stored, before, after, rename);
+  return stored === undefined && sameProto(next, legacyProto(after)) ? undefined : next;
 }

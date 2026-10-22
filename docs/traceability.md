@@ -616,7 +616,7 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 
 | ID | 要件の要約 | 優先度 | 状態 | 実装 | テスト | 備考 |
 |---|---|---|---|---|---|---|
-| DR-10 | `table`・`display_name`・`fields`・`records`・`view` を持つ | 必須 | 実装済み | `packages/core/src/io/decode-table.ts` の `decodeTable`、`packages/core/src/io/serialize.ts` の `tableToTree` | `packages/core/src/io/roundtrip.test.ts`、`packages/core/src/io/table.test.ts` | 確認=テスト |
+| DR-10 | `table`・`display_name`・`fields`・`records`・`view`・`proto`（省略可。P-63）を持つ | 必須 | 実装済み | `packages/core/src/io/decode-table.ts` の `decodeTable`、`packages/core/src/io/serialize.ts` の `tableToTree` | `packages/core/src/io/roundtrip.test.ts`、`packages/core/src/io/table.test.ts`（`proto` は「proto（Protocol Buffers のフィールド番号。P-63）」） | 確認=テスト |
 | DR-11 | SimpleCell か RichCell `{ value, override, color, comment }`。注記が無ければ値だけ。`value` にリストも | 必須 | 実装済み | `packages/core/src/model/cell.ts` の `RichCell`、`packages/core/src/io/decode-value.ts` の `decodeCell`、`packages/core/src/io/serialize.ts` の `cellNode` | `packages/core/src/io/table.test.ts`「RichCell（DR-11、P-04）」 | 確認=テスト |
 | DR-12 | 列定義の知らないキーは読み込みエラー（直下の `required` を見つける） | 必須 | 実装済み | `packages/core/src/io/decode-field.ts` の `decodeFieldDef`（`fieldKeyBelongsToValidation`） | `packages/core/src/io/table.test.ts`「DR-12: 列定義の知らないキー」 | 監査で CLI を実行して確認。確認=動作 |
 | DR-13 | 型は 11 種。`enum` と `list<enum>` は `enum_ref` が必須 | 必須 | 実装済み | `packages/core/src/model/field.ts`、`packages/core/src/validate/fields.ts` の `checkFieldDef`（`enumRefMissing`） | `packages/core/src/model/model.test.ts`、`packages/core/src/validate/validate.test.ts`「列定義の検査（FR-VAL-07）」 | `enum_ref` の欠けは読み込みエラーではなく検査のエラー。確認=テスト |
@@ -641,7 +641,7 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 |---|---|---|---|---|---|---|
 | DR-30 | 同じデータは同じバイト列。読み込んで何も変えずに保存したら 1 バイトも変わらない | 必須 | 実装済み | `packages/core/src/io/serialize.ts`、`packages/core/src/io/project.ts` の `planProjectWrite`（`changed`） | `packages/core/src/io/project.test.ts`「NFR-16・DR-30: サンプルの往復」、`packages/cli/src/run.test.ts`「fmt」 | 監査で `fmt --check` を実行して確認。確認=動作 |
 | DR-31 | UTF-8（BOM なし）、LF、末尾に改行 1 つ、インデント 2 | 必須 | 実装済み | `packages/core/src/io/emit.ts` の `emitYaml`・`emitJson`、`packages/core/src/io/parse.ts` の `parseText`（BOM を警告して除く） | `packages/core/src/io/table.test.ts`「テキストの扱い（DR-31）」 | 確認=テスト |
-| DR-32 | キーの順を固定（テーブル・レコード・列定義） | 必須 | 実装済み | `packages/core/src/io/serialize.ts` の `tableToTree`・`recordNode`・`fieldNode` | `packages/core/src/io/table.test.ts`「DR-32・DR-34: レコードのキーの順と知らないキー」「キーの順が違う列定義は DR-14 の順に直す」 | 確認=テスト |
+| DR-32 | キーの順を固定（テーブル・レコード・列定義） | 必須 | 実装済み | `packages/core/src/io/serialize.ts` の `tableToTree`・`recordNode`・`fieldNode` | `packages/core/src/io/table.test.ts`「DR-32・DR-34: レコードのキーの順と知らないキー」「キーの順が違う列定義は DR-14 の順に直す」「proto（…）」の「読んで書き出すと 1 バイトも変わらず…」 | 確認=テスト |
 | DR-33 | YAML のレコードは 1 フィールド 1 行。リストと RichCell も 1 行 | 推奨 | 実装済み | `packages/core/src/io/serialize.ts`（`seq(..., true)`・`map(..., true)`） | `packages/core/src/io/roundtrip.test.ts`、`packages/core/src/io/table.test.ts` | 確認=テスト |
 | DR-34 | 列定義に無いキーは消さずに末尾に残し、警告 | 推奨 | 実装済み | `packages/core/src/io/decode-table.ts` の `decodeRecord`（`unknownRecordKey`）、`packages/core/src/io/serialize.ts` の `recordNode` | `packages/core/src/io/table.test.ts`「列定義に無いキーは警告し、レコードの末尾に元の順で残す」 | 確認=テスト |
 | DR-35 | 小数は最短の 10 進表記。`NaN`・`Infinity` は保存できない | 必須 | 実装済み | `packages/core/src/io/emit.ts` の `formatNumber`、`packages/core/src/edit/input.ts` の `parseFloat64` | `packages/core/src/io/table.test.ts`「DR-35: 小数」 | 確認=テスト |

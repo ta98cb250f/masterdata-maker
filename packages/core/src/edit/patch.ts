@@ -10,7 +10,7 @@ import { cloneFieldDef, cloneRawValue } from '../model/field';
 import type { Project } from '../model/project';
 import { compareNames } from '../model/project';
 import type { TableProto } from '../model/proto';
-import { cloneTableProto, protoAfterColumnChange } from '../model/proto';
+import { cloneTableProto, nextTableProto } from '../model/proto';
 import type { SourceFile } from '../model/source';
 import type { Table, TableRecord, TableView } from '../model/table';
 import { tableColumns } from '../model/table';
@@ -93,7 +93,8 @@ export type Patch =
   | { op: 'setCommon'; part: 'enums'; items: EnumDef[]; isDefault: boolean }
   /**
    * rename は共通列の名前の変更（フィールド番号を引き継ぐ）。protos は変更後の各テーブルのフィールド番号
-   * （省略すれば変更に合わせて決める。逆のパッチは変更前の番号を持つ）
+   * （省略すれば変更に合わせて決める。無いテーブルは今の番号のまま。外部での変更の読み込み直しは [] にして、
+   * 手での編集と同じく保存・出力のときに列に合わせる。逆のパッチは変更前の番号を持つ）
    */
   | {
       op: 'setCommon';
@@ -660,7 +661,7 @@ function applySetCommon(project: Project, p: Extract<Patch, { op: 'setCommon' }>
         }
         const before = tableColumns(old.items, table);
         const after = tableColumns(p.items, table);
-        return protoAfterColumnChange(table.proto, before, after, p.rename);
+        return nextTableProto(table.proto, before, after, p.rename);
       });
       part.items = p.items.map(cloneFieldDef);
       part.isDefault = p.isDefault;
@@ -696,7 +697,7 @@ function withProto<P extends FieldPatch>(project: Project, p: P, apply: (p: P) =
     setProto(table, p.proto === null ? undefined : cloneTableProto(p.proto));
   } else {
     const rename = p.op === 'renameField' ? { from: p.from, to: p.to } : undefined;
-    setProto(table, protoAfterColumnChange(old, before, tableColumns(base, table), rename));
+    setProto(table, nextTableProto(old, before, tableColumns(base, table), rename));
   }
   return { ...inverse, proto: old === undefined ? null : old };
 }

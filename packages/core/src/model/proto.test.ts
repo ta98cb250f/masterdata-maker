@@ -45,4 +45,10 @@ describe('フィールド番号（P-63）', () => {
       reserved: [{ number: 3 }],
     });
   });
+
+  it('消えた列の名前は、proto の識別子でないときと既に reserved にあるときは番号だけ reserved にする', () => {
+    const stored = { fields: [['id', 1], ['my-memo', 2], ['gone', 3]] as [string, number][], reserved: [{ number: 9, name: 'gone' }] };
+    expect(resolveProto(stored, cols(['id', 'int'])).reserved).toEqual([{ number: 2 }, { number: 3 }, { number: 9, name: 'gone' }]);
+  });
 });
+

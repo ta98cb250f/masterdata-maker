@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Calculator } from '../calc';
 import { planExport } from '../export';
+import { parseCommonFile, parseTableFile } from '../io/parse';
 import { serializeTable } from '../io/serialize';
+import type { FieldDef } from '../model/field';
 import type { Project } from '../model/project';
 import type { TableProto } from '../model/proto';
 import { resolveProto } from '../model/proto';
@@ -151,4 +153,55 @@ describe('列の操作とフィールド番号（P-63）', () => {
     check((p) => setBaseFields(p, [...p.common.base_fields.items, { name: 'note', type: 'string' }]));
     expect(protoOf('stage').fields[2]).toEqual(['note', stageMax + 1]);
   });
+
+  it('番号の変わらない列の変更（表示名など）では、proto の無いテーブルに proto を持たせない（保存しても書き足さない）', () => {
+    const base = project.common.base_fields.items.map((f) => (f.name === 'version' ? { ...f, display_name: '版' } : f));
+    check((p) => setBaseFields(p, base));
+    check((p) => insertColumn(p, { table: uid('stage'), position: { index: 2 }, field: { name: 'last', type: 'int' } }));
+    for (const name of ['character', 'skill', 'stage']) expect(tableNamed(project, name).proto).toBeUndefined();
+    expect(protoOf('stage').fields[4]).toEqual(['last', 5]);
+    expect(session.dirtyTables()).toEqual([uid('stage')]);
+  });
+
+  it('手で消した列の番号は reserved。同じ名前の列を画面で足しても、その番号は使わない', () => {
+    tableNamed(project, 'stage').proto = { fields: [['id', 1], ['version', 2], ['name', 3], ['boss_id', 4], ['gone', 7]], reserved: [] };
+    tableNamed(replica, 'stage').proto = { fields: [['id', 1], ['version', 2], ['name', 3], ['boss_id', 4], ['gone', 7]], reserved: [] };
+    check((p) => insertColumn(p, { table: uid('stage'), position: { index: 2 }, field: { name: 'gone', type: 'string' } }));
+    expect(protoOf('stage')).toEqual({
+      fields: [['id', 1], ['version', 2], ['name', 3], ['boss_id', 4], ['gone', 8]],
+      reserved: [{ number: 7 }],
+    });
+  });
 });
+
+describe('外部での変更の読み込み直しとフィールド番号（P-63）', () => {
+  function reloadBaseFields(edit: (text: string) => string): boolean {
+    const source = project.common.base_fields.source;
+    const text = edit(source?.text as string);
+    const parsed = parseCommonFile('base_fields', source?.path as string, text);
+    if (!parsed.ok) throw new Error('読めない');
+    const next = { items: parsed.value as FieldDef[], source: { path: source?.path as string, format: 'yaml' as const, text } };
+    return session.reloadFiles({ common: [{ part: 'base_fields', next }] }).historyCleared;
+  }
+
+  it('共通列を読み直しても番号は作り直さない（手での編集と同じく、開き直したときと同じ番号）', () => {
+    reloadBaseFields((t) => t);
+    for (const name of ['character', 'skill', 'stage']) expect(tableNamed(project, name).proto).toBeUndefined();
+    reloadBaseFields((t) => t.replace('name: version', 'name: ver'));
+    expect(protoOf('stage').fields.slice(0, 2)).toEqual([
+      ['id', 1],
+      ['ver', 2],
+    ]);
+  });
+
+  it('共通列を変えた履歴は、テーブルを読み直したら消す（元に戻すと、読み直した番号を古い番号で上書きするため）', () => {
+    session.run(setBaseFields(project, [...project.common.base_fields.items, { name: 'note', type: 'string' }]));
+    const stage = tableNamed(project, 'stage');
+    const path = stage.source?.path as string;
+    const text = `${stage.source?.text as string}proto:\n  fields:\n    id: 1\n    version: 2\n    note: 9\n    name: 30\n    boss_id: 4\n`;
+    const next = parseTableFile(path, text, { baseFields: project.common.base_fields.items, uids: project.uids, storageFormat: 'yaml' });
+    expect(session.reloadFiles({ tables: [{ uid: stage.uid, next }] }).historyCleared).toBe(true);
+    expect(protoOf('stage').fields[3]).toEqual(['name', 30]);
+  });
+});
+

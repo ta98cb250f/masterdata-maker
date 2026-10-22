@@ -94,7 +94,7 @@ function decodeReserved(node: SrcNode, r: Reporter): ProtoReserved | undefined {
     const key = `proto.reserved.${entry.key}`;
     if (entry.key === 'number') number = decodeInteger(entry.value, r, key);
     else if (entry.key === 'name') name = decodeStringValue(entry.value, r, key);
-    else r.error(IoCode.unknownProtoKey, entry.keyPos, { key });
+    else r.error(IoCode.unknownProtoKey, entry.keyPos, { key: `reserved.${entry.key}` });
   }
   if (number === undefined) {
     r.error(IoCode.missingKey, node.pos, { key: 'proto.reserved.number' });
@@ -139,7 +139,7 @@ function decodeProto(node: SrcNode, r: Reporter): TableProto | undefined {
         }
         break;
       default:
-        r.error(IoCode.unknownProtoKey, entry.keyPos, { key });
+        r.error(IoCode.unknownProtoKey, entry.keyPos, { key: entry.key });
     }
   }
   return proto;

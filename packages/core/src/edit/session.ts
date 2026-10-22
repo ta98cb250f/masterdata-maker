@@ -278,7 +278,9 @@ export class EditSession {
     // 共通設定を先に（共通列はテーブルの列になるので、テーブルを読み直すより前に変える）
     for (const item of request.common ?? []) {
       const items = item.next?.items ?? defaultCommonItems(item.part);
-      apply({ op: 'setCommon', part: item.part, items, isDefault: item.next === null } as Patch);
+      // 共通列のフィールド番号は作り直さない（手での編集と同じく、保存・出力のときに列に合わせる。P-63）
+      const protos = item.part === 'base_fields' ? { protos: [] } : {};
+      apply({ op: 'setCommon', part: item.part, items, isDefault: item.next === null, ...protos } as Patch);
       this.project.common[item.part].source = item.next?.source ?? null;
       // 基準は開いたときと同じく、読んだ内容を正規形にしたテキスト（正規形でないファイルでも未保存にしない）
       this.commonBaselines.set(item.part, { path: item.next?.source.path ?? null, text: this.commonText(item.part) });
@@ -340,7 +342,11 @@ export class EditSession {
       parts.has('base_fields') ||
       [...tx.patches, ...tx.inverse].some((p) => {
         const table = patchTable(p);
-        return (table !== null && touched.has(table)) || (p.op === 'setCommon' && parts.has(p.part));
+        // 共通列の変更は全テーブルのフィールド番号を持つので、テーブルを 1 つでも読み直したら当てられない（P-63）
+        return (
+          (table !== null && touched.has(table)) ||
+          (p.op === 'setCommon' && (parts.has(p.part) || (p.part === 'base_fields' && touched.size > 0)))
+        );
       });
     const historyCleared = this.history.some(refers);
     if (historyCleared) this.history.clear();
