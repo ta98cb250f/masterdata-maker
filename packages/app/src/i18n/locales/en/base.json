@@ -46,6 +46,7 @@
   "ui.save.nothing": "There are no changes to save",
   "ui.save.done": "Saved ({count} files)",
   "ui.save.downloaded": "Downloaded {name} ({count} files)",
+  "ui.save.committed": "Committed to branch {branch} ({count} files)",
   "ui.save.failedTitle": "Could not save",
   "ui.save.manualRemoveTitle": "Some files must be deleted by hand",
   "ui.save.manualRemoveMessage": "Files cannot be deleted in download mode. Delete the following files from the project folder by hand (they are no longer needed because tables were deleted or renamed)",

@@ -87,9 +87,9 @@ describe('GitHub 方式の読み込み', () => {
     if (loaded.status === 'ok') expect(loaded.project.tables.length).toBeGreaterThan(0);
   });
 
-  it('フォルダが無ければ notFound、トークンが違えば unauthorized', async () => {
+  it('フォルダが無ければ folderMissing、トークンが違えば unauthorized', async () => {
     const { gh, client, location } = setup();
-    await expect(openWorkspace(client, { ...location, folder: 'nothing' })).rejects.toMatchObject({ kind: 'notFound' });
+    await expect(openWorkspace(client, { ...location, folder: 'nothing' })).rejects.toMatchObject({ kind: 'folderMissing', message: 'nothing' });
     const bad = new GitHubClient('wrong', gh.fetch);
     await expect(openWorkspace(bad, location)).rejects.toBeInstanceOf(GitHubError);
     await expect(openWorkspace(bad, location)).rejects.toMatchObject({ kind: 'unauthorized', status: 401 });
@@ -144,23 +144,23 @@ describe('GitHub 方式の保存（コミット）', () => {
     expect(gh.commits.get(head?.parents[0] as string)?.message).toBe('one');
   });
 
-  it('他でブランチが進んでいたら conflict で失敗し、上書きしない', async () => {
+  it('他でブランチが進んでいたら notFastForward で失敗し、上書きしない', async () => {
     const { gh, client, location } = setup();
     const ws = await openWorkspace(client, location);
     const { plan } = await editOneCell(ws.fs);
     gh.pushExternal('main', { 'other.txt': 'x' });
     const external = gh.branches.get('main');
-    await expect(ws.commit(plan, { message: 'm', branch: 'main', newBranch: false })).rejects.toMatchObject({ kind: 'conflict' });
+    await expect(ws.commit(plan, { message: 'm', branch: 'main', newBranch: false })).rejects.toMatchObject({ kind: 'notFastForward' });
     expect(gh.branches.get('main')).toBe(external);
     // 失敗したら作業の場所は進めない
     expect(ws.branch).toBe('main');
   });
 
-  it('同じ名前のブランチがあれば conflict', async () => {
+  it('同じ名前のブランチがあれば branchExists', async () => {
     const { client, location } = setup();
     const ws = await openWorkspace(client, location);
     const { plan } = await editOneCell(ws.fs);
-    await expect(ws.commit(plan, { message: 'm', branch: 'main', newBranch: true })).rejects.toMatchObject({ kind: 'conflict' });
+    await expect(ws.commit(plan, { message: 'm', branch: 'main', newBranch: true })).rejects.toMatchObject({ kind: 'branchExists' });
   });
 
   it('ファイルの削除もコミットに入る。読み込んだ版に無いファイルは消そうとしない', async () => {
@@ -215,6 +215,8 @@ describe('GitHub 方式の保存（コミット）', () => {
     const outcome = await source.save(plan);
     expect(outcome.written).toHaveLength(plan.files.length);
     expect(outcome.committedTo).toBe('saved');
+    // コミットで進んだブランチのものとして退避する
+    expect(source.backupName).toBe('github:acme/game/data/master@saved');
   });
 });
 

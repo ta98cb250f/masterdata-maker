@@ -57,9 +57,9 @@
 
 | 確かめ方 | 件数 | 該当 |
 |---|---|---|
-| 確認=動作 | 130 | 初版の 120 件に、D-4・D-10・NFR-11・NFR-31・NFR-40・FR-OUT-07・FR-GH-01〜05 を加え、NFR-07 を「確認=コード」に移した |
+| 確認=動作 | 131 | 初版の 120 件に、D-4・D-10・NFR-11・NFR-31・NFR-40・FR-OUT-07・FR-GH-01〜05 を加えた |
 | 確認=テスト | 56 | — |
-| 確認=コード（選定の記録・構成を読んだ） | 5 | NFR-06、NFR-07、NFR-20、NFR-21、NFR-22 |
+| 確認=コード（選定の記録・構成を読んだ） | 4 | NFR-06、NFR-20、NFR-21、NFR-22 |
 | 確認=コード（浅い。要件を判定するテストが無い） | 1 | FR-ANN-04 |
 
 ほかに、要件の一部だけが浅いもの（FR-UI-04 の fx の印など）を §3.5 にまとめた。
@@ -567,7 +567,7 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 | FR-FIO-08 | 検査エラーがあっても保存は止めない | 必須 | 実装済み | `packages/app/src/store/AppStore.ts` の `save`（検査を見ない） | `packages/app/e2e/fileaccess.spec.ts`（hp を 0 にしてエラー 1 件のまま保存） | 確認=動作 |
 | FR-GH-01 | GitHub のリポジトリの中のフォルダを開く（トークン・リポジトリ・ブランチ・フォルダ。フォルダは一覧から選べる） | 必須 | 実装済み | `packages/app/src/fs/github.ts` の `GitHubClient`・`openWorkspace`・`GitHubProjectFs`、`packages/app/src/dialogs/github.tsx` の `GitHubOpenDialog`、`packages/app/src/commands/github.ts` | `packages/app/src/fs/github.test.ts`「GitHub 方式の読み込み」、`packages/app/e2e/github.spec.ts`「リポジトリのフォルダを開き…」「トークンが正しくなければ…」 | GitHub の API は偽物（`packages/app/src/fs/githubFake.ts`。画面テストでは `page.route`）で試した。本物の GitHub では動かしていない（この開発環境から api.github.com に届かない）。確認=動作 |
 | FR-GH-02 | 開いたまま別のブランチで開き直す。今のブランチを示す | 必須 | 実装済み | `packages/app/src/commands/github.ts` の `switchBranch`、`packages/app/src/dialogs/github.tsx` の `GitHubBranchDialog`、`packages/app/src/components/TitleBar.tsx`（`branch-badge`） | `packages/app/e2e/github.spec.ts`「ブランチを切り替えると…」 | 未保存の変更は `confirmDiscard` で確かめる。確認=動作 |
-| FR-GH-03 | 保存は 1 つのコミット。新しいブランチか今のブランチ。他で進んでいたら上書きしない | 必須 | 実装済み | `packages/app/src/fs/github.ts` の `GitHubWorkspace.commit`・`githubSource`、`packages/app/src/dialogs/github.tsx` の `GitHubCommitDialog`、`packages/app/src/store/AppStore.ts` の `save`（`cancelled`） | `packages/app/src/fs/github.test.ts`「GitHub 方式の保存（コミット）」、`packages/app/e2e/github.spec.ts`「…新しいブランチにコミットして…」「コミットのダイアログを閉じたら保存しない」「他でブランチが進んでいたら…」 | 確認=動作（偽の GitHub） |
+| FR-GH-03 | 保存は 1 つのコミット。新しいブランチか今のブランチ。他で進んでいたら上書きしない | 必須 | 実装済み | `packages/app/src/fs/github.ts` の `GitHubWorkspace.commit`・`githubSource`、`packages/app/src/dialogs/github.tsx` の `GitHubCommitDialog`、`packages/app/src/store/AppStore.ts` の `save`（`cancelled`） | `packages/app/src/fs/github.test.ts`「GitHub 方式の保存（コミット）」、`packages/app/e2e/github.spec.ts`「…新しいブランチにコミットして…」「コミットのダイアログを閉じたら保存しない」「他でブランチが進んでいたら…」「ブランチの読み込みの間は…」、`packages/app/src/commands/github.test.ts`、`packages/app/src/store/backup.test.ts`「開いている間にプロジェクトの同一性が変わったら…」 | 確認=動作（偽の GitHub） |
 | FR-GH-04 | コミットと同時にプルリクエストを作る。開いていれば示す | 必須 | 実装済み | `packages/app/src/fs/github.ts` の `GitHubClient.createPull`・`openPull`、`PullRequestError` | `packages/app/src/fs/github.test.ts`「新しいブランチにコミットしてプルリクエストを作る…」「同じブランチのプルリクエストがすでに開いていれば…」「プルリクエストだけ失敗したら…」、`packages/app/e2e/github.spec.ts` | 確認=動作（偽の GitHub） |
 | FR-GH-05 | トークンは既定でタブを閉じると忘れる。記憶を選べ、消せる。前回の場所を覚える | 必須 | 実装済み | `packages/app/src/fs/githubSettings.ts` | `packages/app/src/fs/github.test.ts`「入力の記憶」、`packages/app/e2e/github.spec.ts`「…前回の場所とトークンを覚える」 | 確認=動作 |
 
@@ -739,7 +739,7 @@ H の `33a73b8`（受け入れ基準の画面テスト、NFR-11 の測定、READ
 | NFR-04 | 方式はブラウザの名前でなく API の有無で自動的に決める | 必須 | 実装済み | `packages/app/src/fs/direct.ts` の `supportsDirectAccess` | `packages/app/src/fs/fs.test.ts`「API の有無で方式を決める（NFR-04）」、`packages/app/e2e/fileaccess.spec.ts` | 確認=動作 |
 | NFR-05 | ダウンロード保存方式では使えない機能を画面に示す | 必須 | 実装済み | `packages/app/src/components/TitleBar.tsx`（`mode-badge`）、`packages/app/src/components/StartScreen.tsx` | `packages/app/e2e/fileaccess.spec.ts`「API が無ければダウンロード保存方式になり、使えない機能を示す」 | 確認=動作 |
 | NFR-06 | HTTPS の静的ホスティングで配る | 必須 | 実装済み | `packages/app/vite.config.ts`（`base: './'` の静的ファイル）、`README.md`「ビルド（静的ホスティング用）」（HTTPS の静的ホスティングに置く手順と、安全なコンテキストの注意） | 画面テストのたびにビルドと配信が成功 | 配布の手順は H の `33a73b8` の README にある（G-3 を解消）。実際の HTTPS のホスティングに置いて動かしたことは無い（画面テストは `localhost`）。配布の CI は無い。（2026-10-22 追記）`.github/workflows/deploy-pages.yml` が main への push で GitHub Pages に公開し、`.github/workflows/ci.yml` の型検査・単体テスト・画面テストが通らなければ公開しない。確認=コード |
-| NFR-07 | サーバーを持たない。データを外部に送らない（GitHub 方式を選んだときだけ、指定した GitHub のリポジトリへ送る） | 必須 | 実装済み | `packages/app/`（サーバーの処理が無い。サンプルは `import.meta.glob` でビルドに含める）。通信は `packages/app/src/fs/github.ts` の `GitHubClient`（api.github.com だけ）に限る | `packages/app/src/fs/github.test.ts` | 監査で `fetch(`・`XMLHttpRequest`・`WebSocket`・`sendBeacon`・外部の URL を検索し、無いことを確かめた。2026-10-22 の GitHub 方式（FR-GH-01）で、利用者が GitHub 方式を選んだときだけ `GitHubClient` が api.github.com を呼ぶようになった（他の方式では通信しない）。確認=コード |
+| NFR-07 | サーバーを持たない。データを外部に送らない（GitHub 方式を選んだときだけ、指定した GitHub のリポジトリへ送る） | 必須 | 実装済み | `packages/app/`（サーバーの処理が無い。サンプルは `import.meta.glob` でビルドに含める）。通信は `packages/app/src/fs/github.ts` の `GitHubClient`（api.github.com だけ）に限る | `packages/app/src/fs/github.test.ts`、`packages/app/e2e/github.spec.ts` | 監査で `fetch(`・`XMLHttpRequest`・`WebSocket`・`sendBeacon`・外部の URL を検索し、無いことを確かめた。2026-10-22 の GitHub 方式（FR-GH-01）で、利用者が GitHub 方式を選んだときだけ `GitHubClient` が api.github.com を呼ぶようになった。同じ検索で、`fetch(` は `GitHubClient`（と偽の GitHub）だけにあることを確かめた。ビルドした画面は Content-Security-Policy の `connect-src 'self' https://api.github.com` で通信先を限る（`packages/app/vite.config.ts`）。確認=動作 |
 
 ### §10.2 性能
 

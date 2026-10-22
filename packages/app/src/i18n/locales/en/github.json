@@ -53,7 +53,6 @@
   "ui.github.donePull": "Created pull request #{number}:",
   "ui.github.donePullExisting": "Pull request #{number} from this branch is already open:",
   "ui.github.pullFailed": "The commit succeeded, but the pull request could not be created: {message}",
-  "ui.github.committed": "Committed to branch {branch} ({count} files)",
   "ui.github.branchTitle": "Switch branch",
   "ui.github.branchLead": "Reopens {repo} on another branch (currently {branch})",
   "ui.github.switch": "Switch",
@@ -62,8 +61,14 @@
   "ui.github.error.unauthorized": "The token is invalid or has expired ({message})",
   "ui.github.error.forbidden": "The token does not have permission for this operation. Check the token's permissions (Contents and Pull requests: Read and write) and its repositories ({message})",
   "ui.github.error.notFound": "Not found. Check the repository, branch and folder names, and that the token covers the repository ({message})",
-  "ui.github.error.conflict": "GitHub rejected the request. The branch may already exist or may have been updated elsewhere. Commit to a new branch ({message})",
   "ui.github.error.rateLimited": "The GitHub API rate limit was reached. Wait a while and try again ({message})",
   "ui.github.error.network": "Could not connect to GitHub ({message})",
-  "ui.github.error.other": "The GitHub operation failed ({status}: {message})"
+  "ui.github.error.other": "The GitHub operation failed ({status}: {message})",
+  "ui.github.tokenInvalid": "The token contains characters that cannot be used (full-width characters, spaces, and so on). Paste the token exactly as GitHub showed it",
+  "ui.github.checkingPull": "Checking for a pull request from this branch…",
+  "ui.github.error.invalid": "GitHub did not accept the request ({message})",
+  "ui.github.error.branchExists": "A branch with the same name already exists. Choose another name ({message})",
+  "ui.github.error.notFastForward": "The branch was updated elsewhere, so the commit was stopped to avoid overwriting it. Commit to a new branch ({message})",
+  "ui.github.error.folderMissing": "Folder {message} does not exist on this branch",
+  "ui.github.error.tooLarge": "Folder {message} has too many files to read through the GitHub API. Choose a smaller folder"
 }

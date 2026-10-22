@@ -900,7 +900,7 @@ export class AppStore {
       if (outcome.failed.length === 0) {
         this.showStatus(
           outcome.committedTo !== undefined
-            ? this.t('ui.github.committed', { count: count + outcome.removed.length, branch: outcome.committedTo })
+            ? this.t('ui.save.committed', { count, branch: outcome.committedTo })
             : outcome.downloaded === undefined
               ? this.t('ui.save.done', { count })
               : this.t('ui.save.downloaded', { count, name: outcome.downloaded }),

@@ -46,6 +46,7 @@
   "ui.save.nothing": "保存する変更はありません",
   "ui.save.done": "保存しました（{count} ファイル）",
   "ui.save.downloaded": "{name} をダウンロードしました（{count} ファイル）",
+  "ui.save.committed": "ブランチ {branch} にコミットしました（{count} ファイル）",
   "ui.save.failedTitle": "保存できませんでした",
   "ui.save.manualRemoveTitle": "手で消すファイルがあります",
   "ui.save.manualRemoveMessage": "ダウンロード保存方式ではファイルを消せません。次のファイルを、プロジェクトのフォルダから手で消してください（テーブルの削除や名前の変更をしたため、要らなくなったファイルです）",

@@ -56,7 +56,23 @@ export function defaultBranchName(now: Date = new Date()): string {
   return `masterdata/${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
 }
 
-export type GitHubErrorKind = 'unauthorized' | 'forbidden' | 'notFound' | 'conflict' | 'rateLimited' | 'network' | 'other';
+/**
+ * invalid: GitHub が要求を受け付けなかった（409・422）。コミットでは、ブランチの作成・更新のときに
+ * branchExists（同じ名前のブランチがある）・notFastForward（他でブランチが進んだ）に分ける。
+ * folderMissing: 指定したフォルダが無い / tooLarge: フォルダのファイルが多すぎて一覧を取り切れない
+ */
+export type GitHubErrorKind =
+  | 'unauthorized'
+  | 'forbidden'
+  | 'notFound'
+  | 'invalid'
+  | 'branchExists'
+  | 'notFastForward'
+  | 'folderMissing'
+  | 'tooLarge'
+  | 'rateLimited'
+  | 'network'
+  | 'other';
 
 /** API の失敗。kind で画面の文言を選ぶ */
 export class GitHubError extends Error {
@@ -75,7 +91,7 @@ function errorKind(status: number, message: string, rateRemaining: string | null
   if ((status === 403 || status === 429) && (rateRemaining === '0' || /rate limit/i.test(message))) return 'rateLimited';
   if (status === 403) return 'forbidden';
   if (status === 404) return 'notFound';
-  if (status === 409 || status === 422) return 'conflict';
+  if (status === 409 || status === 422) return 'invalid';
   return 'other';
 }
 
@@ -202,7 +218,7 @@ export class GitHubClient {
     await this.json('POST', `${this.repoPath(ref)}/git/refs`, { ref: `refs/heads/${branch}`, sha });
   }
 
-  /** ブランチを進める（早送りだけ。他で進んでいれば conflict で失敗する） */
+  /** ブランチを進める（早送りだけ。他で進んでいれば invalid で失敗する） */
   async updateBranch(ref: RepoRef, branch: string, sha: string): Promise<void> {
     await this.json('PATCH', `${this.repoPath(ref)}/git/refs/heads/${refPath(branch)}`, { sha, force: false });
   }
@@ -257,7 +273,7 @@ export class GitHubProjectFs implements ProjectFs {
     if (file === undefined) return null;
     if (file.text !== null) return file.text;
     const sha = file.sha as string;
-    if (this.active >= READ_CONCURRENCY) await new Promise<void>((resolve) => this.waiting.push(resolve));
+    while (this.active >= READ_CONCURRENCY) await new Promise<void>((resolve) => this.waiting.push(resolve));
     this.active++;
     try {
       const text = await this.client.blobText(this.ref, sha);
@@ -343,12 +359,19 @@ export class GitHubWorkspace {
     }
     for (const path of plan.remove) {
       // 読み込んだ版に無いファイルを消そうとすると GitHub が失敗にするので、あるものだけを消す
-      if (this.fs.mode(path) !== null) entries.push({ path: this.repoPath(path), mode: '100644', type: 'blob', sha: null });
+      const mode = this.fs.mode(path);
+      if (mode !== null) entries.push({ path: this.repoPath(path), mode, type: 'blob', sha: null });
     }
     const tree = await this.client.createTree(this.repo, this.head.tree, entries);
     const commit = await this.client.createCommit(this.repo, request.message, tree, this.head.commit);
-    if (request.newBranch) await this.client.createBranch(this.repo, request.branch, commit);
-    else await this.client.updateBranch(this.repo, request.branch, commit);
+    try {
+      if (request.newBranch) await this.client.createBranch(this.repo, request.branch, commit);
+      else await this.client.updateBranch(this.repo, request.branch, commit);
+    } catch (e) {
+      // 作るときの 422 は同じ名前のブランチがある、進めるときの 422 は早送りでない（他でブランチが進んだ）
+      if (e instanceof GitHubError && e.kind === 'invalid') throw new GitHubError(request.newBranch ? 'branchExists' : 'notFastForward', e.status, e.message);
+      throw e;
+    }
     // ここまで来たらコミットは入った。以降の失敗（プルリクエスト）は、コミットを取り消さずに知らせる
     this.branch = request.branch;
     this.head = { commit, tree };
@@ -365,7 +388,7 @@ export class GitHubWorkspace {
         result.pull = await this.client.createPull(this.repo, { ...request.pull, head: request.branch });
       } catch (e) {
         // 同じブランチからのプルリクエストがすでに開いていれば、それを示す
-        const existing = e instanceof GitHubError && e.kind === 'conflict' ? await this.client.openPull(this.repo, request.branch).catch(() => null) : null;
+        const existing = e instanceof GitHubError && e.kind === 'invalid' ? await this.client.openPull(this.repo, request.branch).catch(() => null) : null;
         if (existing === null) throw new PullRequestError(result, e);
         result.pull = existing;
         result.pullExisted = true;
@@ -386,13 +409,13 @@ export class PullRequestError extends Error {
   }
 }
 
-/** フォルダを読み込んで作業の場所を作る。フォルダが無ければ GitHubError（notFound） */
+/** フォルダを読み込んで作業の場所を作る。フォルダが無ければ GitHubError（folderMissing） */
 export async function openWorkspace(client: GitHubClient, location: GitHubLocation): Promise<GitHubWorkspace> {
   const [info, head] = await Promise.all([client.repository(location.repo), client.branchHead(location.repo, location.branch)]);
   const folderTree = await client.folderTree(location.repo, head.tree, location.folder);
-  if (folderTree === null) throw new GitHubError('notFound', 404, `${location.folder} is not found on ${location.branch}`);
+  if (folderTree === null) throw new GitHubError('folderMissing', 404, location.folder);
   const { entries, truncated } = await client.tree(location.repo, folderTree, true);
-  if (truncated) throw new GitHubError('other', 0, 'The folder has too many files to read through the GitHub API. Choose a smaller folder.');
+  if (truncated) throw new GitHubError('tooLarge', 0, location.folder);
   const fs = new GitHubProjectFs(client, location.repo, entries);
   return new GitHubWorkspace(client, location.repo, location.folder, location.branch, head, fs, location.branch, info.defaultBranch);
 }
@@ -407,7 +430,10 @@ export function githubSource(workspace: GitHubWorkspace, runCommit: CommitRunner
   return {
     kind: 'github',
     name: workspace.name,
-    backupName: `github:${workspace.name}@${workspace.openedBranch}`,
+    // コミットで別のブランチへ進んだら、退避もそのブランチのものとして扱う（FR-FIO-06）
+    get backupName() {
+      return `github:${workspace.name}@${workspace.branch}`;
+    },
     fs: workspace.fs,
     capabilities: GITHUB_CAPABILITIES,
     github: workspace,

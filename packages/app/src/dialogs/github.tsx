@@ -1,10 +1,12 @@
 // GitHub 方式のダイアログ（FR-GH-01〜05、P-67）: リポジトリのフォルダを開く・コミットする（新しいブランチ・プルリクエスト）・ブランチを切り替える
+import { PROJECT_CONFIG_FILES } from '@masterdata-maker/core';
 import { useEffect, useRef, useState } from 'react';
 import type { GitHubCommitArgs } from '../commands/github';
 import { GITHUB_BRANCH_DIALOG, GITHUB_COMMIT_DIALOG, GITHUB_OPEN_DIALOG, githubErrorText, openGitHubLocation, switchBranch } from '../commands/github';
 import { DialogFrame } from '../components/Dialog';
 import type { CommitResult, PullRef, RepoRef } from '../fs/github';
-import { GitHubClient, PullRequestError, defaultBranchName, isGitHubSource, isValidBranchName, normalizeRepoPath, parseRepo } from '../fs/github';
+import { GitHubClient, GitHubError, PullRequestError, defaultBranchName, isGitHubSource, isValidBranchName, normalizeRepoPath, parseRepo } from '../fs/github';
+import { errorMessage } from '../fs/text';
 import { forgetToken, loadLastLocation, loadToken, saveToken } from '../fs/githubSettings';
 import { useT } from '../store/hooks';
 import { Check, Field } from './formParts';
@@ -15,8 +17,8 @@ import '../styles/github.css';
 /** fine-grained personal access token を作る画面 */
 export const TOKEN_HELP_URL = 'https://github.com/settings/personal-access-tokens/new';
 
-/** プロジェクト設定のファイル（フォルダの一覧で、プロジェクトのフォルダに印を付ける） */
-const CONFIG_FILES = ['masterdata-maker.yaml', 'masterdata-maker.yml', 'masterdata-maker.json'];
+/** プロジェクト設定のファイル（フォルダの一覧で、プロジェクトのフォルダに印を付ける。読み込みと同じ判定） */
+const CONFIG_FILES: readonly string[] = PROJECT_CONFIG_FILES;
 
 interface Connected {
   client: GitHubClient;
@@ -46,6 +48,7 @@ function GitHubOpenDialog({ store, close }: DialogProps<undefined>) {
   const [saved] = useState(() => ({ token: loadToken(), last: loadLastLocation() }));
   const [token, setToken] = useState(saved.token?.token ?? '');
   const [remember, setRemember] = useState(saved.token?.remembered ?? false);
+  const [hasSavedToken, setHasSavedToken] = useState(saved.token !== null);
   const [repoText, setRepoText] = useState(saved.last?.repo ?? '');
   const [connected, setConnected] = useState<Connected | null>(null);
   const [branch, setBranch] = useState('');
@@ -57,8 +60,11 @@ function GitHubOpenDialog({ store, close }: DialogProps<undefined>) {
   const heads = useRef(new Map<string, string>());
 
   const connect = async () => {
+    if (busy) return;
     const repo = parseRepo(repoText);
     if (token.trim() === '') return setError(t('ui.github.tokenRequired'));
+    // HTTP のヘッダーに入れられない文字（全角の空白など）は、通信の前に知らせる
+    if (!/^[\x21-\x7e]+$/.test(token.trim())) return setError(t('ui.github.tokenInvalid'));
     if (repo === null) return setError(t('ui.github.repoInvalid'));
     setBusy(true);
     setError(null);
@@ -66,6 +72,7 @@ function GitHubOpenDialog({ store, close }: DialogProps<undefined>) {
     try {
       const [info, branches] = await Promise.all([client.repository(repo), client.branches(repo)]);
       saveToken(token.trim(), remember);
+      setHasSavedToken(true);
       heads.current.clear();
       const sameRepo = saved.last !== null && saved.last.repo.toLowerCase() === `${repo.owner}/${repo.repo}`.toLowerCase();
       const lastBranch = sameRepo && saved.last !== null && branches.includes(saved.last.branch) ? saved.last.branch : null;
@@ -141,17 +148,18 @@ function GitHubOpenDialog({ store, close }: DialogProps<undefined>) {
     forgetToken();
     setToken('');
     setRemember(false);
+    setHasSavedToken(false);
   };
 
   return (
     <DialogFrame
       title={t('ui.github.openTitle')}
-      onClose={close}
+      onClose={() => !busy && close()}
       width={560}
       testId="github-open-dialog"
       footer={
         <>
-          <button type="button" className="sc-button" onClick={close}>
+          <button type="button" className="sc-button" onClick={close} disabled={busy}>
             {t('ui.dialog.cancel')}
           </button>
           {connected === null ? (
@@ -186,7 +194,7 @@ function GitHubOpenDialog({ store, close }: DialogProps<undefined>) {
                 <a href={TOKEN_HELP_URL} target="_blank" rel="noreferrer noopener">
                   {t('ui.github.tokenCreate')}
                 </a>
-                {saved.token !== null && (
+                {hasSavedToken && (
                   <button type="button" className="sc-link-button" onClick={forget} data-testid="github-forget-token">
                     {t('ui.github.tokenForget')}
                   </button>
@@ -292,19 +300,26 @@ function GitHubOpenDialog({ store, close }: DialogProps<undefined>) {
 
 // ---- コミット（保存） ----
 
+/** プルリクエストを作れなかった理由。GitHub の文をそのまま出す（コミットはできているので、コミットのやり直しを勧める文言は使わない） */
+function pullErrorText(cause: unknown): string {
+  return cause instanceof GitHubError ? cause.message : errorMessage(cause);
+}
+
 type CommitPhase = { kind: 'form' } | { kind: 'running' } | { kind: 'done'; result: CommitResult; pullError: string | null };
 
 function GitHubCommitDialog({ store, args, close }: DialogProps<GitHubCommitArgs>) {
   const t = useT();
   const ws = args.workspace;
   // 開いたブランチのままなら新しいブランチへ、このセッションで作ったブランチなら続けてそこへコミットするのを既定にする
-  const [newBranch, setNewBranch] = useState(ws.branch === ws.openedBranch);
+  const [newBranch, setNewBranchState] = useState(ws.branch === ws.openedBranch);
   const [branchName, setBranchName] = useState(() => defaultBranchName());
   const [message, setMessage] = useState(() => t('ui.github.defaultMessage'));
+  const initialBase = ws.branch === ws.openedBranch ? ws.branch : ws.openedBranch;
+  // 既定の組み合わせ（新しいブランチ → 開いたブランチ、作ったブランチ → 開いたブランチ）では、マージ先は別のブランチになる
   const [createPull, setCreatePull] = useState(true);
   const [pullTitle, setPullTitle] = useState<string | null>(null);
   const [pullBody, setPullBody] = useState('');
-  const [base, setBase] = useState(ws.branch === ws.openedBranch ? ws.branch : ws.openedBranch);
+  const [base, setBase] = useState(initialBase);
   const [branches, setBranches] = useState<string[] | null>(null);
   const [existingPull, setExistingPull] = useState<PullRef | null | undefined>(undefined);
   const [phase, setPhase] = useState<CommitPhase>({ kind: 'form' });
@@ -327,7 +342,15 @@ function GitHubCommitDialog({ store, args, close }: DialogProps<GitHubCommitArgs
     };
   }, [ws]);
 
+  // 今のブランチがマージ先と同じなら、プルリクエストは作らないのを既定にする
+  const setNewBranch = (value: boolean) => {
+    setNewBranchState(value);
+    setCreatePull(value || ws.branch !== base);
+  };
+
   const target = newBranch ? branchName.trim() : ws.branch;
+  // 今のブランチのプルリクエストを調べている間は、作るかどうかが決まらないので送らない
+  const checkingPull = !newBranch && existingPull === undefined;
   const pullTarget = newBranch || existingPull === null;
   const branchError = !newBranch
     ? null
@@ -337,12 +360,13 @@ function GitHubCommitDialog({ store, args, close }: DialogProps<GitHubCommitArgs
         ? t('ui.github.branchExists', { branch: target })
         : null;
   const baseError = createPull && pullTarget && base === target ? t('ui.github.baseSame') : null;
-  const canSubmit = phase.kind === 'form' && branchError === null && baseError === null && message.trim() !== '';
+  const canSubmit = phase.kind === 'form' && branchError === null && baseError === null && message.trim() !== '' && !checkingPull;
 
   const cancel = () => {
     if (phase.kind === 'running') return;
-    close();
+    // 先に結果を渡す（閉じると、答えずに消えたダイアログとして取り消しになる）
     args.resolve(phase.kind === 'done' ? phase.result : null);
+    close();
   };
 
   const submit = async () => {
@@ -359,7 +383,7 @@ function GitHubCommitDialog({ store, args, close }: DialogProps<GitHubCommitArgs
       });
       setPhase({ kind: 'done', result, pullError: null });
     } catch (e) {
-      if (e instanceof PullRequestError) setPhase({ kind: 'done', result: e.result, pullError: githubErrorText(store, e.cause) });
+      if (e instanceof PullRequestError) setPhase({ kind: 'done', result: e.result, pullError: pullErrorText(e.cause) });
       else {
         setPhase({ kind: 'form' });
         setError(githubErrorText(store, e));
@@ -369,7 +393,8 @@ function GitHubCommitDialog({ store, args, close }: DialogProps<GitHubCommitArgs
 
   const files = [
     ...args.plan.files.map((f) => ({ path: ws.repoPath(f.path), removed: false })),
-    ...args.plan.remove.map((p) => ({ path: ws.repoPath(p), removed: true })),
+    // 読み込んだ版に無いファイルの削除はコミットに入らないので出さない
+    ...args.plan.remove.filter((p) => ws.fs.mode(p) !== null).map((p) => ({ path: ws.repoPath(p), removed: true })),
   ];
 
   if (phase.kind === 'done') {
@@ -472,7 +497,11 @@ function GitHubCommitDialog({ store, args, close }: DialogProps<GitHubCommitArgs
             data-testid="github-message"
           />
         </Field>
-        {!pullTarget && existingPull !== undefined && existingPull !== null ? (
+        {checkingPull ? (
+          <p className="sc-field-hint" data-testid="github-checking-pull">
+            {t('ui.github.checkingPull')}
+          </p>
+        ) : !pullTarget && existingPull !== undefined && existingPull !== null ? (
           <p className="sc-form-info" data-testid="github-existing-pull">
             {t('ui.github.existingPull', { number: existingPull.number })}{' '}
             <a href={existingPull.url} target="_blank" rel="noreferrer noopener">
@@ -538,6 +567,7 @@ function GitHubBranchDialog({ store, close }: DialogProps<undefined>) {
   const [branches, setBranches] = useState<string[] | null>(null);
   const [branch, setBranch] = useState(ws?.branch ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (ws === null) return;
@@ -552,24 +582,36 @@ function GitHubBranchDialog({ store, close }: DialogProps<undefined>) {
   }, [ws, store]);
 
   if (ws === null) return null;
+  // 読み込みが終わるまでこのダイアログを開いたままにする（開いている間は編集・保存を受け付けないので、読み込みの間の編集が消えない）
+  const load = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      // 開けたらダイアログは openLoaded が閉じる。プロジェクトのフォルダでなければ store.open が知らせる
+      if (!(await switchBranch(store, branch))) close();
+    } catch (e) {
+      setError(githubErrorText(store, e));
+      setBusy(false);
+    }
+  };
   const submit = () => {
-    close();
-    if (branch === ws.branch) return;
-    store.confirmDiscard(() => switchBranch(store, branch));
+    if (busy) return;
+    if (branch === ws.branch) return close();
+    store.confirmDiscard(load);
   };
 
   return (
     <DialogFrame
       title={t('ui.github.branchTitle')}
-      onClose={close}
+      onClose={() => !busy && close()}
       width={440}
       testId="github-branch-dialog"
       footer={
         <>
-          <button type="button" className="sc-button" onClick={close}>
+          <button type="button" className="sc-button" onClick={close} disabled={busy}>
             {t('ui.dialog.cancel')}
           </button>
-          <button type="button" className="sc-button primary" onClick={submit} disabled={branches === null || branch === ''} data-testid="github-branch-ok">
+          <button type="button" className="sc-button primary" onClick={submit} disabled={busy || branches === null || branch === ''} data-testid="github-branch-ok">
             {t('ui.github.switch')}
           </button>
         </>
@@ -581,7 +623,14 @@ function GitHubBranchDialog({ store, close }: DialogProps<undefined>) {
           <p className="sc-field-hint">{t('ui.github.working')}</p>
         ) : (
           <Field label={t('ui.github.branch')} htmlFor="github-switch-branch">
-            <select id="github-switch-branch" className="sc-select" value={branch} onChange={(e) => setBranch(e.target.value)} data-testid="github-switch-branch">
+            <select
+              id="github-switch-branch"
+              className="sc-select"
+              value={branch}
+              disabled={busy}
+              onChange={(e) => setBranch(e.target.value)}
+              data-testid="github-switch-branch"
+            >
               {(branches ?? []).map((b) => (
                 <option key={b} value={b}>
                   {b}
@@ -590,8 +639,9 @@ function GitHubBranchDialog({ store, close }: DialogProps<undefined>) {
             </select>
           </Field>
         )}
+        {busy && <p className="sc-field-hint">{t('ui.github.working')}</p>}
         {error !== null && (
-          <div className="sc-field-error" role="alert">
+          <div className="sc-field-error" role="alert" data-testid="github-branch-error">
             {error}
           </div>
         )}

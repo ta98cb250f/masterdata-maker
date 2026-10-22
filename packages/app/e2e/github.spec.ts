@@ -18,7 +18,11 @@ async function sampleFiles(dir = SAMPLE_DIR, prefix = ''): Promise<Record<string
   return out;
 }
 
+/** 要求を遅らせる（読み込みの途中の操作を試す）。キーは「メソッド パスの一部」 */
+const delays = new Map<string, number>();
+
 async function fakeGitHub(page: Page): Promise<FakeGitHub> {
+  delays.clear();
   const files: Record<string, string> = { 'README.md': '# game\n' };
   for (const [path, text] of Object.entries(await sampleFiles())) files[`data/master/${path}`] = text;
   const gh = new FakeGitHub('acme', 'game', files);
@@ -28,6 +32,10 @@ async function fakeGitHub(page: Page): Promise<FakeGitHub> {
     // ブラウザからの直接の呼び出し（CORS）。プリフライトには許可を返す
     const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*' };
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    for (const [match, ms] of delays) {
+      const [method, part] = match.split(' ');
+      if (req.method() === method && new URL(req.url()).pathname.includes(part)) await new Promise((r) => setTimeout(r, ms));
+    }
     const r = gh.handle(req.method(), req.url(), await req.allHeaders(), req.postData());
     await route.fulfill({
       status: r.status,
@@ -131,9 +139,10 @@ test.describe('GitHub 方式', () => {
     const external = gh.branches.get('main');
     await page.keyboard.press('Control+s');
     await page.getByTestId('github-target-current').check();
-    await page.getByTestId('github-create-pull').uncheck();
+    // 開いたブランチへのコミットでは、マージ先が同じになるのでプルリクエストは作らないのが既定
+    await expect(page.getByTestId('github-create-pull')).not.toBeChecked();
     await page.getByTestId('github-commit-ok').click();
-    await expect(page.getByTestId('github-error')).toContainText('他でブランチが更新された');
+    await expect(page.getByTestId('github-error')).toContainText('ブランチが他で更新されているので');
     expect(gh.branches.get('main')).toBe(external);
     await page.getByTestId('github-target-new').check();
     await page.getByTestId('github-branch-name').fill('retry');
@@ -178,5 +187,57 @@ test.describe('GitHub 方式', () => {
     await page.getByTestId('github-repo').fill('acme/game');
     await page.getByTestId('github-connect').click();
     await expect(page.getByTestId('github-error')).toContainText('トークンが正しくないか');
+  });
+  test('ブランチの読み込みの間はダイアログを開いたままにして、編集・保存を受け付けない。未保存の変更があれば確かめる', async ({ page }) => {
+    await fakeGitHub(page);
+    await page.goto('/');
+    await openFromGitHub(page);
+    await editHp(page, '321');
+    delays.set('GET /git/ref/heads/develop', 1500);
+    await page.getByTestId('branch-badge').click();
+    await page.getByTestId('github-switch-branch').selectOption('develop');
+    await page.getByTestId('github-branch-ok').click();
+    // 未保存の変更を捨ててよいかを確かめる
+    await expect(page.getByTestId('confirm-dialog')).toBeVisible();
+    await page.getByTestId('confirm-dialog').getByRole('button', { name: '変更を破棄して続ける' }).click();
+    // 読み込みの間もダイアログが残り、Ctrl+S ではコミットのダイアログが開かない
+    await expect(page.getByTestId('github-branch-dialog')).toBeVisible();
+    await page.keyboard.press('Control+s');
+    await expect(page.getByTestId('github-commit-dialog')).toHaveCount(0);
+    await expect(page.getByTestId('github-branch-dialog')).toHaveCount(0);
+    await expect(page.getByTestId('branch-badge')).toHaveText('ブランチ: develop');
+    await expect(page.getByTestId('project-modified')).toHaveCount(0);
+    // その後も保存できる
+    await editHp(page, '322');
+    await page.keyboard.press('Control+s');
+    await expect(page.getByTestId('github-commit-dialog')).toBeVisible();
+  });
+
+  test('今のブランチのプルリクエストを調べている間はコミットできない。プルリクエストだけ失敗したら、コミットの結果と理由を示す', async ({ page }) => {
+    const gh = await fakeGitHub(page);
+    await page.goto('/');
+    await openFromGitHub(page);
+    await editHp(page, '601');
+    await page.keyboard.press('Control+s');
+    await page.getByTestId('github-branch-name').fill('w1');
+    gh.failNext = { match: '/pulls', status: 422, message: 'Validation Failed' };
+    await page.getByTestId('github-commit-ok').click();
+    await expect(page.getByTestId('github-pull-error')).toContainText('コミットはできましたが、プルリクエストを作れませんでした: Validation Failed');
+    await page.getByTestId('github-commit-close').click();
+    await expect(page.getByTestId('project-modified')).toHaveCount(0);
+    expect(gh.branchFiles('w1')['data/master/tables/character.yaml']).toContain('601');
+
+    delays.set('GET /pulls', 1500);
+    await editHp(page, '602');
+    await page.keyboard.press('Control+s');
+    await expect(page.getByTestId('github-target-current')).toBeChecked();
+    await expect(page.getByTestId('github-checking-pull')).toBeVisible();
+    await expect(page.getByTestId('github-commit-ok')).toBeDisabled();
+    // プルリクエストが無いと分かったら、作るのが既定（マージ先は開いたブランチ）
+    await expect(page.getByTestId('github-create-pull')).toBeChecked();
+    await expect(page.getByTestId('github-base')).toHaveValue('main');
+    await page.getByTestId('github-commit-ok').click();
+    await expect(page.getByTestId('github-pull-link')).toHaveText('https://github.com/acme/game/pull/1');
+    expect(gh.pulls[0]).toMatchObject({ head: 'w1', base: 'main' });
   });
 });
