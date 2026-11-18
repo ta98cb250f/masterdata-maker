@@ -43,7 +43,8 @@ jobs:
 
   e2e:
     name: 画面テスト
-    runs-on: ubuntu-latest
+    # ubuntu-latest は 26.04 になり、Playwright 1.56 は chromium の依存を入れられない。対応する版に上げるまで 24.04 に固定する
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     # パッケージ名に頼らないよう、packages/app で動かす（--filter は名前が当たらなくても成功で終わる）
     defaults:
@@ -76,7 +77,8 @@ jobs:
   perf:
     name: 性能の計測（失敗しても止めない）
     if: ${{ !inputs.skip_perf }}
-    runs-on: ubuntu-latest
+    # ubuntu-latest は 26.04 になり、Playwright 1.56 は chromium の依存を入れられない。対応する版に上げるまで 24.04 に固定する
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     continue-on-error: true
     defaults:

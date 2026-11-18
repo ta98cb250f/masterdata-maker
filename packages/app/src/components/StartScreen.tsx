@@ -1,4 +1,4 @@
-// 開いていないときの画面: フォルダを開く・前回のフォルダを開く（FR-FIO-01）・サンプルを開く（P-45）。
+// 開いていないときの画面: フォルダを開く・前回のフォルダを開く（FR-FIO-01）・GitHub のリポジトリを開く（FR-GH-01）・サンプルを開く（P-45）。
 // 直接保存方式が使えないブラウザでは、使えない機能を示す（NFR-05）
 import { supportsDirectAccess } from '../fs/direct';
 import { useAppState, useStore, useT } from '../store/hooks';
@@ -25,6 +25,9 @@ export function StartScreen() {
               {t('ui.command.openLastFolderNamed', { name: lastFolder })}
             </button>
           )}
+          <button type="button" className="sc-button" disabled={loading} onClick={() => void store.run('file.openGitHub')} data-testid="open-github">
+            {t('ui.command.openGitHub')}
+          </button>
           <button type="button" className="sc-button" disabled={loading} onClick={() => void store.run('file.openSample')} data-testid="open-sample">
             {t('ui.command.openSample')}
           </button>

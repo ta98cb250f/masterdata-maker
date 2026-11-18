@@ -1,0 +1,61 @@
+/* GitHub 方式のダイアログと、タイトルのブランチの印（FR-GH-01〜05） */
+.sc-gh-indent {
+  margin-left: 24px;
+}
+.sc-gh-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.sc-gh-links a,
+.sc-form a {
+  color: var(--sc-accent-text-strong);
+  word-break: break-all;
+}
+.sc-link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--sc-accent-text-strong);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.sc-gh-browser {
+  max-height: 180px;
+  overflow: auto;
+  margin: 0 0 4px 148px;
+  padding: 6px 10px;
+  border: 1px solid var(--sc-gridline);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.sc-gh-browser p {
+  margin: 0 0 4px;
+}
+.sc-gh-project {
+  color: var(--sc-success);
+}
+.sc-gh-dirs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  line-height: 1.8;
+}
+.sc-gh-files {
+  max-height: 120px;
+}
+.sc-branch-badge {
+  margin-left: auto;
+  font-size: 12px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-header-bg);
+  border-radius: 12px;
+  padding: 2px 10px;
+  cursor: pointer;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

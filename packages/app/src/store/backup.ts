@@ -39,7 +39,7 @@ export const DEFAULT_BACKUP_DELAY = 800;
 export function projectIdentity(project: Project, source: ProjectSource): ProjectIdentity | null {
   const config = project.config.source;
   if (config === null) return null;
-  return { name: source.name, configPath: config.path, configText: config.text };
+  return { name: source.backupName ?? source.name, configPath: config.path, configText: config.text };
 }
 
 /** 退避先のキー（同じプロジェクトなら同じキー） */
@@ -377,12 +377,19 @@ export class BackupManager {
     const key = this.key;
     if (project === null || key === null || this.proposing) return this.chain;
     return this.enqueue(async () => {
-      const { calc } = this.store.getState();
+      const { calc, source } = this.store.getState();
       if (this.store.project !== project || calc === null) return;
+      // 開いている間に同一性が変わったら（GitHub 方式で新しいブランチにコミットした）、前のキーの退避を消して新しいキーに移る
+      const identity = source === null ? null : projectIdentity(project, source);
+      const current = identity === null ? key : backupKey(identity);
+      if (current !== this.key && this.key !== null) {
+        await this.remove(this.key);
+        this.key = current;
+      }
       const plan = await planBackup(this.store, this.now());
       if (this.store.project !== project || this.proposing) return;
       if (plan === null) {
-        await this.remove(key);
+        await this.remove(this.key ?? key);
         return;
       }
       // テーブルのテキストを作って書き込むのは Worker（メインスレッドを止めない）

@@ -71,7 +71,8 @@ export async function runExport(store: AppStore, request: ExportRequest, deps: E
     }
     return { status: 'written', outDir, files, failed };
   }
-  return downloadExport(plan.files, `${source.name}-${outDir === '' ? 'export' : baseName(outDir)}`, deps.download ?? browserDownload);
+  // GitHub 方式の名前（owner/repo/folder）の / はファイル名に使えないので - にする
+  return downloadExport(plan.files, `${source.name.replace(/\//g, '-')}-${outDir === '' ? 'export' : baseName(outDir)}`, deps.download ?? browserDownload);
 }
 
 /** ダウンロードするファイルの種類（拡張子から） */

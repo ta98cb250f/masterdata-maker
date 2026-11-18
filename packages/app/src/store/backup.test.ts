@@ -176,6 +176,30 @@ describe('退避と復元の流れ', () => {
     expect(storage.data.size).toBe(0);
   });
 
+  it('開いている間にプロジェクトの同一性が変わったら（GitHub 方式で新しいブランチにコミット）、前のキーの退避を消して新しいキーに退避する', async () => {
+    const storage = new MemoryBackupStorage();
+    const a = await openTestStore();
+    const handle = installBackup(a.store, { storage, delay: 0 });
+    setCell(a.store, 'character', 'hp', '4321');
+    await tick();
+    await handle.manager.idle();
+    const before = [...storage.data.keys()];
+    expect(before).toHaveLength(1);
+    a.source.backupName = 'github:acme/game@masterdata/x';
+    setCell(a.store, 'character', 'hp', '4322');
+    await tick();
+    await handle.manager.idle();
+    const after = [...storage.data.keys()];
+    expect(after).toHaveLength(1);
+    expect(after[0]).not.toBe(before[0]);
+    // 保存したら新しいキーの退避を消す
+    await a.store.save();
+    await tick();
+    await handle.manager.idle();
+    expect(storage.data.size).toBe(0);
+    handle.dispose();
+  });
+
   it('「復元しない」を選ぶと消す。答えずに閉じたら残す', async () => {
     const storage = new MemoryBackupStorage();
     const a = await openTestStore();

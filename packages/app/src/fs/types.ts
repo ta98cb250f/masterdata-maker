@@ -1,8 +1,11 @@
 // ファイルの読み書きの方式（§4.4、NFR-02〜05）
 import type { ProjectFs, SaveFile, SavePlan } from '@masterdata-maker/core';
 
-/** direct: 直接保存方式 / download: ダウンロード保存方式 / sample: 組み込みのサンプル（保存はダウンロード。P-45） */
-export type SourceKind = 'direct' | 'download' | 'sample';
+/**
+ * direct: 直接保存方式 / download: ダウンロード保存方式 / sample: 組み込みのサンプル（保存はダウンロード。P-45） /
+ * github: GitHub 方式（保存はコミット。FR-GH-01〜05、P-67）
+ */
+export type SourceKind = 'direct' | 'download' | 'sample' | 'github';
 
 /** その方式で使える機能（NFR-05: 使えない機能を画面に示す） */
 export interface SourceCapabilities {
@@ -33,6 +36,10 @@ export interface SaveOutcome {
   manualRemove: string[];
   /** ダウンロードしたファイルの名前（ダウンロード保存方式） */
   downloaded?: string;
+  /** 保存を取り消した（GitHub 方式でコミットのダイアログを閉じた）。何も書き込んでいない */
+  cancelled?: boolean;
+  /** コミットしたブランチ（GitHub 方式） */
+  committedTo?: string;
 }
 
 /** 開いたプロジェクトの読み書きの口 */
@@ -40,6 +47,8 @@ export interface ProjectSource {
   kind: SourceKind;
   /** プロジェクトのフォルダ名（タイトルに出す） */
   name: string;
+  /** 未保存の変更の退避で、同じプロジェクトかを見分ける名前（省略時は name。FR-FIO-06） */
+  backupName?: string;
   /** 読み込み */
   fs: ProjectFs;
   capabilities: SourceCapabilities;

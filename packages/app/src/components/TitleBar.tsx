@@ -1,6 +1,9 @@
-// タイトル: プロジェクトのフォルダ名と未保存の印。ダウンロード保存方式では、使えない機能を示す（NFR-05）
+// タイトル: プロジェクトのフォルダ名と未保存の印。ダウンロード保存方式では、使えない機能を示す（NFR-05）。
+// GitHub 方式では今のブランチを示し、押すとブランチを切り替える（FR-GH-02）
 import { useEffect } from 'react';
+import { isGitHubSource } from '../fs/github';
 import { useAppState, useStore, useT } from '../store/hooks';
+import '../styles/github.css';
 
 export function TitleBar() {
   const store = useStore();
@@ -38,7 +41,17 @@ export function TitleBar() {
         )}
         {running && <span className="sc-title-checking">{t('ui.title.validating')}</span>}
       </div>
-      {source !== null && !source.capabilities.directSave && (
+      {isGitHubSource(source) ? (
+        <button
+          type="button"
+          className="sc-branch-badge"
+          title={t('ui.github.branchBadgeTitle', { branch: source.github.branch })}
+          onClick={() => void store.run('github.switchBranch')}
+          data-testid="branch-badge"
+        >
+          {t('ui.github.branchBadge', { branch: source.github.branch })}
+        </button>
+      ) : source !== null && !source.capabilities.directSave && (
         <button type="button" className="sc-mode-badge" onClick={showLimits} data-testid="mode-badge">
           {t(source.kind === 'sample' ? 'ui.mode.sample' : 'ui.mode.download')}
         </button>
