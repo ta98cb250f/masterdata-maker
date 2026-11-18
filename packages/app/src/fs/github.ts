@@ -57,8 +57,8 @@ export function defaultBranchName(now: Date = new Date()): string {
 }
 
 /**
- * invalid: GitHub が要求を受け付けなかった（409・422）。コミットでは、ブランチの作成・更新のときに
- * branchExists（同じ名前のブランチがある）・notFastForward（他でブランチが進んだ）に分ける。
+ * invalid: GitHub が要求を受け付けなかった（409・422）。コミットでは、ブランチの作成・更新のときに GitHub の文で見分けられたものだけを
+ * branchExists（同じ名前のブランチがある）・notFastForward（他でブランチが進んだ）に分ける（refError）。
  * folderMissing: 指定したフォルダが無い / tooLarge: フォルダのファイルが多すぎて一覧を取り切れない
  */
 export type GitHubErrorKind =
@@ -86,9 +86,10 @@ export class GitHubError extends Error {
   }
 }
 
-function errorKind(status: number, message: string, rateRemaining: string | null): GitHubErrorKind {
+export function errorKind(status: number, message: string, rateRemaining: string | null): GitHubErrorKind {
   if (status === 401) return 'unauthorized';
-  if ((status === 403 || status === 429) && (rateRemaining === '0' || /rate limit/i.test(message))) return 'rateLimited';
+  // 429 はいつも流量制限。403 は残りが 0 か、本文が流量制限（二次的な制限を含む）のときだけ
+  if (status === 429 || (status === 403 && (rateRemaining === '0' || /rate limit/i.test(message)))) return 'rateLimited';
   if (status === 403) return 'forbidden';
   if (status === 404) return 'notFound';
   if (status === 409 || status === 422) return 'invalid';
@@ -351,6 +352,19 @@ export class GitHubWorkspace {
     return this.folder === '' ? path : `${this.folder}/${path}`;
   }
 
+  /**
+   * ブランチの作成・更新が応答を受け取れずに失敗した（通信の切断・5xx）とき、GitHub の側では進んでいることがある。
+   * ブランチの先頭を読み直し、作ったコミットになっていれば入ったものとする
+   */
+  private async landed(branch: string, commit: string, e: unknown): Promise<boolean> {
+    if (!(e instanceof GitHubError) || !(e.kind === 'network' || e.status >= 500)) return false;
+    try {
+      return (await this.client.branchHead(this.repo, branch)).commit === commit;
+    } catch {
+      return false;
+    }
+  }
+
   /** 保存の計画を 1 つのコミットにして、ブランチを進める（作る）。プルリクエストも作れる */
   async commit(plan: SavePlan, request: CommitRequest): Promise<CommitResult> {
     const entries: unknown[] = [];
@@ -368,9 +382,7 @@ export class GitHubWorkspace {
       if (request.newBranch) await this.client.createBranch(this.repo, request.branch, commit);
       else await this.client.updateBranch(this.repo, request.branch, commit);
     } catch (e) {
-      // 作るときの 422 は同じ名前のブランチがある、進めるときの 422 は早送りでない（他でブランチが進んだ）
-      if (e instanceof GitHubError && e.kind === 'invalid') throw new GitHubError(request.newBranch ? 'branchExists' : 'notFastForward', e.status, e.message);
-      throw e;
+      if (!(await this.landed(request.branch, commit, e))) throw refError(e, request.newBranch);
     }
     // ここまで来たらコミットは入った。以降の失敗（プルリクエスト）は、コミットを取り消さずに知らせる
     this.branch = request.branch;
@@ -398,6 +410,18 @@ export class GitHubWorkspace {
   }
 }
 
+/**
+ * ブランチの作成・更新の失敗を、画面の文言のための種類に分ける。GitHub は 409・422 をいくつもの理由で返す
+ * （保護されたブランチ、消えたブランチ、名前の衝突など）ので、本文で見分けられたものだけを
+ * branchExists・notFastForward にし、それ以外は invalid のまま GitHub の文を示す
+ */
+export function refError(e: unknown, newBranch: boolean): unknown {
+  if (!(e instanceof GitHubError) || e.kind !== 'invalid') return e;
+  if (newBranch && /already exists/i.test(e.message)) return new GitHubError('branchExists', e.status, e.message);
+  if (!newBranch && /fast.?forward/i.test(e.message)) return new GitHubError('notFastForward', e.status, e.message);
+  return e;
+}
+
 /** コミットはできたが、プルリクエストを作れなかった */
 export class PullRequestError extends Error {
   constructor(
@@ -413,9 +437,9 @@ export class PullRequestError extends Error {
 export async function openWorkspace(client: GitHubClient, location: GitHubLocation): Promise<GitHubWorkspace> {
   const [info, head] = await Promise.all([client.repository(location.repo), client.branchHead(location.repo, location.branch)]);
   const folderTree = await client.folderTree(location.repo, head.tree, location.folder);
-  if (folderTree === null) throw new GitHubError('folderMissing', 404, location.folder);
+  if (folderTree === null) throw new GitHubError('folderMissing', 404, location.folder === '' ? '/' : location.folder);
   const { entries, truncated } = await client.tree(location.repo, folderTree, true);
-  if (truncated) throw new GitHubError('tooLarge', 0, location.folder);
+  if (truncated) throw new GitHubError('tooLarge', 0, location.folder === '' ? '/' : location.folder);
   const fs = new GitHubProjectFs(client, location.repo, entries);
   return new GitHubWorkspace(client, location.repo, location.folder, location.branch, head, fs, location.branch, info.defaultBranch);
 }

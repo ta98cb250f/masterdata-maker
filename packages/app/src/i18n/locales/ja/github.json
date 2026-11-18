@@ -16,7 +16,7 @@
   "ui.github.connect": "接続",
   "ui.github.connected": "{repo} に接続しました。",
   "ui.github.changeRepo": "リポジトリを変える",
-  "ui.github.noPush": "このトークンではこのリポジトリに書き込めません。開いて編集はできますが、コミットできません",
+  "ui.github.noPush": "このアカウントにはこのリポジトリへの書き込み権限がありません。開いて編集はできますが、コミットできません。（この警告が出なくても、トークンの権限が足りなければコミットのときに失敗します）",
   "ui.github.branch": "ブランチ",
   "ui.github.defaultBranchOption": "{branch}（既定）",
   "ui.github.folder": "フォルダ",

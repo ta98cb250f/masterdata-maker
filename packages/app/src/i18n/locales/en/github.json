@@ -16,7 +16,7 @@
   "ui.github.connect": "Connect",
   "ui.github.connected": "Connected to {repo}.",
   "ui.github.changeRepo": "Change repository",
-  "ui.github.noPush": "This token cannot write to this repository. You can open and edit, but you cannot commit",
+  "ui.github.noPush": "Your account has no write access to this repository. You can open and edit, but you cannot commit. (Even without this warning, committing fails if the token lacks permission)",
   "ui.github.branch": "Branch",
   "ui.github.defaultBranchOption": "{branch} (default)",
   "ui.github.folder": "Folder",

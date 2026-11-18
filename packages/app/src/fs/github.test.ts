@@ -6,11 +6,13 @@ import {
   GitHubError,
   PullRequestError,
   defaultBranchName,
+  errorKind,
   githubSource,
   isValidBranchName,
   normalizeRepoPath,
   openWorkspace,
   parseRepo,
+  refError,
 } from './github';
 import { FakeGitHub } from './githubFake';
 import { loadLastLocation, loadToken, saveLastLocation, saveToken, forgetToken } from './githubSettings';
@@ -195,6 +197,42 @@ describe('GitHub 方式の保存（コミット）', () => {
     expect(gh.pulls).toHaveLength(1);
   });
 
+  it('他でブランチが消えていたら、早送りでないとは言わず invalid のまま GitHub の文を示す', async () => {
+    const { gh, client, location } = setup();
+    const ws = await openWorkspace(client, location);
+    const { plan } = await editOneCell(ws.fs);
+    gh.branches.delete('main');
+    await expect(ws.commit(plan, { message: 'm', branch: 'main', newBranch: false })).rejects.toMatchObject({ kind: 'invalid', message: 'Reference does not exist' });
+  });
+
+  it('ブランチの更新で応答を受け取れなくても、GitHub の側で進んでいればコミットできたものとする', async () => {
+    const { gh, location } = setup();
+    // ref の更新だけ、GitHub が処理した後で通信が切れたことにする
+    const client = new GitHubClient('test-token', async (input, init) => {
+      const res = await gh.fetch(input, init);
+      if (init?.method === 'PATCH' && input.includes('/git/refs/')) throw new TypeError('Failed to fetch');
+      return res;
+    });
+    const ws = await openWorkspace(client, location);
+    const { plan } = await editOneCell(ws.fs);
+    const result = await ws.commit(plan, { message: 'm', branch: 'main', newBranch: false });
+    expect(gh.branches.get('main')).toBe(result.commit);
+    expect(ws.head.commit).toBe(result.commit);
+  });
+
+  it('ブランチの作成が GitHub に届かずに切れたら network で失敗し、作業の場所は進めない', async () => {
+    const { gh, location } = setup();
+    const client = new GitHubClient('test-token', async (input, init) => {
+      if (init?.method === 'POST' && input.endsWith('/git/refs')) throw new TypeError('Failed to fetch');
+      return gh.fetch(input, init);
+    });
+    const ws = await openWorkspace(client, location);
+    const { plan } = await editOneCell(ws.fs);
+    await expect(ws.commit(plan, { message: 'm', branch: 'nb', newBranch: true })).rejects.toMatchObject({ kind: 'network' });
+    expect(gh.branches.has('nb')).toBe(false);
+    expect(ws.branch).toBe('main');
+  });
+
   it('書き込めないトークンは forbidden', async () => {
     const { gh, client, location } = setup();
     gh.canPush = false;
@@ -260,5 +298,32 @@ describe('入力の記憶', () => {
     const stores = { session: memory(), local: memory() };
     saveLastLocation({ repo: { owner: 'acme', repo: 'game' }, branch: 'dev', folder: 'data' }, stores);
     expect(loadLastLocation(stores)).toEqual({ repo: 'acme/game', branch: 'dev', folder: 'data' });
+  });
+});
+
+describe('失敗の分け方', () => {
+  it.each([
+    [401, 'Bad credentials', null, 'unauthorized'],
+    [403, 'API rate limit exceeded for user', '0', 'rateLimited'],
+    [403, 'You have exceeded a secondary rate limit', '4000', 'rateLimited'],
+    [429, 'Too Many Requests', null, 'rateLimited'],
+    [403, 'Resource not accessible by personal access token', '4999', 'forbidden'],
+    [404, 'Not Found', null, 'notFound'],
+    [409, 'Git Repository is empty.', null, 'invalid'],
+    [422, 'Validation Failed', null, 'invalid'],
+    [500, 'Server Error', null, 'other'],
+  ] as const)('%i %s → %s', (status, message, remaining, kind) => {
+    expect(errorKind(status, message, remaining)).toBe(kind);
+  });
+
+  it('ブランチの作成・更新の失敗は、GitHub の文で見分けられたものだけを branchExists・notFastForward にする', () => {
+    const invalid = (m: string) => new GitHubError('invalid', 422, m);
+    expect(refError(invalid('Reference already exists'), true)).toMatchObject({ kind: 'branchExists' });
+    expect(refError(invalid('Update is not a fast forward'), false)).toMatchObject({ kind: 'notFastForward' });
+    // 保護されたブランチ・無効な名前などは invalid のまま
+    expect(refError(invalid('Protected branch update failed for refs/heads/main.'), false)).toMatchObject({ kind: 'invalid' });
+    expect(refError(invalid('Reference update failed'), true)).toMatchObject({ kind: 'invalid' });
+    const forbidden = new GitHubError('forbidden', 403, 'x');
+    expect(refError(forbidden, false)).toBe(forbidden);
   });
 });

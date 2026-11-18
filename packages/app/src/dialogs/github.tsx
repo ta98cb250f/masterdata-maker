@@ -314,7 +314,7 @@ function GitHubCommitDialog({ store, args, close }: DialogProps<GitHubCommitArgs
   const [newBranch, setNewBranchState] = useState(ws.branch === ws.openedBranch);
   const [branchName, setBranchName] = useState(() => defaultBranchName());
   const [message, setMessage] = useState(() => t('ui.github.defaultMessage'));
-  const initialBase = ws.branch === ws.openedBranch ? ws.branch : ws.openedBranch;
+  const initialBase = ws.openedBranch;
   // 既定の組み合わせ（新しいブランチ → 開いたブランチ、作ったブランチ → 開いたブランチ）では、マージ先は別のブランチになる
   const [createPull, setCreatePull] = useState(true);
   const [pullTitle, setPullTitle] = useState<string | null>(null);

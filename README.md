@@ -120,7 +120,7 @@ node packages/cli/dist/cli.mjs convert --to json path/to/project
 
 - 通信はブラウザから GitHub の REST API（api.github.com）へ直接行います。サーバーは使いません（NFR-07 の例外は GitHub 方式のときだけ）
 - トークンは既定ではタブを閉じると忘れます（sessionStorage）。「この端末にトークンを記憶する」を選ぶと localStorage に残ります。共用の端末では記憶しないでください。記憶したトークンはダイアログの「覚えているトークンを消す」で消せます。トークンの有効期限は短くしておくことを勧めます
-- sessionStorage・localStorage は同じ配信元のページから読めます。GitHub Pages の配信元は `<owner>.github.io` なので、同じ持ち主のほかのリポジトリの Pages からもトークンを読めてしまいます。ほかの Pages を公開しているアカウントでは、独自ドメインか、このアプリ専用のアカウント・組織の Pages で配ることを勧めます。ビルドした画面は Content-Security-Policy で通信先を自分と api.github.com に限っています
+- sessionStorage・localStorage は同じ配信元のページから読めます。GitHub Pages の配信元は `<owner>.github.io` なので、同じ持ち主のほかのリポジトリの Pages からもトークンを読めてしまいます。ほかの Pages を公開しているアカウントでは、独自ドメインか、このアプリ専用のアカウント・組織の Pages で配ることを勧めます。ビルドした画面は Content-Security-Policy で fetch などの通信先を自分と api.github.com に限っていますが、これは多層の守りの 1 つで、画像の読み込みやページの移動による持ち出しまでは防ぎません
 - 今のブランチが他で進んでいたら、今のブランチへのコミットは失敗し、上書きしません。新しいブランチにコミットしてください
 - 画面からの出力（出力のダイアログ）は、GitHub 方式ではダウンロードになります（出力したファイルはコミットに入りません）
 - ほかのエディタや Git による変更の検知（FR-FIO-07）はありません
